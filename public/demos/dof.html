@@ -7,8 +7,10 @@
   Maps to the library's `post` module: createDofPass + createComposer's depth
   texture. A 12-tap Poisson blur scales with the circle of confusion — the
   distance between each pixel's LINEAR depth and the focal plane — and the same
-  CoC drives a radial R/G/B split for lens-edge fringing. The composer renders
-  into a render target carrying a DepthTexture; the pass samples it as tDepth.
+  CoC drives a radial R/G/B split for lens-edge fringing. The scene renders into
+  a dedicated render target carrying a DepthTexture; the pass samples it as tDepth
+  (kept OUT of the composer ping-pong, or reading it while a sibling buffer has it
+  bound as DEPTH_ATTACHMENT is an illegal feedback loop and depth reads as garbage).
   Slide the focal distance to rack focus front-to-back.
 -->
 <html lang="en">
@@ -45,8 +47,8 @@
     import * as THREE from 'three'
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
     import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
-    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
     import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
+    import { TexturePass } from 'three/addons/postprocessing/TexturePass.js'
     import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 
     const NEAR = 0.1, FAR = 120
@@ -129,16 +131,21 @@
       return new THREE.WebGLRenderTarget(w, h, { depthTexture, depthBuffer: true })
     }
     let w = canvas.clientWidth, h = canvas.clientHeight
-    const rt = makeRT(w, h)
-    const composer = new EffectComposer(renderer, rt)
-    composer.addPass(new RenderPass(scene, camera))
+    // Dedicated scene target with its own DepthTexture, kept OUT of the composer's
+    // ping-pong. EffectComposer clones its RT into both buffers which SHARE the
+    // depth texture, so sampling it in the DOF pass while a sibling buffer has it
+    // bound as DEPTH_ATTACHMENT is an illegal read/write feedback loop. Rendering
+    // the scene here and feeding the composer a plain colour copy keeps depth read-only.
+    const sceneRT = makeRT(w, h)
+    const composer = new EffectComposer(renderer)        // default targets, no depth texture
+    composer.addPass(new TexturePass(sceneRT.texture))
     composer.addPass(dof)
     composer.addPass(new OutputPass())
-    dof.uniforms.tDepth.value = rt.depthTexture          // shared across the ping-pong buffers
+    dof.uniforms.tDepth.value = sceneRT.depthTexture     // never bound for writing → no feedback
 
     function resize () {
       w = canvas.clientWidth; h = canvas.clientHeight
-      renderer.setSize(w, h, false); composer.setSize(w, h)
+      renderer.setSize(w, h, false); composer.setSize(w, h); sceneRT.setSize(w, h)
       camera.aspect = w / h; camera.updateProjectionMatrix()
       dof.uniforms.uAspect.value = w / h
     }
@@ -151,6 +158,9 @@
     function tick () {
       const dt = clock.getDelta()
       scene.children.forEach((o) => { if (o.geometry === geo) { o.rotation.x += dt * 0.3; o.rotation.y += dt * 0.4 } })
+      renderer.setRenderTarget(sceneRT)                  // fill colour + depth for the DOF pass
+      renderer.render(scene, camera)
+      renderer.setRenderTarget(null)
       composer.render()
       requestAnimationFrame(tick)
     }
