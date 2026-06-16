@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<!--
+  voxels.html — VoxelChunk storage + greedy meshing
+  ──────────────────────────────────────────────────
+  Self-contained. Open directly in a browser (loads `three` from esm.sh).
+
+  Maps to the library's `voxels` module: VoxelChunk + greedyMesh. A 32³ chunk
+  is filled from value-noise terrain, then meshed two ways. Greedy meshing
+  merges coplanar same-id faces into the largest possible rectangles, so the
+  rendered geometry is 10–30× fewer triangles than the naive "6 quads per solid
+  voxel" approach. The HUD shows both counts. Toggle wireframe to see the merged
+  quads — notice they span many voxels.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>three.js · voxels + greedy mesh</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0d1117; overflow: hidden; font-family: ui-monospace, monospace }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #d6e0ea;
+      background: rgba(13, 17, 23, 0.6); border: 1px solid #2a3441; border-radius: 6px;
+      font-size: 12px; line-height: 1.7 }
+    label { display: block; cursor: pointer }
+    b { color: #9fd0ff }
+    .save { color: #8fffa8 }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>three.js · voxels + greedy mesh</div>
+      <div>greedy <b id="greedy">–</b> tris · naive <b id="naive">–</b> tris</div>
+      <div class="save"><b id="ratio">–</b>× fewer triangles</div>
+      <label><input type="checkbox" id="wire"> show merged quads (wireframe)</label>
+      <div>double-click to regenerate</div>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  { "imports": { "three": "https://esm.sh/three@0.184.0", "three/addons/": "https://esm.sh/three@0.184.0/addons/" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+
+    // ── voxels module, inlined ───────────────────────────────────────────────
+    // flat Uint16Array storage, 2 bytes/voxel, bounds-checked accessors
+    class VoxelChunk {
+      constructor (size) { this.size = size; this.data = new Uint16Array(size ** 3) }
+      _idx (x, y, z) { return (y * this.size + z) * this.size + x }
+      get (x, y, z) { return (x < 0 || y < 0 || z < 0 || x >= this.size || y >= this.size || z >= this.size) ? 0 : this.data[this._idx(x, y, z)] }
+      set (x, y, z, id) { if (!(x < 0 || y < 0 || z < 0 || x >= this.size || y >= this.size || z >= this.size)) this.data[this._idx(x, y, z)] = id }
+    }
+    // greedy mesh: per axis, slice into 2D masks, sweep largest same-id rects
+    function buildGreedyMesh (chunk) {
+      const N = chunk.size, positions = [], normals = [], colors = [], indices = []
+      for (let dim = 0; dim < 3; dim++) {
+        const u = (dim + 1) % 3, v = (dim + 2) % 3, x = [0, 0, 0], q = [0, 0, 0]
+        const mask = new Int32Array(N * N); q[dim] = 1
+        for (x[dim] = -1; x[dim] < N;) {
+          let n = 0
+          for (x[v] = 0; x[v] < N; x[v]++) for (x[u] = 0; x[u] < N; x[u]++) {
+            const a = x[dim] >= 0 ? chunk.get(x[0], x[1], x[2]) : 0
+            const b = x[dim] < N - 1 ? chunk.get(x[0] + q[0], x[1] + q[1], x[2] + q[2]) : 0
+            mask[n++] = !!a !== !!b ? (a !== 0 ? a : -b) : 0
+          }
+          x[dim]++
+          n = 0
+          for (let j = 0; j < N; j++) for (let i = 0; i < N;) {
+            const m = mask[n]
+            if (m !== 0) {
+              let w = 1; while (i + w < N && mask[n + w] === m) w++
+              let h = 1; outer: for (; j + h < N; h++) for (let k = 0; k < w; k++) if (mask[n + k + h * N] !== m) break outer
+              x[u] = i; x[v] = j
+              const du = [0, 0, 0], dv = [0, 0, 0]
+              if (m > 0) { du[u] = w; dv[v] = h } else { du[v] = h; dv[u] = w }
+              const base = positions.length / 3
+              positions.push(
+                x[0], x[1], x[2],
+                x[0] + du[0], x[1] + du[1], x[2] + du[2],
+                x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2],
+                x[0] + dv[0], x[1] + dv[1], x[2] + dv[2])
+              const sign = m > 0 ? 1 : -1
+              const nx = dim === 0 ? sign : 0, ny = dim === 1 ? sign : 0, nz = dim === 2 ? sign : 0
+              for (let k = 0; k < 4; k++) normals.push(nx, ny, nz)
+              const id = Math.abs(m)
+              const r = (id * 37 % 255) / 255, g = (id * 91 % 255) / 255, bb = (id * 151 % 255) / 255
+              for (let k = 0; k < 4; k++) colors.push(r, g, bb)
+              indices.push(base, base + 1, base + 2, base, base + 2, base + 3)
+              for (let l = 0; l < h; l++) for (let k = 0; k < w; k++) mask[n + k + l * N] = 0
+              i += w; n += w
+            } else { i++; n++ }
+          }
+        }
+      }
+      const geo = new THREE.BufferGeometry()
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3))
+      geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals), 3))
+      geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(colors), 3))
+      geo.setIndex(indices); geo.computeBoundingSphere()
+      return geo
+    }
+
+    // seeded value noise for terrain
+    function mulberry32 (seed) { let s = seed >>> 0; return () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 } }
+
+    // ── scaffold ─────────────────────────────────────────────────────────────
+    const canvas = document.querySelector('#scene')
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color('#0d1117')
+    const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 300)
+    const orbit = { theta: 0.8, phi: 0.6, radius: 58 }
+    const updateCamera = () => { const r = orbit.radius * Math.cos(orbit.phi); camera.position.set(Math.sin(orbit.theta) * r, Math.sin(orbit.phi) * orbit.radius, Math.cos(orbit.theta) * r); camera.lookAt(0, 8, 0) }
+    updateCamera()
+    new ResizeObserver((e) => { const { width, height } = e[0].contentRect; renderer.setSize(width, height, false); camera.aspect = width / height; camera.updateProjectionMatrix() }).observe(canvas.parentElement)
+    ;(() => {
+      const pts = new Map(); let lastPinch = 0
+      canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 2) { const [a, b] = [...pts.values()]; lastPinch = Math.hypot(a.x - b.x, a.y - b.y) } })
+      canvas.addEventListener('pointermove', (e) => { const p = pts.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY; if (pts.size === 1) { orbit.theta -= dx * 0.005; orbit.phi = Math.max(0.15, Math.min(1.3, orbit.phi + dy * 0.005)); updateCamera() } else if (pts.size === 2) { const [a, b] = [...pts.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (lastPinch > 0) { orbit.radius = Math.max(24, Math.min(120, orbit.radius / (d / lastPinch))); updateCamera() } lastPinch = d } })
+      const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) lastPinch = 0 }
+      canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up)
+      canvas.addEventListener('wheel', (e) => { e.preventDefault(); orbit.radius = Math.max(24, Math.min(120, orbit.radius * (1 + e.deltaY * 0.001))); updateCamera() }, { passive: false })
+    })()
+
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    const env = new RoomEnvironment()
+    scene.environment = pmrem.fromScene(env, 0.04).texture
+    scene.environmentIntensity = 0.6
+    pmrem.dispose(); env.traverse((o) => o.geometry?.dispose())
+    scene.add(new THREE.DirectionalLight('#fff5e0', 2.4).translateX(20).translateY(40).translateZ(15), new THREE.HemisphereLight('#9fc0ff', '#332a1f', 0.6))
+
+    // ── build a 32³ chunk from noise terrain, then mesh it ───────────────────
+    const N = 32
+    const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0, flatShading: true })
+    const wireMaterial = new THREE.MeshBasicMaterial({ color: '#0d1117', wireframe: true })
+    let mesh = null, wireMesh = null
+
+    function buildTerrain (seed) {
+      const rand = mulberry32(seed), perm = new Float32Array(256)
+      for (let i = 0; i < 256; i++) perm[i] = rand()
+      const hash = (xi, zi) => perm[((xi * 73856093 ^ zi * 19349663) >>> 0) & 255]
+      const sm = t => t * t * (3 - 2 * t), lp = (a, b, t) => a + (b - a) * t
+      const noise = (x, z) => { const xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi; const u = sm(xf), v = sm(zf); return lp(lp(hash(xi, zi), hash(xi + 1, zi), u), lp(hash(xi, zi + 1), hash(xi + 1, zi + 1), u), v) }
+      const chunk = new VoxelChunk(N)
+      let solid = 0
+      for (let x = 0; x < N; x++) for (let z = 0; z < N; z++) {
+        const h = Math.floor((noise(x / 10, z / 10) * 0.6 + noise(x / 4, z / 4) * 0.4) * (N - 8)) + 4
+        for (let y = 0; y < h; y++) {
+          const id = y > h - 2 ? 3 : y > h - 5 ? 2 : 1   // grass / dirt / stone bands
+          chunk.set(x, y, z, id); solid++
+        }
+      }
+      return { chunk, solid }
+    }
+
+    function regen (seed) {
+      if (mesh) { scene.remove(mesh, wireMesh); mesh.geometry.dispose() }
+      const { chunk, solid } = buildTerrain(seed)
+      const geo = buildGreedyMesh(chunk)
+      geo.translate(-N / 2, 0, -N / 2)
+      mesh = new THREE.Mesh(geo, material)
+      wireMesh = new THREE.Mesh(geo, wireMaterial); wireMesh.visible = false
+      scene.add(mesh, wireMesh)
+      const greedyTris = geo.index.count / 3
+      const naiveTris = solid * 12                 // 6 quads × 2 tris per solid voxel
+      document.querySelector('#greedy').textContent = greedyTris.toLocaleString()
+      document.querySelector('#naive').textContent = naiveTris.toLocaleString()
+      document.querySelector('#ratio').textContent = (naiveTris / greedyTris).toFixed(1)
+    }
+
+    regen(7)
+    document.querySelector('#wire').addEventListener('change', (e) => { wireMesh.visible = e.target.checked })
+    let seed = 7
+    canvas.addEventListener('dblclick', () => regen(++seed))   // double-tap regenerates
+    renderer.compile(scene, camera)
+
+    const clock = new THREE.Clock()
+    function tick () {
+      const dt = clock.getDelta()
+      if (mesh) { mesh.rotation.y += dt * 0.08; wireMesh.rotation.y = mesh.rotation.y }
+      renderer.render(scene, camera)
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+    window.__SCENE_READY__ = true
+
+    // double-click/tap the scene to regenerate terrain with a new seed.
+    // perf: greedy meshing is O(N³) to build (run in a Worker for big chunks)
+    // but pays for itself every frame in fewer triangles + smaller buffers.
+  </script>
+</body>
+</html>

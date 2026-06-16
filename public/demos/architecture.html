@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<!--
+  architecture.html — scene modules + MaterialPool + pickTopLevel
+  ────────────────────────────────────────────────────────────────
+  Self-contained. Open directly in a browser (loads `three` from esm.sh).
+
+  Maps to the library's `architecture` module. Three patterns at once:
+   • createSceneModule — each feature is { name, build(ctx), dispose() } and
+     receives a SceneContext, never globals. Toggle modules in the HUD; each
+     disposes ONLY what it created.
+   • MaterialPool — modules request materials by key and share instances; the
+     pool owns disposal. The HUD shows how few materials back many meshes.
+   • pickTopLevel — click any object; a raycast walks up to the scene's direct
+     child and reports which MODULE owns the hit (via userData.module).
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>three.js · scene architecture</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b0e13; overflow: hidden; font-family: ui-monospace, monospace }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #d2dae4;
+      background: rgba(11, 14, 19, 0.62); border: 1px solid #2a3240; border-radius: 6px;
+      font-size: 12px; line-height: 1.7; min-width: 210px }
+    label { display: block; cursor: pointer; user-select: none }
+    b { color: #9fd8ff }
+    #picked { color: #ffd98f }
+    hr { border: 0; border-top: 1px solid #2a3240; margin: 6px 0 }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>three.js · scene architecture</div>
+      <hr>
+      <label><input type="checkbox" id="m-pillars" checked> module: <b>pillars</b></label>
+      <label><input type="checkbox" id="m-orbs" checked> module: <b>orbs</b></label>
+      <label><input type="checkbox" id="m-ring" checked> module: <b>ring</b></label>
+      <hr>
+      <div><b id="meshes">–</b> meshes · <b id="materials">–</b> pooled materials</div>
+      <div>picked → <span id="picked">click an object</span></div>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  { "imports": { "three": "https://esm.sh/three@0.184.0", "three/addons/": "https://esm.sh/three@0.184.0/addons/" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+
+    // ── architecture module, inlined ─────────────────────────────────────────
+    // MaterialPool — cache materials by key; the pool owns disposal
+    class MaterialPool {
+      constructor () { this.cache = new Map() }
+      get (key, factory) { let m = this.cache.get(key); if (!m) { m = factory(); this.cache.set(key, m) } return m }
+      get size () { return this.cache.size }
+      dispose () { for (const m of this.cache.values()) m.dispose(); this.cache.clear() }
+    }
+    // createSceneModule — feature = { name, build(ctx), dispose() }, gets a context
+    function createSceneModule ({ name, build, dispose }) { return { name, build, dispose, _root: null } }
+    // pickTopLevel — raycast, then walk up to the scene's direct child
+    const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2()
+    function pickTopLevel (scene, camera, ndcX, ndcY) {
+      ndc.set(ndcX, ndcY); raycaster.setFromCamera(ndc, camera)
+      const hits = raycaster.intersectObjects(scene.children, true)
+      for (const hit of hits) {
+        if (!hit.object.visible) continue
+        let top = hit.object
+        while (top.parent && top.parent !== scene) top = top.parent
+        return { object: hit.object, topLevel: top, point: hit.point }
+      }
+      return null
+    }
+
+    // ── scaffold ─────────────────────────────────────────────────────────────
+    const canvas = document.querySelector('#scene')
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color('#0b0e13')
+    const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 200)
+    const orbit = { theta: 0.6, phi: 0.5, radius: 22 }
+    const updateCamera = () => { const r = orbit.radius * Math.cos(orbit.phi); camera.position.set(Math.sin(orbit.theta) * r, Math.sin(orbit.phi) * orbit.radius + 2, Math.cos(orbit.theta) * r); camera.lookAt(0, 1.5, 0) }
+    updateCamera()
+    new ResizeObserver((e) => { const { width, height } = e[0].contentRect; renderer.setSize(width, height, false); camera.aspect = width / height; camera.updateProjectionMatrix() }).observe(canvas.parentElement)
+    ;(() => {
+      const pts = new Map(); let lastPinch = 0, moved = 0
+      canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved = 0; if (pts.size === 2) { const [a, b] = [...pts.values()]; lastPinch = Math.hypot(a.x - b.x, a.y - b.y) } })
+      canvas.addEventListener('pointermove', (e) => { const p = pts.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x, dy = e.clientY - p.y; moved += Math.abs(dx) + Math.abs(dy); p.x = e.clientX; p.y = e.clientY; if (pts.size === 1) { orbit.theta -= dx * 0.005; orbit.phi = Math.max(0.1, Math.min(1.2, orbit.phi + dy * 0.005)); updateCamera() } else if (pts.size === 2) { const [a, b] = [...pts.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (lastPinch > 0) { orbit.radius = Math.max(10, Math.min(50, orbit.radius / (d / lastPinch))); updateCamera() } lastPinch = d } })
+      const up = (e) => { if (moved < 6 && pts.size === 1) doPick(e); pts.delete(e.pointerId); if (pts.size < 2) lastPinch = 0 }
+      canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', (e) => pts.delete(e.pointerId))
+      canvas.addEventListener('wheel', (e) => { e.preventDefault(); orbit.radius = Math.max(10, Math.min(50, orbit.radius * (1 + e.deltaY * 0.001))); updateCamera() }, { passive: false })
+    })()
+
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    const env = new RoomEnvironment()
+    scene.environment = pmrem.fromScene(env, 0.04).texture
+    scene.environmentIntensity = 0.6
+    pmrem.dispose(); env.traverse((o) => o.geometry?.dispose())
+    scene.add(new THREE.DirectionalLight('#fff5e0', 2.2).translateX(8).translateY(14).translateZ(6), new THREE.HemisphereLight('#9fc0ff', '#22282f', 0.5))
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(16, 48), new THREE.MeshStandardMaterial({ color: '#161b22', roughness: 0.95 }))
+    floor.rotation.x = -Math.PI / 2; scene.add(floor)
+
+    // ── the SceneContext every module receives (no globals) ──────────────────
+    const pool = new MaterialPool()
+    const updaters = new Set()
+    const ctx = { scene, pool, onFrame: (fn) => updaters.add(fn) }
+
+    // ── three modules, each tagging its root with userData.module ────────────
+    const modules = {
+      pillars: createSceneModule({
+        name: 'pillars',
+        build (ctx) {
+          const root = new THREE.Group(); root.userData.module = 'pillars'
+          const geo = new THREE.CylinderGeometry(0.5, 0.6, 4, 12)
+          const mat = ctx.pool.get('stone', () => new THREE.MeshStandardMaterial({ color: '#7a8590', roughness: 0.8, metalness: 0.1 }))
+          for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; const m = new THREE.Mesh(geo, mat); m.position.set(Math.cos(a) * 8, 2, Math.sin(a) * 8); root.add(m) }
+          this._root = root; this._geo = geo; ctx.scene.add(root)
+        },
+        dispose () { this._root.parent?.remove(this._root); this._geo.dispose() },   // material is pooled — NOT disposed here
+      }),
+      orbs: createSceneModule({
+        name: 'orbs',
+        build (ctx) {
+          const root = new THREE.Group(); root.userData.module = 'orbs'
+          const geo = new THREE.IcosahedronGeometry(0.7, 1)
+          for (let i = 0; i < 6; i++) {
+            const mat = ctx.pool.get('emissive-' + (i % 3), () => new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL((i % 3) / 3, 0.7, 0.5), emissive: new THREE.Color().setHSL((i % 3) / 3, 0.7, 0.3), roughness: 0.3 }))
+            const m = new THREE.Mesh(geo, mat); const a = (i / 6) * Math.PI * 2; m.position.set(Math.cos(a) * 4, 1.5 + Math.sin(a * 2), Math.sin(a) * 4); root.add(m)
+          }
+          this._root = root; this._geo = geo
+          ctx.onFrame((dt) => { root.rotation.y += dt * 0.4 })
+          ctx.scene.add(root)
+        },
+        dispose () { this._root.parent?.remove(this._root); this._geo.dispose() },
+      }),
+      ring: createSceneModule({
+        name: 'ring',
+        build (ctx) {
+          const root = new THREE.Group(); root.userData.module = 'ring'
+          const geo = new THREE.TorusGeometry(6, 0.25, 16, 80)
+          const mat = ctx.pool.get('metal', () => new THREE.MeshStandardMaterial({ color: '#d8c089', roughness: 0.2, metalness: 0.95 }))
+          const m = new THREE.Mesh(geo, mat); m.rotation.x = Math.PI / 2; m.position.y = 1; root.add(m)
+          this._root = root; this._geo = geo
+          ctx.onFrame((dt) => { root.rotation.z += dt * 0.2 })
+          ctx.scene.add(root)
+        },
+        dispose () { this._root.parent?.remove(this._root); this._geo.dispose() },
+      }),
+    }
+
+    const active = new Set()
+    function setModule (key, on) {
+      const mod = modules[key]
+      if (on && !active.has(key)) { mod.build(ctx); active.add(key) }
+      else if (!on && active.has(key)) { mod.dispose(); active.delete(key) }
+      // a disposed module's onFrame closure keeps running on a now-detached
+      // group — harmless (nothing renders it). Re-sync the HUD counts:
+      refreshHud()
+    }
+    function refreshHud () {
+      let meshes = 0; scene.traverse((o) => { if (o.isMesh) meshes++ })
+      document.querySelector('#meshes').textContent = meshes
+      document.querySelector('#materials').textContent = pool.size
+    }
+
+    for (const key of Object.keys(modules)) { modules[key].build(ctx); active.add(key) }
+    refreshHud()
+    for (const key of Object.keys(modules)) {
+      document.querySelector('#m-' + key).addEventListener('change', (e) => setModule(key, e.target.checked))
+    }
+
+    // ── pick → report owning module ──────────────────────────────────────────
+    const pickedEl = document.querySelector('#picked')
+    function doPick (e) {
+      const rect = canvas.getBoundingClientRect()
+      const res = pickTopLevel(scene, camera, ((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1)
+      pickedEl.textContent = res?.topLevel.userData.module ?? (res ? 'floor (unowned)' : 'nothing')
+    }
+
+    renderer.compile(scene, camera)
+    const clock = new THREE.Clock()
+    function tick () {
+      const dt = clock.getDelta()
+      for (const fn of updaters) fn(dt)
+      renderer.render(scene, camera)
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+    window.__SCENE_READY__ = true
+
+    // ownership note: pooled materials are shared, so a module's dispose()
+    // frees only its geometry + removes its root — never the pooled material.
+    // The pool is the single owner; double-free is the classic dispose bug
+    // this pattern designs away (see production-lessons.md).
+  </script>
+</body>
+</html>

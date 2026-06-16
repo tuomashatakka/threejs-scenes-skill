@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<!--
+  god-rays.html — screen-space volumetric light shafts
+  ──────────────────────────────────────────────────────
+  Self-contained. Open directly in a browser (loads `three` from esm.sh).
+
+  Maps to the library's `post` module: createGodRaysPass. A radial blur marches
+  samples from each pixel toward the light's SCREEN-space position, accumulating
+  brightness with decay — cheap fake volumetrics. The pass projects the light's
+  world position each frame and disables itself when the light goes behind the
+  camera. Orbit so the bright sun disc moves; the shafts always point at it.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>three.js · god rays</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #04060a; overflow: hidden; font-family: ui-monospace, monospace }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #ffe6c0;
+      background: rgba(4, 6, 10, 0.6); border: 1px solid #4a3a20; border-radius: 6px;
+      font-size: 12px; line-height: 1.7 }
+    input[type=range] { width: 140px; vertical-align: middle }
+    b { color: #ffcf8f }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>three.js · god rays</div>
+      <label>exposure <b id="eval">0.20</b><br><input type="range" id="exp" min="0" max="0.5" step="0.01" value="0.2"></label>
+      <div>drag to orbit · 60 samples/px</div>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  { "imports": { "three": "https://esm.sh/three@0.184.0", "three/addons/": "https://esm.sh/three@0.184.0/addons/" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+    import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
+    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
+
+    // ── god-rays pass, inlined ───────────────────────────────────────────────
+    const godRays = new ShaderPass({
+      uniforms: {
+        tDiffuse: { value: null }, uLightPos: { value: new THREE.Vector2(0.5, 0.7) },
+        uExposure: { value: 0.2 }, uDecay: { value: 0.95 }, uDensity: { value: 0.9 }, uWeight: { value: 0.4 }, uSamples: { value: 60 },
+      },
+      vertexShader: /* glsl */`varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+      fragmentShader: /* glsl */`
+        uniform sampler2D tDiffuse; uniform vec2 uLightPos;
+        uniform float uExposure, uDecay, uDensity, uWeight; uniform int uSamples; varying vec2 vUv;
+        void main(){
+          vec2 texCoord = vUv;
+          vec2 deltaTex = (vUv - uLightPos) * (1.0 / float(uSamples)) * uDensity;
+          float illumDecay = 1.0;
+          vec4 color = texture2D(tDiffuse, vUv);
+          for (int i = 0; i < 100; i++) {
+            if (i >= uSamples) break;
+            texCoord -= deltaTex;
+            vec4 s = texture2D(tDiffuse, texCoord) * illumDecay * uWeight;
+            color += s; illumDecay *= uDecay;
+          }
+          gl_FragColor = color * uExposure;
+        }`,
+    })
+    const projected = new THREE.Vector3()
+    function updateGodRaysFromLight (worldPos, camera) {
+      projected.copy(worldPos).project(camera)
+      godRays.uniforms.uLightPos.value.set(projected.x * 0.5 + 0.5, projected.y * 0.5 + 0.5)
+      godRays.enabled = projected.z < 1     // light in front of camera
+    }
+
+    // ── scaffold ─────────────────────────────────────────────────────────────
+    const canvas = document.querySelector('#scene')
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color('#04060a')
+    const camera = new THREE.PerspectiveCamera(55, canvas.clientWidth / canvas.clientHeight, 0.1, 200)
+    const orbit = { theta: 0.2, phi: 0.3, radius: 24 }
+    const updateCamera = () => { const r = orbit.radius * Math.cos(orbit.phi); camera.position.set(Math.sin(orbit.theta) * r, Math.sin(orbit.phi) * orbit.radius + 2, Math.cos(orbit.theta) * r); camera.lookAt(0, 2, 0) }
+    updateCamera()
+    ;(() => {
+      const pts = new Map(); let lastPinch = 0
+      canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 2) { const [a, b] = [...pts.values()]; lastPinch = Math.hypot(a.x - b.x, a.y - b.y) } })
+      canvas.addEventListener('pointermove', (e) => { const p = pts.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY; if (pts.size === 1) { orbit.theta -= dx * 0.005; orbit.phi = Math.max(0.05, Math.min(1.0, orbit.phi + dy * 0.005)); updateCamera() } else if (pts.size === 2) { const [a, b] = [...pts.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (lastPinch > 0) { orbit.radius = Math.max(12, Math.min(60, orbit.radius / (d / lastPinch))); updateCamera() } lastPinch = d } })
+      const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) lastPinch = 0 }
+      canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up)
+      canvas.addEventListener('wheel', (e) => { e.preventDefault(); orbit.radius = Math.max(12, Math.min(60, orbit.radius * (1 + e.deltaY * 0.001))); updateCamera() }, { passive: false })
+    })()
+
+    // bright sun disc — the rays radiate from this; occluders cut the shafts
+    const lightWorld = new THREE.Vector3(-6, 9, -14)
+    const sunDisc = new THREE.Mesh(new THREE.SphereGeometry(2.2, 32, 16), new THREE.MeshBasicMaterial({ color: '#fff3d0' }))
+    sunDisc.position.copy(lightWorld); scene.add(sunDisc)
+    const dir = new THREE.DirectionalLight('#fff0d0', 2.5); dir.position.copy(lightWorld); scene.add(dir, new THREE.AmbientLight('#22304a', 1.2))
+
+    // dark occluders that carve silhouettes out of the rays
+    const occ = new THREE.MeshStandardMaterial({ color: '#0a0d14', roughness: 1 })
+    for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2; const m = new THREE.Mesh(new THREE.BoxGeometry(1, 6 + i, 1), occ); m.position.set(Math.cos(a) * 6, 2, Math.sin(a) * 6); scene.add(m) }
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(4, 0.5, 16, 60), occ); ring.rotation.x = Math.PI / 2; ring.position.y = 3; scene.add(ring)
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(40, 48), occ); ground.rotation.x = -Math.PI / 2; scene.add(ground)
+
+    const composer = new EffectComposer(renderer)
+    composer.addPass(new RenderPass(scene, camera))
+    composer.addPass(godRays)
+    composer.addPass(new OutputPass())
+    function resize () { const w = canvas.clientWidth, h = canvas.clientHeight; renderer.setSize(w, h, false); composer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix() }
+    new ResizeObserver(resize).observe(canvas.parentElement); resize()
+
+    const expEl = document.querySelector('#exp'), evalEl = document.querySelector('#eval')
+    expEl.addEventListener('input', () => { godRays.uniforms.uExposure.value = +expEl.value; evalEl.textContent = (+expEl.value).toFixed(2) })
+
+    const clock = new THREE.Clock()
+    function tick () {
+      const dt = clock.getDelta()
+      ring.rotation.z += dt * 0.3
+      updateGodRaysFromLight(lightWorld, camera)
+      composer.render()
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+    window.__SCENE_READY__ = true
+
+    // technique note: this is screen-space — it only knows brightness in the
+    // rendered image, not true light transport. It reads gorgeous when a hot
+    // emissive disc sits behind dark occluders, which is exactly this setup.
+  </script>
+</body>
+</html>

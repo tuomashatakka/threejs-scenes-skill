@@ -224,4 +224,11 @@
     padding: 0.15rem 0.6rem;
     border-radius: 999px;
   }
+
+  .demo-link {
+    font-size: 0.9rem;
+    margin: 0.25rem 0 1rem;
+  }
+  .demo-link a { font-weight: 600; }
+  .demo-link a::before { content: "\25B6\FE0E"; margin-right: 0.4rem; opacity: 0.7; }
 }

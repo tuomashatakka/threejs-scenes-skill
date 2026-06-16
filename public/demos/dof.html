@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<!--
+  dof.html — depth of field + chromatic aberration from a real depth texture
+  ────────────────────────────────────────────────────────────────────────────
+  Self-contained. Open directly in a browser (loads `three` from esm.sh).
+
+  Maps to the library's `post` module: createDofPass + createComposer's depth
+  texture. A 12-tap Poisson blur scales with the circle of confusion — the
+  distance between each pixel's LINEAR depth and the focal plane — and the same
+  CoC drives a radial R/G/B split for lens-edge fringing. The composer renders
+  into a render target carrying a DepthTexture; the pass samples it as tDepth.
+  Slide the focal distance to rack focus front-to-back.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>three.js · depth of field</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #080a10; overflow: hidden; font-family: ui-monospace, monospace }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #cfe0ff;
+      background: rgba(8, 10, 16, 0.6); border: 1px solid #2a3450; border-radius: 6px;
+      font-size: 12px; line-height: 1.7 }
+    input[type=range] { width: 150px; vertical-align: middle }
+    b { color: #9fbfff }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>three.js · depth of field + CA</div>
+      <label>focal distance <b id="fval">14</b><br><input type="range" id="focal" min="6" max="40" step="0.5" value="14"></label>
+      <div>12-tap Poisson · CoC-driven CA</div>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  { "imports": { "three": "https://esm.sh/three@0.184.0", "three/addons/": "https://esm.sh/three@0.184.0/addons/" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+    import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
+    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
+
+    const NEAR = 0.1, FAR = 120
+
+    // ── DOF + chromatic aberration pass, inlined ─────────────────────────────
+    const dof = new ShaderPass({
+      uniforms: {
+        tDiffuse: { value: null }, tDepth: { value: null },
+        uFocalDistance: { value: 14 }, uFocalRange: { value: 5 }, uMaxBlur: { value: 0.018 },
+        uCAStrength: { value: 0.6 }, uNear: { value: NEAR }, uFar: { value: FAR }, uAspect: { value: 1 },
+      },
+      vertexShader: /* glsl */`varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+      fragmentShader: /* glsl */`
+        uniform sampler2D tDiffuse, tDepth;
+        uniform float uFocalDistance, uFocalRange, uMaxBlur, uCAStrength, uNear, uFar, uAspect;
+        varying vec2 vUv;
+        float linearizeDepth (float z) { float ndc = z * 2.0 - 1.0; return (2.0 * uNear * uFar) / (uFar + uNear - ndc * (uFar - uNear)); }
+        vec3 sampleCA (vec2 uv, float coc) {
+          vec2 dir = uv - 0.5; float len = max(length(dir), 1e-4); vec2 nd = dir / len;
+          float ca = coc * uCAStrength * 0.01;
+          return vec3(texture2D(tDiffuse, uv + nd*ca).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - nd*ca).b);
+        }
+        const int TAPS = 12;
+        const vec2 POISSON[12] = vec2[](
+          vec2(0.0,0.0), vec2(0.5,0.25), vec2(-0.25,0.5), vec2(-0.5,-0.25),
+          vec2(0.25,-0.5), vec2(0.75,0.0), vec2(0.0,0.75), vec2(-0.75,0.0),
+          vec2(0.0,-0.75), vec2(0.53,0.53), vec2(-0.53,0.53), vec2(-0.53,-0.53));
+        void main(){
+          float d = linearizeDepth(texture2D(tDepth, vUv).r);
+          float coc = clamp(abs(d - uFocalDistance) / uFocalRange, 0.0, 1.0);
+          float radius = coc * uMaxBlur;
+          vec3 sum = vec3(0.0);
+          for (int i = 0; i < TAPS; i++) { vec2 off = POISSON[i] * radius * vec2(1.0, uAspect); sum += sampleCA(vUv + off, coc); }
+          gl_FragColor = vec4(sum / float(TAPS), 1.0);
+        }`,
+    })
+
+    // ── scaffold ─────────────────────────────────────────────────────────────
+    const canvas = document.querySelector('#scene')
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color('#080a10')
+    const camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, NEAR, FAR)
+    const orbit = { theta: 0.35, phi: 0.25, radius: 24 }
+    const updateCamera = () => { const r = orbit.radius * Math.cos(orbit.phi); camera.position.set(Math.sin(orbit.theta) * r, Math.sin(orbit.phi) * orbit.radius + 1.5, Math.cos(orbit.theta) * r); camera.lookAt(0, 0.5, 0) }
+    updateCamera()
+    ;(() => {
+      const pts = new Map(); let lastPinch = 0
+      canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 2) { const [a, b] = [...pts.values()]; lastPinch = Math.hypot(a.x - b.x, a.y - b.y) } })
+      canvas.addEventListener('pointermove', (e) => { const p = pts.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY; if (pts.size === 1) { orbit.theta -= dx * 0.005; orbit.phi = Math.max(0.02, Math.min(0.9, orbit.phi + dy * 0.005)); updateCamera() } else if (pts.size === 2) { const [a, b] = [...pts.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (lastPinch > 0) { orbit.radius = Math.max(14, Math.min(50, orbit.radius / (d / lastPinch))); updateCamera() } lastPinch = d } })
+      const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) lastPinch = 0 }
+      canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up)
+      canvas.addEventListener('wheel', (e) => { e.preventDefault(); orbit.radius = Math.max(14, Math.min(50, orbit.radius * (1 + e.deltaY * 0.001))); updateCamera() }, { passive: false })
+    })()
+
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    const env = new RoomEnvironment()
+    scene.environment = pmrem.fromScene(env, 0.04).texture
+    scene.environmentIntensity = 0.7
+    pmrem.dispose(); env.traverse((o) => o.geometry?.dispose())
+    scene.add(new THREE.DirectionalLight('#fff5e0', 2).translateX(6).translateY(10).translateZ(8))
+
+    // a deep row of objects so the focal plane is obvious as it racks
+    const geo = new THREE.TorusKnotGeometry(0.7, 0.26, 100, 16)
+    for (let i = 0; i < 14; i++) {
+      const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(i / 14, 0.6, 0.55), roughness: 0.3, metalness: 0.3 }))
+      m.position.set((i - 6.5) * 1.6, 0.5, -(i - 6.5) * 2.6)   // diagonal recede in depth
+      scene.add(m)
+    }
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshStandardMaterial({ color: '#10141c', roughness: 0.9 }))
+    floor.rotation.x = -Math.PI / 2; floor.position.y = -0.9; scene.add(floor)
+
+    // ── composer with a DepthTexture-backed render target ────────────────────
+    function makeRT (w, h) {
+      const depthTexture = new THREE.DepthTexture(w, h)
+      depthTexture.type = THREE.UnsignedIntType
+      return new THREE.WebGLRenderTarget(w, h, { depthTexture, depthBuffer: true })
+    }
+    let w = canvas.clientWidth, h = canvas.clientHeight
+    const rt = makeRT(w, h)
+    const composer = new EffectComposer(renderer, rt)
+    composer.addPass(new RenderPass(scene, camera))
+    composer.addPass(dof)
+    composer.addPass(new OutputPass())
+    dof.uniforms.tDepth.value = rt.depthTexture          // shared across the ping-pong buffers
+
+    function resize () {
+      w = canvas.clientWidth; h = canvas.clientHeight
+      renderer.setSize(w, h, false); composer.setSize(w, h)
+      camera.aspect = w / h; camera.updateProjectionMatrix()
+      dof.uniforms.uAspect.value = w / h
+    }
+    new ResizeObserver(resize).observe(canvas.parentElement); resize()
+
+    const focalEl = document.querySelector('#focal'), fvalEl = document.querySelector('#fval')
+    focalEl.addEventListener('input', () => { dof.uniforms.uFocalDistance.value = +focalEl.value; fvalEl.textContent = focalEl.value })
+
+    const clock = new THREE.Clock()
+    function tick () {
+      const dt = clock.getDelta()
+      scene.children.forEach((o) => { if (o.geometry === geo) { o.rotation.x += dt * 0.3; o.rotation.y += dt * 0.4 } })
+      composer.render()
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+    window.__SCENE_READY__ = true
+
+    // depth note: the DepthTexture is attached to the composer's render target,
+    // so the RenderPass fills it for free — no extra depth-only render pass.
+    // linearizeDepth converts the non-linear hardware z back to view-space
+    // distance so the circle of confusion is physically sensible.
+  </script>
+</body>
+</html>

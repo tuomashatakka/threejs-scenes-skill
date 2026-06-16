@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<!--
+  procedural.html — seeded RNG + Poisson-disk scatter + value-noise texture
+  ─────────────────────────────────────────────────────────────────────────
+  Self-contained. Open directly in a browser (loads `three` from esm.sh).
+
+  Maps to the library's `procedural` module: createSeededRng / poissonDisk /
+  createNoiseTexture. The whole scene is a pure function of ONE integer seed —
+  reload and it is pixel-identical. A Poisson-disk sampler scatters trees with a
+  guaranteed minimum spacing (no clumping), and a seamless value-noise texture
+  drives the ground colour. Change the seed in the HUD to regenerate.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>three.js · procedural generation</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0a0e14; overflow: hidden; font-family: ui-monospace, monospace }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #cdd9e5;
+      background: rgba(10, 14, 20, 0.6); border: 1px solid #2a3a4a; border-radius: 6px;
+      font-size: 12px; line-height: 1.6 }
+    b { color: #8fd0ff }
+    button { font: inherit; color: #cdd9e5; background: #16202c; border: 1px solid #2a3a4a;
+      border-radius: 4px; padding: 2px 8px; cursor: pointer; margin-top: 4px }
+    button:hover { background: #1e2c3a }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>three.js · procedural generation</div>
+      <div>seed <b id="seed">1337</b> · <b id="count">–</b> Poisson points</div>
+      <button id="reseed">re-seed →</button>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  { "imports": { "three": "https://esm.sh/three@0.184.0", "three/addons/": "https://esm.sh/three@0.184.0/addons/" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+
+    // ── procedural module, inlined ───────────────────────────────────────────
+    // seeded RNG (mulberry32) — deterministic stream, forkable per consumer
+    function mulberry32 (seed) {
+      let s = seed >>> 0
+      return () => {
+        s = (s + 0x6d2b79f5) | 0
+        let t = Math.imul(s ^ (s >>> 15), 1 | s)
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+      }
+    }
+    // Poisson-disk 2D: points with a guaranteed minimum spacing (Bridson)
+    function poissonDisk2D ({ width, height, minDist, rng, k = 30 }) {
+      const cell = minDist / Math.SQRT2
+      const cols = Math.ceil(width / cell), rows = Math.ceil(height / cell)
+      const grid = new Array(cols * rows).fill(null)
+      const pts = [], active = []
+      const add = (x, y) => { const p = [x, y]; pts.push(p); active.push(p); grid[(x / cell | 0) + (y / cell | 0) * cols] = p }
+      add(rng() * width, rng() * height)
+      while (active.length) {
+        const i = rng() * active.length | 0, [px, py] = active[i]
+        let placed = false
+        for (let n = 0; n < k; n++) {
+          const a = rng() * Math.PI * 2, r = minDist * (1 + rng())
+          const nx = px + Math.cos(a) * r, ny = py + Math.sin(a) * r
+          if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
+          const gx = nx / cell | 0, gy = ny / cell | 0
+          let ok = true
+          for (let dy = -2; dy <= 2 && ok; dy++) for (let dx = -2; dx <= 2 && ok; dx++) {
+            const cgx = gx + dx, cgy = gy + dy
+            if (cgx < 0 || cgy < 0 || cgx >= cols || cgy >= rows) continue
+            const p = grid[cgx + cgy * cols]
+            if (p && (p[0] - nx) ** 2 + (p[1] - ny) ** 2 < minDist * minDist) ok = false
+          }
+          if (ok) { add(nx, ny); placed = true; break }
+        }
+        if (!placed) active.splice(i, 1)
+      }
+      return pts
+    }
+    // seamless value-noise DataTexture (toroidal hashing) — fBm over octaves
+    function createNoiseTexture ({ size = 256, frequency = 4, octaves = 4, seed = 1 }) {
+      const rand = mulberry32(seed), perm = new Float32Array(256)
+      for (let i = 0; i < 256; i++) perm[i] = rand()
+      const hash = (xi, yi) => perm[((xi * 73856093 ^ yi * 19349663) >>> 0) & 255]
+      const smooth = t => t * t * (3 - 2 * t), lerp = (a, b, t) => a + (b - a) * t
+      const vnoise = (x, y, period) => {
+        const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi
+        const w = (a) => ((a % period) + period) % period
+        const c00 = hash(w(xi), w(yi)), c10 = hash(w(xi + 1), w(yi))
+        const c01 = hash(w(xi), w(yi + 1)), c11 = hash(w(xi + 1), w(yi + 1))
+        const u = smooth(xf), v = smooth(yf)
+        return lerp(lerp(c00, c10, u), lerp(c01, c11, u), v)
+      }
+      const data = new Uint8Array(size * size * 4)
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+        let total = 0, amp = 1, freq = frequency, norm = 0
+        for (let o = 0; o < octaves; o++) {
+          total += amp * vnoise(x / size * freq, y / size * freq, freq)
+          norm += amp; amp *= 0.5; freq *= 2
+        }
+        const c = Math.round((total / norm) * 255), i = (y * size + x) * 4
+        data[i] = c * 0.45 | 0; data[i + 1] = c * 0.75 | 0; data[i + 2] = c * 0.4 | 0; data[i + 3] = 255
+      }
+      const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat)
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+      tex.colorSpace = THREE.SRGBColorSpace
+      tex.needsUpdate = true
+      return tex
+    }
+
+    // ── compact scaffold (see minimal-scene.html for the annotated version) ──
+    function createRenderer (canvas) {
+      const r = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
+      r.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+      r.outputColorSpace = THREE.SRGBColorSpace
+      r.toneMapping = THREE.ACESFilmicToneMapping
+      return r
+    }
+    function attachResize (renderer, camera, canvas) {
+      new ResizeObserver((e) => {
+        const { width, height } = e[0].contentRect
+        renderer.setSize(width, height, false)
+        camera.aspect = width / height; camera.updateProjectionMatrix()
+      }).observe(canvas.parentElement)
+    }
+    function attachOrbit (el, state, onChange) {
+      const pts = new Map(); let lastPinch = 0
+      el.addEventListener('pointerdown', (e) => { el.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 2) { const [a, b] = [...pts.values()]; lastPinch = Math.hypot(a.x - b.x, a.y - b.y) } })
+      el.addEventListener('pointermove', (e) => {
+        const p = pts.get(e.pointerId); if (!p) return
+        const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY
+        if (pts.size === 1) { state.theta -= dx * 0.005; state.phi = Math.max(0.1, Math.min(1.3, state.phi + dy * 0.005)); onChange() }
+        else if (pts.size === 2) { const [a, b] = [...pts.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (lastPinch > 0) { state.radius = Math.max(10, Math.min(90, state.radius / (d / lastPinch))); onChange() } lastPinch = d }
+      })
+      const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) lastPinch = 0 }
+      el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up)
+      el.addEventListener('wheel', (e) => { e.preventDefault(); state.radius = Math.max(10, Math.min(90, state.radius * (1 + e.deltaY * 0.001))); onChange() }, { passive: false })
+    }
+
+    const canvas = document.querySelector('#scene')
+    const renderer = createRenderer(canvas)
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color('#0a0e14')
+    const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 400)
+    const orbit = { theta: 0.7, phi: 0.6, radius: 46 }
+    const updateCamera = () => {
+      const r = orbit.radius * Math.cos(orbit.phi)
+      camera.position.set(Math.sin(orbit.theta) * r, Math.sin(orbit.phi) * orbit.radius, Math.cos(orbit.theta) * r)
+      camera.lookAt(0, 0, 0)
+    }
+    updateCamera(); attachResize(renderer, camera, canvas); attachOrbit(canvas, orbit, updateCamera)
+
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    const env = new RoomEnvironment()
+    scene.environment = pmrem.fromScene(env, 0.04).texture
+    scene.environmentIntensity = 0.5
+    pmrem.dispose(); env.traverse((o) => o.geometry?.dispose())
+    const sun = new THREE.DirectionalLight('#fff5e0', 2.4)
+    sun.position.set(20, 30, 12)
+    scene.add(sun, new THREE.HemisphereLight('#9fc0ff', '#22331f', 0.5))
+
+    // ── the lesson: the entire scene is f(seed) — deterministic & reproducible ─
+    const SIZE = 64
+    const treeGeo = new THREE.ConeGeometry(0.5, 2.2, 6)
+    const trunkGeo = new THREE.CylinderGeometry(0.12, 0.16, 0.7, 5)
+    const treeMat = new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.7, vertexColors: true })
+    const trunkMat = new THREE.MeshStandardMaterial({ color: '#5a3d28', roughness: 0.9 })
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(SIZE, SIZE),
+      new THREE.MeshStandardMaterial({ roughness: 1 }),
+    )
+    ground.rotation.x = -Math.PI / 2
+    scene.add(ground)
+    let trees = null, trunks = null, noiseTex = null
+
+    function generate (seed) {
+      // dispose previous generation
+      if (trees) { scene.remove(trees, trunks); trees.dispose(); trunks.dispose() }
+      if (noiseTex) noiseTex.dispose()
+
+      const rng = mulberry32(seed)
+      const treeRng = mulberry32(seed ^ 0x9e3779b9)         // forked sub-stream
+      noiseTex = createNoiseTexture({ size: 256, frequency: 5, octaves: 5, seed })
+      ground.material.map = noiseTex; ground.material.needsUpdate = true
+
+      const points = poissonDisk2D({ width: SIZE, height: SIZE, minDist: 2.4, rng })
+      trees = new THREE.InstancedMesh(treeGeo, treeMat, points.length)
+      trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, points.length)
+      const dummy = new THREE.Object3D(), color = new THREE.Color()
+      points.forEach(([x, z], i) => {
+        const px = x - SIZE / 2, pz = z - SIZE / 2
+        const s = 0.7 + treeRng() * 0.8
+        dummy.position.set(px, 1.1 * s + 0.35, pz); dummy.rotation.y = treeRng() * Math.PI * 2
+        dummy.scale.setScalar(s); dummy.updateMatrix(); trees.setMatrixAt(i, dummy.matrix)
+        color.setHSL(0.27 + treeRng() * 0.08, 0.5, 0.3 + treeRng() * 0.12); trees.setColorAt(i, color)
+        dummy.position.set(px, 0.35 * s, pz); dummy.scale.setScalar(s); dummy.updateMatrix(); trunks.setMatrixAt(i, dummy.matrix)
+      })
+      trees.instanceMatrix.needsUpdate = true; trees.instanceColor.needsUpdate = true
+      trunks.instanceMatrix.needsUpdate = true
+      scene.add(trees, trunks)
+      document.querySelector('#count').textContent = points.length
+      document.querySelector('#seed').textContent = seed
+    }
+
+    let currentSeed = 1337
+    generate(currentSeed)
+    document.querySelector('#reseed').addEventListener('click', () => generate(++currentSeed))
+    renderer.compile(scene, camera)
+
+    const clock = new THREE.Clock()
+    function tick () {
+      const dt = clock.getDelta()
+      if (trees) { trees.rotation.y += dt * 0.05; trunks.rotation.y += dt * 0.05 }
+      renderer.render(scene, camera)
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+    window.__SCENE_READY__ = true
+
+    // determinism note: poissonDisk and the noise hash both consume the SAME
+    // seeded stream, so the forest + ground are reproducible for any seed —
+    // the foundation of shareable procedural worlds and regression snapshots.
+  </script>
+</body>
+</html>

@@ -40,7 +40,7 @@
 
     <section id="demos" aria-labelledby="demos-h">
       <h2 id="demos-h">Live demos</h2>
-      <p>Six self-contained templates, each loading three.js from the esm.sh CDN with no build step. Every demo maps to the library capability it exercises.</p>
+      <p>Fifteen self-contained templates, each loading three.js from the esm.sh CDN with no build step. Every demo maps to the library capability it exercises — there is at least one live scene per module.</p>
       <ul class="gallery">
         <li>
           <figure>
@@ -78,12 +78,67 @@
             <figcaption><code>particles.html</code> — <strong>particles</strong>: <code>createParticleEmitter</code>, a CPU-driven billboarded particle system.</figcaption>
           </figure>
         </li>
+        <li>
+          <figure>
+            <iframe src="demos/procedural.html" title="Procedural: seeded RNG, Poisson-disk scatter and value-noise texture" loading="lazy"></iframe>
+            <figcaption><code>procedural.html</code> — <strong>procedural</strong>: a forest that is a pure function of one seed — <code>poissonDisk</code> scatter + a seamless <code>createNoiseTexture</code> ground, reproducible across reloads.</figcaption>
+          </figure>
+        </li>
+        <li>
+          <figure>
+            <iframe src="demos/follow-camera.html" title="Follow camera: framerate-independent third-person chase" loading="lazy"></iframe>
+            <figcaption><code>follow-camera.html</code> — <strong>camera (follow)</strong>: <code>createFollowCamera</code> chasing a self-driving target with <code>1 − e<sup>−k·dt</sup></code> damping — identical feel at any FPS.</figcaption>
+          </figure>
+        </li>
+        <li>
+          <figure>
+            <iframe src="demos/lighting.html" title="Lighting: IBL environment, shadow-tuned sun and hemisphere fill" loading="lazy"></iframe>
+            <figcaption><code>lighting.html</code> — <strong>lighting</strong>: <code>setupStandardLighting</code> — toggle the IBL environment, shadow-casting sun and hemisphere fill independently.</figcaption>
+          </figure>
+        </li>
+        <li>
+          <figure>
+            <iframe src="demos/batched-buildings.html" title="Batched buildings: N geometries, one material, one draw call" loading="lazy"></iframe>
+            <figcaption><code>batched-buildings.html</code> — <strong>instancing (batched)</strong>: <code>createBatchedBuildings</code> drawing 600 distinct shapes in one call; click to hide an instance via <code>setVisibleAt</code>.</figcaption>
+          </figure>
+        </li>
+        <li>
+          <figure>
+            <iframe src="demos/voxels.html" title="Voxels: greedy meshing with a triangle-count comparison" loading="lazy"></iframe>
+            <figcaption><code>voxels.html</code> — <strong>voxels</strong>: <code>VoxelChunk</code> + <code>greedyMesh</code> turning noise terrain into merged quads — the HUD shows 10–30× fewer triangles than naive meshing.</figcaption>
+          </figure>
+        </li>
+        <li>
+          <figure>
+            <iframe src="demos/architecture.html" title="Architecture: scene modules, material pool and click-to-pick ownership" loading="lazy"></iframe>
+            <figcaption><code>architecture.html</code> — <strong>architecture</strong>: <code>createSceneModule</code> + <code>MaterialPool</code> + <code>pickTopLevel</code> — toggle modules, share pooled materials, click to find a hit's owning module.</figcaption>
+          </figure>
+        </li>
+        <li>
+          <figure>
+            <iframe src="demos/glitch.html" title="Glitch: stacked RGB-shift, block-displacement and scanline passes" loading="lazy"></iframe>
+            <figcaption><code>glitch.html</code> — <strong>post (glitch)</strong>: <code>createRgbShiftPass</code> / <code>createBlockDisplacementPass</code> / <code>createScanCorruptionPass</code> stacked into layered datamosh over bloom.</figcaption>
+          </figure>
+        </li>
+        <li>
+          <figure>
+            <iframe src="demos/god-rays.html" title="God rays: screen-space volumetric light shafts" loading="lazy"></iframe>
+            <figcaption><code>god-rays.html</code> — <strong>post (god rays)</strong>: <code>createGodRaysPass</code> radial-marches toward the light's projected screen position; occluders carve the shafts.</figcaption>
+          </figure>
+        </li>
+        <li>
+          <figure>
+            <iframe src="demos/dof.html" title="Depth of field: CoC-driven blur plus chromatic aberration" loading="lazy"></iframe>
+            <figcaption><code>dof.html</code> — <strong>post (DOF + CA)</strong>: <code>createDofPass</code> sampling a real <code>DepthTexture</code> — rack the focal plane front-to-back with CoC-driven chromatic aberration.</figcaption>
+          </figure>
+        </li>
       </ul>
     </section>
 
     <section id="core" aria-labelledby="core-h">
       <h2 id="core-h">core</h2>
       <p>Core scene scaffolding: renderer, frame loop, bootstrap, pointer gestures, disposal, and quality-tier detection. Copy <code>bootstrapScene</code> as the starting point for any new scene.</p>
+      <p class="demo-link"><a href="demos/minimal-scene.html">Live demo — minimal-scene.html</a></p>
       <details open>
         <summary>Exports</summary>
         <table>
@@ -113,6 +168,7 @@ const app = bootstrapScene({
     <section id="procedural" aria-labelledby="procedural-h">
       <h2 id="procedural-h">procedural</h2>
       <p>Deterministic procedural generation: seeded RNG with per-consumer forking, Poisson-disk scatter, and seamless noise textures.</p>
+      <p class="demo-link"><a href="demos/procedural.html">Live demo — procedural.html</a></p>
       <details>
         <summary>Exports</summary>
         <table>
@@ -135,6 +191,7 @@ const points = poissonDisk({ width: 100, height: 100, radius: 4, rng: trees })</
     <section id="camera" aria-labelledby="camera-h">
       <h2 id="camera-h">camera</h2>
       <p>Camera factories: an orthographic isometric rig and a framerate-independent third-person follow camera.</p>
+      <p class="demo-link"><a href="demos/isometric.html">Live demo — isometric.html</a> · <a href="demos/follow-camera.html">follow-camera.html</a></p>
       <details>
         <summary>Exports</summary>
         <table>
@@ -155,6 +212,7 @@ const follow = createFollowCamera(camera, { target, distance: 8 })</code></pre>
     <section id="instancing" aria-labelledby="instancing-h">
       <h2 id="instancing-h">instancing</h2>
       <p>High-count draw strategies: one geometry across N transforms, and N geometries sharing one material.</p>
+      <p class="demo-link"><a href="demos/instanced-field.html">Live demo — instanced-field.html</a> · <a href="demos/batched-buildings.html">batched-buildings.html</a></p>
       <details>
         <summary>Exports</summary>
         <table>
@@ -174,6 +232,7 @@ scene.add(grass.mesh)</code></pre>
     <section id="materials" aria-labelledby="materials-h">
       <h2 id="materials-h">materials</h2>
       <p>A reference <code>ShaderMaterial</code> composition demonstrating the standard custom-material pattern.</p>
+      <p class="demo-link"><a href="demos/shader-material.html">Live demo — shader-material.html</a></p>
       <details>
         <summary>Exports</summary>
         <table>
@@ -192,6 +251,7 @@ loop.onFrame(({ elapsed }) => { mat.uniforms.uTime.value = elapsed })</code></pr
     <section id="lighting" aria-labelledby="lighting-h">
       <h2 id="lighting-h">lighting</h2>
       <p>Standard scene lighting: image-based environment, a shadow-tuned sun, and hemisphere fill — composed by one helper.</p>
+      <p class="demo-link"><a href="demos/lighting.html">Live demo — lighting.html</a></p>
       <details>
         <summary>Exports</summary>
         <table>
@@ -212,6 +272,7 @@ const lights = setupStandardLighting(scene, renderer)</code></pre>
     <section id="particles" aria-labelledby="particles-h">
       <h2 id="particles-h">particles</h2>
       <p>A CPU-driven particle system using <code>InstancedBufferGeometry</code> and GLSL billboarding — deterministic phase math, zero per-frame allocation.</p>
+      <p class="demo-link"><a href="demos/particles.html">Live demo — particles.html</a></p>
       <details>
         <summary>Exports</summary>
         <table>
@@ -231,6 +292,7 @@ loop.onFrame(ctx => emitter.update(ctx))</code></pre>
     <section id="post" aria-labelledby="post-h">
       <h2 id="post-h">post (WebGL)</h2>
       <p>An <code>EffectComposer</code> factory plus a pass library. The canonical chain is RenderPass → UnrealBloomPass → grade → OutputPass; tone-map exactly once, at the OutputPass.</p>
+      <p class="demo-link"><a href="demos/post-processing.html">Live demo — post-processing.html</a> · <a href="demos/glitch.html">glitch.html</a> · <a href="demos/god-rays.html">god-rays.html</a> · <a href="demos/dof.html">dof.html</a></p>
       <details>
         <summary>Exports</summary>
         <table>
@@ -301,6 +363,7 @@ loop.onFrame(() => composer.render())</code></pre>
     <section id="voxels" aria-labelledby="voxels-h">
       <h2 id="voxels-h">voxels</h2>
       <p>Voxel storage, greedy meshing, and an infinite-world chunk manager.</p>
+      <p class="demo-link"><a href="demos/voxels.html">Live demo — voxels.html</a></p>
       <details>
         <summary>Exports</summary>
         <table>
@@ -321,6 +384,7 @@ const geometry = greedyMesh(chunk)</code></pre>
     <section id="architecture" aria-labelledby="architecture-h">
       <h2 id="architecture-h">architecture</h2>
       <p>Transferable architecture patterns: context-injection modules, pooled materials, lazy procedural textures, undo/redo, never-throw param coercion, and raycast introspection.</p>
+      <p class="demo-link"><a href="demos/architecture.html">Live demo — architecture.html</a></p>
       <details>
         <summary>Exports</summary>
         <table>

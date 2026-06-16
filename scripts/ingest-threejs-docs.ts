@@ -351,6 +351,7 @@ async function ingestSource (spec: SourceSpec, opts: Options): Promise<void> {
       if (opts.md) {
         try {
           await sleep(150)
+
           // direct markdown: docs ship a pre-rendered <Name>.html.md in the
           // repo; manual has none, so fall back to HTML extraction (still no model).
           const body   = spec.mdUrl

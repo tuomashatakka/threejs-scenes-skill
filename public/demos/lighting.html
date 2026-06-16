@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<!--
+  lighting.html — standard three-part lighting rig with tuned shadows
+  ───────────────────────────────────────────────────────────────────
+  Self-contained. Open directly in a browser (loads `three` from esm.sh).
+
+  Maps to the library's `lighting` module: setupStandardLighting = IBL
+  environment (PBR reflections + ambient) + a shadow-casting directional sun
+  + a hemisphere fill (sky/ground tint). The three jobs are separated on
+  purpose: the env gives reflections, the sun gives direction + contact
+  shadows, the hemisphere keeps shadowed sides from going pure black.
+  Toggle each contribution in the HUD to see what it does.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>three.js · standard lighting rig</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #11151c; overflow: hidden; font-family: ui-monospace, monospace }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #e6dccd;
+      background: rgba(17, 21, 28, 0.6); border: 1px solid #3a342a; border-radius: 6px;
+      font-size: 12px; line-height: 1.7 }
+    label { display: block; cursor: pointer; user-select: none }
+    b { color: #ffd98f }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>three.js · standard lighting rig</div>
+      <label><input type="checkbox" id="env" checked> IBL environment</label>
+      <label><input type="checkbox" id="sun" checked> directional sun + shadows</label>
+      <label><input type="checkbox" id="hemi" checked> hemisphere fill</label>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  { "imports": { "three": "https://esm.sh/three@0.184.0", "three/addons/": "https://esm.sh/three@0.184.0/addons/" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+
+    // ── compact scaffold ─────────────────────────────────────────────────────
+    const canvas = document.querySelector('#scene')
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.shadowMap.enabled = true
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap     // soft shadow edges
+
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color('#11151c')
+    const camera = new THREE.PerspectiveCamera(48, canvas.clientWidth / canvas.clientHeight, 0.1, 100)
+    const orbit = { theta: 0.7, phi: 0.5, radius: 16 }
+    const updateCamera = () => {
+      const r = orbit.radius * Math.cos(orbit.phi)
+      camera.position.set(Math.sin(orbit.theta) * r, Math.sin(orbit.phi) * orbit.radius + 1, Math.cos(orbit.theta) * r)
+      camera.lookAt(0, 1, 0)
+    }
+    updateCamera()
+    new ResizeObserver((e) => { const { width, height } = e[0].contentRect; renderer.setSize(width, height, false); camera.aspect = width / height; camera.updateProjectionMatrix() }).observe(canvas.parentElement)
+    ;(() => {
+      const pts = new Map(); let lastPinch = 0
+      canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 2) { const [a, b] = [...pts.values()]; lastPinch = Math.hypot(a.x - b.x, a.y - b.y) } })
+      canvas.addEventListener('pointermove', (e) => { const p = pts.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY; if (pts.size === 1) { orbit.theta -= dx * 0.005; orbit.phi = Math.max(0.1, Math.min(1.3, orbit.phi + dy * 0.005)); updateCamera() } else if (pts.size === 2) { const [a, b] = [...pts.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (lastPinch > 0) { orbit.radius = Math.max(7, Math.min(40, orbit.radius / (d / lastPinch))); updateCamera() } lastPinch = d } })
+      const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) lastPinch = 0 }
+      canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up)
+      canvas.addEventListener('wheel', (e) => { e.preventDefault(); orbit.radius = Math.max(7, Math.min(40, orbit.radius * (1 + e.deltaY * 0.001))); updateCamera() }, { passive: false })
+    })()
+
+    // ── lighting module, inlined ─────────────────────────────────────────────
+    // 1) IBL environment — reflections + image-based ambient
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    const envScene = new RoomEnvironment()
+    const envTexture = pmrem.fromScene(envScene, 0.04).texture
+    pmrem.dispose(); envScene.traverse((o) => o.geometry?.dispose())
+    const setEnv = (on) => { scene.environment = on ? envTexture : null; scene.environmentIntensity = 0.6 }
+
+    // 2) directional sun — the only shadow caster, with a tuned shadow frustum
+    const sun = new THREE.DirectionalLight('#fff5e0', 3)
+    sun.position.set(8, 12, 6)
+    sun.castShadow = true
+    sun.shadow.mapSize.set(2048, 2048)
+    sun.shadow.camera.near = 1; sun.shadow.camera.far = 30
+    sun.shadow.camera.top = 15; sun.shadow.camera.right = 15
+    sun.shadow.camera.bottom = -15; sun.shadow.camera.left = -15
+    sun.shadow.bias = -0.0001; sun.shadow.normalBias = 0.02     // kill shadow acne/peter-panning
+    scene.add(sun, sun.target)
+
+    // 3) hemisphere fill — sky/ground tint so shadowed sides aren't pure black
+    const hemi = new THREE.HemisphereLight('#a0c0ff', '#3a2a1a', 0.5)
+    scene.add(hemi)
+
+    // ── subjects: a ring of PBR props on a shadow-catching floor ──────────────
+    const floor = new THREE.Mesh(
+      new THREE.CircleGeometry(14, 64),
+      new THREE.MeshStandardMaterial({ color: '#2a2e36', roughness: 0.9, metalness: 0 }),
+    )
+    floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true
+    scene.add(floor)
+
+    const geos = [new THREE.IcosahedronGeometry(1.1, 0), new THREE.TorusKnotGeometry(0.7, 0.28, 96, 16), new THREE.BoxGeometry(1.6, 1.6, 1.6), new THREE.SphereGeometry(1.1, 32, 16), new THREE.ConeGeometry(1, 2, 24)]
+    const spinners = []
+    geos.forEach((g, i) => {
+      const a = (i / geos.length) * Math.PI * 2
+      const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({
+        color: new THREE.Color().setHSL(i / geos.length, 0.5, 0.55),
+        roughness: 0.15 + i * 0.18, metalness: i % 2 ? 0.9 : 0.1,
+      }))
+      m.position.set(Math.cos(a) * 4.5, 1.3, Math.sin(a) * 4.5)
+      m.castShadow = true; m.receiveShadow = true
+      scene.add(m); spinners.push(m)
+    })
+
+    document.querySelector('#env').addEventListener('change', (e) => setEnv(e.target.checked))
+    document.querySelector('#sun').addEventListener('change', (e) => { sun.visible = e.target.checked })
+    document.querySelector('#hemi').addEventListener('change', (e) => { hemi.visible = e.target.checked })
+    setEnv(true)
+    renderer.compile(scene, camera)
+
+    const clock = new THREE.Clock()
+    function tick () {
+      const dt = clock.getDelta()
+      spinners.forEach((m, i) => { m.rotation.y += dt * (0.3 + i * 0.05); m.rotation.x += dt * 0.2 })
+      renderer.render(scene, camera)
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+    window.__SCENE_READY__ = true
+
+    // tuning note: shadow.bias and normalBias are the two knobs that fix the
+    // two classic artefacts — surface acne (too little bias) and detached
+    // "peter-panning" shadows (too much). The frustum is sized to the scene,
+    // not the world: a tighter frustum = more shadow-map texels per unit.
+  </script>
+</body>
+</html>

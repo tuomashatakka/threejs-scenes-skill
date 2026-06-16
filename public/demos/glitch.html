@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<!--
+  glitch.html — stackable datamosh: RGB shift + block displacement + scanlines
+  ──────────────────────────────────────────────────────────────────────────────
+  Self-contained. Open directly in a browser (loads `three` from esm.sh).
+
+  Maps to the library's `post` glitch passes: createRgbShiftPass /
+  createBlockDisplacementPass / createScanCorruptionPass. Each is one fullscreen
+  ShaderPass with its own intensity uniform, so they stack into layered
+  corruption on the EffectComposer after the bloom. Drag the slider to ramp all
+  three intensities; the bloom underneath shows they composite over real HDR.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>three.js · glitch passes</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #05070d; overflow: hidden; font-family: ui-monospace, monospace }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #d8c8ff;
+      background: rgba(5, 7, 13, 0.6); border: 1px solid #3a2a5a; border-radius: 6px;
+      font-size: 12px; line-height: 1.7 }
+    input[type=range] { width: 150px; vertical-align: middle }
+    b { color: #c89fff }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>three.js · glitch passes</div>
+      <label>corruption <b id="ival">0.5</b><br><input type="range" id="amt" min="0" max="1" step="0.01" value="0.5"></label>
+      <div>rgb-shift · block-displace · scanlines</div>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  { "imports": { "three": "https://esm.sh/three@0.184.0", "three/addons/": "https://esm.sh/three@0.184.0/addons/" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
+    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
+    import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
+
+    // ── glitch passes, inlined ───────────────────────────────────────────────
+    const VERT = /* glsl */`varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`
+    const rgbShift = new ShaderPass({
+      uniforms: { tDiffuse: { value: null }, uIntensity: { value: 0.5 }, uAngle: { value: 0.3 } },
+      vertexShader: VERT,
+      fragmentShader: /* glsl */`uniform sampler2D tDiffuse; uniform float uIntensity, uAngle; varying vec2 vUv;
+        void main(){ vec2 off = vec2(cos(uAngle), sin(uAngle)) * (0.005 * uIntensity);
+          float r = texture2D(tDiffuse, vUv + off).r, g = texture2D(tDiffuse, vUv).g, b = texture2D(tDiffuse, vUv - off).b;
+          gl_FragColor = vec4(r, g, b, 1.0); }`,
+    })
+    const blockDisp = new ShaderPass({
+      uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uIntensity: { value: 0.5 }, uBlockSize: { value: 32.0 } },
+      vertexShader: VERT,
+      fragmentShader: /* glsl */`uniform sampler2D tDiffuse; uniform float uTime, uIntensity, uBlockSize; varying vec2 vUv;
+        float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+        void main(){ vec2 res = vec2(uBlockSize); vec2 block = floor(vUv*res)/res;
+          float h = hash(block + floor(uTime*12.0)); float th = 1.0 - uIntensity*0.4; vec2 shift = vec2(0.0);
+          if (h > th) shift.x = (h - th) * 0.3 * sign(h - 0.5);
+          vec4 c = texture2D(tDiffuse, vUv + shift); if (h > th + 0.05) c.rgb = c.bgr; gl_FragColor = c; }`,
+    })
+    const scanCorrupt = new ShaderPass({
+      uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uIntensity: { value: 0.5 } },
+      vertexShader: VERT,
+      fragmentShader: /* glsl */`uniform sampler2D tDiffuse; uniform float uTime, uIntensity; varying vec2 vUv;
+        void main(){ float band = step(0.98, fract(vUv.y*80.0 + uTime*2.0));
+          float jitter = (band > 0.5) ? (sin(uTime*30.0 + vUv.y*100.0) * 0.02 * uIntensity) : 0.0;
+          vec4 c = texture2D(tDiffuse, vec2(vUv.x + jitter, vUv.y)); c.rgb += band * uIntensity * 0.4; gl_FragColor = c; }`,
+    })
+
+    // ── scaffold ─────────────────────────────────────────────────────────────
+    const canvas = document.querySelector('#scene')
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color('#05070d')
+    const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100)
+    camera.position.set(0, 1, 7)
+
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    const env = new RoomEnvironment()
+    scene.environment = pmrem.fromScene(env, 0.04).texture
+    scene.environmentIntensity = 0.6
+    pmrem.dispose(); env.traverse((o) => o.geometry?.dispose())
+    scene.add(new THREE.DirectionalLight('#fff', 1.5).translateX(4).translateY(6).translateZ(4))
+
+    // an emissive subject so the bloom + glitch have something hot to chew on
+    const knot = new THREE.Mesh(
+      new THREE.TorusKnotGeometry(1.4, 0.42, 160, 24),
+      new THREE.MeshStandardMaterial({ color: '#3a1060', emissive: '#7a30ff', emissiveIntensity: 1.4, roughness: 0.25, metalness: 0.6 }),
+    )
+    scene.add(knot)
+    const grid = new THREE.GridHelper(40, 40, '#5a3a8a', '#241634'); grid.position.y = -2.5; scene.add(grid)
+
+    // ── composer chain: render → bloom → glitch stack → output ───────────────
+    const composer = new EffectComposer(renderer)
+    composer.addPass(new RenderPass(scene, camera))
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(canvas.clientWidth, canvas.clientHeight), 0.7, 0.5, 0.0))
+    composer.addPass(rgbShift)
+    composer.addPass(blockDisp)
+    composer.addPass(scanCorrupt)
+    composer.addPass(new OutputPass())
+
+    function resize () { const w = canvas.clientWidth, h = canvas.clientHeight; renderer.setSize(w, h, false); composer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix() }
+    new ResizeObserver(resize).observe(canvas.parentElement); resize()
+
+    let amt = 0.5
+    const amtEl = document.querySelector('#amt'), ivalEl = document.querySelector('#ival')
+    amtEl.addEventListener('input', () => { amt = +amtEl.value; ivalEl.textContent = amtEl.value })
+
+    const clock = new THREE.Clock()
+    function tick () {
+      const dt = clock.getDelta(), t = clock.elapsedTime
+      knot.rotation.x += dt * 0.3; knot.rotation.y += dt * 0.5
+      // bursty corruption: a slow pulse modulates the slider value
+      const burst = amt * (0.6 + 0.4 * Math.pow(Math.max(0, Math.sin(t * 1.3)), 6) * 3)
+      rgbShift.uniforms.uIntensity.value = burst
+      blockDisp.uniforms.uIntensity.value = burst; blockDisp.uniforms.uTime.value = t
+      scanCorrupt.uniforms.uIntensity.value = amt; scanCorrupt.uniforms.uTime.value = t
+      composer.render()
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+    window.__SCENE_READY__ = true
+
+    // ordering note: glitch passes go AFTER bloom but BEFORE OutputPass, so they
+    // mangle the bloomed HDR buffer and the single tone-map happens last. Each
+    // pass owns one uniform — drive them independently for art-directed bursts.
+  </script>
+</body>
+</html>

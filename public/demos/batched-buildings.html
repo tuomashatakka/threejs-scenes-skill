@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<!--
+  batched-buildings.html — BatchedMesh: N geometries, ONE material, ONE call
+  ───────────────────────────────────────────────────────────────────────────
+  Self-contained. Open directly in a browser (loads `three` from esm.sh).
+
+  Maps to the library's `instancing` module: createBatchedBuildings. Where
+  InstancedMesh draws N copies of ONE geometry, BatchedMesh draws N DIFFERENT
+  geometries that share ONE material in a single draw call — exactly what a city
+  of mixed building shapes needs. Per-instance frustum culling and
+  setVisibleAt(id, false) work individually. The HUD proves the whole skyline is
+  one draw call; click a building to hide/show it.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>three.js · batched buildings</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0a0d12; overflow: hidden; font-family: ui-monospace, monospace }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #cdd6e0;
+      background: rgba(10, 13, 18, 0.6); border: 1px solid #2a3340; border-radius: 6px;
+      font-size: 12px; line-height: 1.6 }
+    b { color: #9fbfff }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>three.js · batched buildings</div>
+      <div><b id="count">–</b> buildings · <b id="geos">–</b> shapes · <b id="calls">–</b> draw calls</div>
+      <div>click a building to toggle it</div>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  { "imports": { "three": "https://esm.sh/three@0.184.0", "three/addons/": "https://esm.sh/three@0.184.0/addons/" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+
+    function mulberry32 (seed) { let s = seed >>> 0; return () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 } }
+    const rand = mulberry32(99), range = (a, b) => a + rand() * (b - a)
+
+    const canvas = document.querySelector('#scene')
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.shadowMap.enabled = true
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color('#0a0d12')
+    scene.fog = new THREE.Fog('#0a0d12', 60, 160)
+    const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 400)
+    const orbit = { theta: 0.6, phi: 0.4, radius: 70 }
+    const updateCamera = () => { const r = orbit.radius * Math.cos(orbit.phi); camera.position.set(Math.sin(orbit.theta) * r, Math.sin(orbit.phi) * orbit.radius + 4, Math.cos(orbit.theta) * r); camera.lookAt(0, 6, 0) }
+    updateCamera()
+    new ResizeObserver((e) => { const { width, height } = e[0].contentRect; renderer.setSize(width, height, false); camera.aspect = width / height; camera.updateProjectionMatrix() }).observe(canvas.parentElement)
+    ;(() => {
+      const pts = new Map(); let lastPinch = 0, moved = 0
+      canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved = 0; if (pts.size === 2) { const [a, b] = [...pts.values()]; lastPinch = Math.hypot(a.x - b.x, a.y - b.y) } })
+      canvas.addEventListener('pointermove', (e) => { const p = pts.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x, dy = e.clientY - p.y; moved += Math.abs(dx) + Math.abs(dy); p.x = e.clientX; p.y = e.clientY; if (pts.size === 1) { orbit.theta -= dx * 0.005; orbit.phi = Math.max(0.1, Math.min(1.2, orbit.phi + dy * 0.005)); updateCamera() } else if (pts.size === 2) { const [a, b] = [...pts.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (lastPinch > 0) { orbit.radius = Math.max(28, Math.min(160, orbit.radius / (d / lastPinch))); updateCamera() } lastPinch = d } })
+      const up = (e) => { if (moved < 6 && pts.size === 1) tryPick(e); pts.delete(e.pointerId); if (pts.size < 2) lastPinch = 0 }
+      canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', (e) => { pts.delete(e.pointerId) })
+      canvas.addEventListener('wheel', (e) => { e.preventDefault(); orbit.radius = Math.max(28, Math.min(160, orbit.radius * (1 + e.deltaY * 0.001))); updateCamera() }, { passive: false })
+    })()
+
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    const env = new RoomEnvironment()
+    scene.environment = pmrem.fromScene(env, 0.04).texture
+    scene.environmentIntensity = 0.55
+    pmrem.dispose(); env.traverse((o) => o.geometry?.dispose())
+    const sun = new THREE.DirectionalLight('#fff0d8', 2.6)
+    sun.position.set(30, 50, 20); sun.castShadow = true
+    sun.shadow.mapSize.set(2048, 2048); sun.shadow.camera.far = 140
+    sun.shadow.camera.top = sun.shadow.camera.right = 70; sun.shadow.camera.bottom = sun.shadow.camera.left = -70
+    scene.add(sun, new THREE.HemisphereLight('#8fb0ff', '#1a1410', 0.5))
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(140, 64), new THREE.MeshStandardMaterial({ color: '#12161d', roughness: 1 }))
+    ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true
+    scene.add(ground)
+
+    // ── instancing module (BatchedMesh), inlined ─────────────────────────────
+    // a palette of distinct building silhouettes — all merged into one batch
+    const shapes = [
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.CylinderGeometry(0.5, 0.5, 1, 8),
+      new THREE.CylinderGeometry(0.35, 0.5, 1, 6),       // tapered tower
+      new THREE.BoxGeometry(1, 1, 0.6),                  // slab
+      new THREE.ConeGeometry(0.6, 1, 4),                 // spire
+    ]
+    const COUNT = 600
+    const totalVerts = shapes.reduce((s, g) => s + g.attributes.position.count, 0) * COUNT
+    const totalIndex = shapes.reduce((s, g) => s + (g.index?.count ?? 0), 0) * COUNT
+    const material = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.2, vertexColors: false })
+    const batch = new THREE.BatchedMesh(COUNT, totalVerts, totalIndex, material)
+    batch.castShadow = true; batch.receiveShadow = true
+    batch.perObjectFrustumCulled = true
+
+    const geometryIds = shapes.map((g) => batch.addGeometry(g))
+    const dummy = new THREE.Object3D(), color = new THREE.Color()
+    const visible = new Array(COUNT).fill(true)
+    // grid-with-jitter city layout
+    const side = Math.ceil(Math.sqrt(COUNT)), spacing = 5
+    for (let i = 0; i < COUNT; i++) {
+      const gx = (i % side) - side / 2, gz = Math.floor(i / side) - side / 2
+      const h = range(3, 26) * (1 - Math.min(1, Math.hypot(gx, gz) / side) * 0.5)   // taller toward centre
+      const w = range(1.4, 3)
+      const id = batch.addInstance(geometryIds[i % geometryIds.length])
+      dummy.position.set(gx * spacing + range(-1, 1), h / 2, gz * spacing + range(-1, 1))
+      dummy.scale.set(w, h, w); dummy.rotation.y = (rand() * 4 | 0) * Math.PI / 2
+      dummy.updateMatrix(); batch.setMatrixAt(id, dummy.matrix)
+      color.setHSL(0.58 + range(-0.05, 0.05), 0.2, range(0.25, 0.55)); batch.setColorAt(id, color)
+    }
+    scene.add(batch)
+
+    // ── per-instance hide via raycast → setVisibleAt(id, bool) ───────────────
+    const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2()
+    function tryPick (e) {
+      const rect = canvas.getBoundingClientRect()
+      ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1)
+      raycaster.setFromCamera(ndc, camera)
+      const hit = raycaster.intersectObject(batch, false)[0]
+      if (hit && hit.batchId != null) { visible[hit.batchId] = !visible[hit.batchId]; batch.setVisibleAt(hit.batchId, visible[hit.batchId]) }
+    }
+
+    document.querySelector('#count').textContent = COUNT.toLocaleString()
+    document.querySelector('#geos').textContent = shapes.length
+    renderer.compile(scene, camera)
+    const callsEl = document.querySelector('#calls')
+    const clock = new THREE.Clock()
+    function tick () {
+      const dt = clock.getDelta()
+      batch.rotation.y += dt * 0.03
+      renderer.render(scene, camera)
+      callsEl.textContent = renderer.info.render.calls
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+    window.__SCENE_READY__ = true
+
+    // perf: 600 distinct-shaped, distinct-coloured buildings, ONE draw call.
+    // InstancedMesh couldn't do this (it needs identical geometry); 600 plain
+    // Meshes would be 600 draw calls. BatchedMesh is the city-builder primitive.
+  </script>
+</body>
+</html>

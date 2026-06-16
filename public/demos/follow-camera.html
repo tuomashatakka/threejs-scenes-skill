@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<!--
+  follow-camera.html — third-person follow camera, framerate-independent
+  ───────────────────────────────────────────────────────────────────────
+  Self-contained. Open directly in a browser (loads `three` from esm.sh).
+
+  Maps to the library's `camera` module: createFollowCamera. A "player" drives
+  itself around a figure-eight path; the camera chases it from a fixed offset
+  in the target's local space, damped with `1 - exp(-k·delta)`. That damping
+  form is the whole lesson — the smoothed result is identical at 30fps and
+  144fps, unlike a naive `lerp(pos, target, 0.1)` which speeds up with FPS.
+  Drag to orbit the framing; the follow keeps working underneath.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>three.js · follow camera</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0c1018; overflow: hidden; font-family: ui-monospace, monospace }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #cfe0d8;
+      background: rgba(12, 16, 24, 0.6); border: 1px solid #2a3a33; border-radius: 6px;
+      font-size: 12px; line-height: 1.7 }
+    label { display: block }
+    input[type=range] { width: 130px; vertical-align: middle }
+    b { color: #8fffd0 }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>three.js · follow camera</div>
+      <label>stiffness <b id="kval">8</b><br><input type="range" id="k" min="1" max="20" step="0.5" value="8"></label>
+      <div><b id="fps">–</b> fps · damping = 1 − e<sup>−k·dt</sup></div>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  { "imports": { "three": "https://esm.sh/three@0.184.0", "three/addons/": "https://esm.sh/three@0.184.0/addons/" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+
+    const canvas = document.querySelector('#scene')
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.shadowMap.enabled = true
+
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color('#0c1018')
+    scene.fog = new THREE.Fog('#0c1018', 30, 90)
+    const camera = new THREE.PerspectiveCamera(55, canvas.clientWidth / canvas.clientHeight, 0.1, 200)
+    camera.position.set(0, 6, 12)
+
+    // an orbital offset the user can nudge — the follow targets THIS in local space
+    const orbit = { theta: 0, phi: 0.35 }
+    new ResizeObserver((e) => { const { width, height } = e[0].contentRect; renderer.setSize(width, height, false); camera.aspect = width / height; camera.updateProjectionMatrix() }).observe(canvas.parentElement)
+    ;(() => {
+      let down = false, lx = 0, ly = 0
+      canvas.addEventListener('pointerdown', (e) => { down = true; lx = e.clientX; ly = e.clientY; canvas.setPointerCapture(e.pointerId) })
+      canvas.addEventListener('pointermove', (e) => { if (!down) return; orbit.theta -= (e.clientX - lx) * 0.005; orbit.phi = Math.max(0.05, Math.min(1.1, orbit.phi + (e.clientY - ly) * 0.005)); lx = e.clientX; ly = e.clientY })
+      const up = () => { down = false }; canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up)
+    })()
+
+    // lighting
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    const env = new RoomEnvironment()
+    scene.environment = pmrem.fromScene(env, 0.04).texture
+    scene.environmentIntensity = 0.5
+    pmrem.dispose(); env.traverse((o) => o.geometry?.dispose())
+    const sun = new THREE.DirectionalLight('#fff5e0', 2.6)
+    sun.position.set(10, 18, 6); sun.castShadow = true
+    sun.shadow.mapSize.set(1024, 1024); sun.shadow.camera.far = 60
+    sun.shadow.camera.top = sun.shadow.camera.right = 30; sun.shadow.camera.bottom = sun.shadow.camera.left = -30
+    scene.add(sun, new THREE.HemisphereLight('#9fc0ff', '#22331f', 0.5))
+
+    // ground grid
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(80, 64), new THREE.MeshStandardMaterial({ color: '#141c18', roughness: 1 }))
+    ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true
+    scene.add(ground, new THREE.GridHelper(160, 80, '#1f3a33', '#16241f'))
+    // scatter pillars for parallax reference
+    for (let i = 0; i < 40; i++) {
+      const a = (i / 40) * Math.PI * 2, r = 14 + (i % 5) * 5
+      const p = new THREE.Mesh(new THREE.BoxGeometry(1.4, 4 + (i % 4) * 2, 1.4), new THREE.MeshStandardMaterial({ color: '#2a3a4a', roughness: 0.8 }))
+      p.position.set(Math.cos(a) * r, 2 + (i % 4), Math.sin(a) * r); p.castShadow = true; scene.add(p)
+    }
+
+    // ── the "player" — a self-driving target on a figure-eight path ───────────
+    const player = new THREE.Group()
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 1, 8, 16), new THREE.MeshStandardMaterial({ color: '#ff7a4a', roughness: 0.4, metalness: 0.1 }))
+    body.position.y = 1; body.castShadow = true
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.8, 16), new THREE.MeshStandardMaterial({ color: '#ffd98f' }))
+    nose.rotation.x = Math.PI / 2; nose.position.set(0, 1, 0.7)
+    player.add(body, nose)
+    scene.add(player)
+
+    // ── follow-camera module, inlined ────────────────────────────────────────
+    const OFFSET = new THREE.Vector3(0, 4, -9)         // behind + above, in target space
+    const LOOK_AHEAD = new THREE.Vector3(0, 1, 4)
+    const sTarget = new THREE.Vector3(), sLook = new THREE.Vector3(), sDesired = new THREE.Vector3()
+    let stiffness = 8, rotationStiffness = 6
+    function followStep (delta) {
+      player.getWorldPosition(sTarget)
+      // desired position = offset rotated into the target's orientation, plus a user orbit nudge
+      sDesired.copy(OFFSET)
+      sDesired.applyAxisAngle(new THREE.Vector3(0, 1, 0), orbit.theta)
+      sDesired.applyQuaternion(player.quaternion).add(sTarget)
+      sDesired.y += orbit.phi * 6
+      camera.position.lerp(sDesired, 1 - Math.exp(-stiffness * delta))
+      sLook.copy(LOOK_AHEAD).applyQuaternion(player.quaternion).add(sTarget)
+      sLook.lerp(sTarget, 1 - Math.exp(-rotationStiffness * delta))
+      camera.lookAt(sLook)
+    }
+
+    const kEl = document.querySelector('#k'), kVal = document.querySelector('#kval')
+    kEl.addEventListener('input', () => { stiffness = +kEl.value; rotationStiffness = stiffness * 0.75; kVal.textContent = kEl.value })
+
+    renderer.compile(scene, camera)
+    const fpsEl = document.querySelector('#fps')
+    const clock = new THREE.Clock(); let acc = 0, frames = 0, t = 0
+    function tick () {
+      const dt = Math.min(clock.getDelta(), 0.05)
+      t += dt
+      // figure-eight (lemniscate) path
+      const s = 18
+      const px = s * Math.cos(t * 0.4), pz = s * Math.sin(t * 0.8) * 0.7
+      const prev = player.position.clone()
+      player.position.set(px, 0, pz)
+      const vel = player.position.clone().sub(prev)
+      if (vel.lengthSq() > 1e-6) player.rotation.y = Math.atan2(vel.x, vel.z)
+      followStep(dt)
+      renderer.render(scene, camera)
+      acc += dt; frames++
+      if (acc >= 0.5) { fpsEl.textContent = Math.round(frames / acc); acc = 0; frames = 0 }
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+    window.__SCENE_READY__ = true
+
+    // why exp-damping: with `pos.lerp(target, k*dt)` the constant fraction makes
+    // the catch-up speed depend on frame rate. `1 - exp(-k·dt)` is the exact
+    // solution to the smoothing ODE, so the trajectory is identical regardless
+    // of dt — the same chase feel on a 30Hz phone and a 144Hz monitor.
+  </script>
+</body>
+</html>
