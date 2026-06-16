@@ -1,0 +1,1 @@
+{"version":3,"file":"bloom-selective.d.ts","sourceRoot":"","sources":["../../../lib/post/webgpu/bloom-selective.ts"],"names":[],"mappings":"AAQA,OAAO,KAAK,EAAE,QAAQ,EAAE,MAAM,cAAc,CAAA;AAG5C,MAAM,WAAW,qBAAqB;IACpC,QAAQ,CAAC,EAAG,MAAM,CAAA;IAClB,MAAM,CAAC,EAAK,MAAM,CAAA;IAClB,SAAS,CAAC,EAAE,MAAM,CAAA;CACnB;AAKD,wBAAgB,oBAAoB,CAAE,SAAS,EAAE,QAAQ,EAAE,OAAO,GAAE,qBAA0B;;;;EAM7F"}

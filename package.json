@@ -1,6 +1,6 @@
 {
   "name": "@tuomashatakka/threejs-scenes",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
@@ -30,6 +30,22 @@
       "types": "./dist/materials/index.d.ts",
       "import": "./dist/materials/index.js"
     },
+    "./geometry": {
+      "types": "./dist/geometry/index.d.ts",
+      "import": "./dist/geometry/index.js"
+    },
+    "./loaders": {
+      "types": "./dist/loaders/index.d.ts",
+      "import": "./dist/loaders/index.js"
+    },
+    "./animation": {
+      "types": "./dist/animation/index.d.ts",
+      "import": "./dist/animation/index.js"
+    },
+    "./props": {
+      "types": "./dist/props/index.d.ts",
+      "import": "./dist/props/index.js"
+    },
     "./lighting": {
       "types": "./dist/lighting/index.d.ts",
       "import": "./dist/lighting/index.js"
@@ -58,6 +74,14 @@
       "types": "./dist/architecture/index.d.ts",
       "import": "./dist/architecture/index.js"
     },
+    "./jsx": {
+      "types": "./dist/jsx/index.d.ts",
+      "import": "./dist/jsx/index.js"
+    },
+    "./jsx/jsx-runtime": {
+      "types": "./dist/jsx/jsx-runtime.d.ts",
+      "import": "./dist/jsx/jsx-runtime.js"
+    },
     "./types": {
       "types": "./dist/types.d.ts",
       "import": "./dist/types.js"
@@ -72,7 +96,8 @@
     "lib": "lib"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && bun run copy:lib",
+    "copy:lib": "bun run scripts/copy-lib.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint lib",
     "smoke": "bun run lib/__smoke__.ts",

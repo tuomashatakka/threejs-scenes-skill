@@ -10,6 +10,7 @@ import * as THREE from 'three'
 import type { VoxelChunk } from './voxel-data.js'
 
 
+/* eslint-disable complexity, max-statements, max-depth -- greedy meshing is one tight, inherently nested sweep */
 export function greedyMesh (chunk: VoxelChunk): THREE.BufferGeometry {
   const N                   = chunk.size
   const positions: number[] = []

@@ -3,6 +3,8 @@
 // not need a canvas / WebGL context. Run with `bun run lib/__smoke__.ts`.
 // GL-bound factories are proven by a successful `tsc` build instead.
 
+import * as THREE from 'three'
+
 import {
   createSeededRng,
   poissonDisk,
@@ -13,10 +15,27 @@ import {
   VoxelChunk,
   greedyMesh,
   createProceduralTexture,
-  createNoiseTexture
-
-
+  createNoiseTexture,
+  // geometry
+  roundedRectShape,
+  starShape,
+  createExtrudedMesh,
+  applyTwist,
+  displaceByNoise,
+  layoutGrid,
+  // materials
+  createStandardMaterial,
+  createToonMaterial,
+  createGradientToonMap,
+  // animation
+  spinClip,
+  bobClip,
+  createAnimationController,
+  // props
+  defineProp,
+  createProp,
 } from './index.js'
+import { h, signal, Fragment } from './jsx/index.js'
 import type { ParamSpec, ParamSpecMap } from './index.js'
 
 
@@ -95,5 +114,60 @@ assert(geo.getAttribute('position').count > 0, 'greedy mesh emitted faces')
 // 7. DOM-guarded factories return null headless
 assert(createProceduralTexture('k', () => {}) === null, 'procedural texture null headless')
 assert(createNoiseTexture() === null, 'noise texture null headless')
+
+// 8. geometry — shapes, extrusion, deformers, layout (all CPU, no GL)
+assert(roundedRectShape(2, 1, 0.2).getPoints().length > 0, 'rounded rect shape has points')
+
+const star = createExtrudedMesh({ shape: starShape(5, 1, 0.5), depth: 0.5 })
+assert(star.geometry.getAttribute('position').count > 0, 'extruded star has geometry')
+
+const box    = new THREE.BoxGeometry(1, 2, 1, 4, 8, 4)
+const before = box.getAttribute('position').getX(0)
+applyTwist(box, Math.PI / 2, 'y')
+assert(box.getAttribute('position').getX(0) !== before, 'twist moved vertices')
+displaceByNoise(new THREE.SphereGeometry(1, 8, 8), { amp: 0.2, seed: 3 })
+
+const cells = layoutGrid([ new THREE.Object3D(), new THREE.Object3D(), new THREE.Object3D(), new THREE.Object3D() ], { cols: 2, spacing: 2 })
+assert(cells[1]!.position.x !== cells[0]!.position.x, 'grid layout spread objects')
+
+// 9. materials — presets + toon ramp
+const gold = createStandardMaterial('gold')
+assert(gold.metalness === 1, 'gold preset is fully metallic')
+
+const overridden = createStandardMaterial('plastic', { roughness: 0.1 })
+assert(overridden.roughness === 0.1, 'overrides win over preset')
+assert(createGradientToonMap(4).image.width === 4, 'gradient ramp has steps')
+assert(createToonMaterial({ steps: 3 }).gradientMap !== null, 'toon material has a gradient map')
+
+// 10. animation — clip builders + controller (AnimationMixer is GL-free)
+const spin = spinClip('y', 2)
+assert(spin.tracks.length === 1 && spin.duration === 2, 'spin clip built')
+
+const obj  = new THREE.Object3D()
+const ctrl = createAnimationController(obj, [ spin, bobClip(0.3, 1) ])
+assert(ctrl.actions.size === 2, 'controller registered both clips')
+assert(ctrl.play('spin') !== null, 'play resolves a known action')
+ctrl.tick({ delta: 0.016, elapsed: 0.016, frame: 1 })
+ctrl.dispose()
+
+// 11. props — defineProp + createProp (headless build + dispose)
+const cubeProp = defineProp({
+  name:  'cube',
+  build: () => new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()),
+  clips: () => [ spinClip('y', 2) ],
+})
+const inst = createProp(cubeProp, {}, { autoplay: false })
+assert(inst.object instanceof THREE.Mesh, 'prop built its mesh')
+assert(inst.controller !== undefined, 'prop wired an animation controller')
+inst.dispose()
+
+// 12. jsx — element descriptors + signals (no DOM, no render)
+const [ count, setCount ] = signal(1)
+setCount(c => c + 1)
+assert(count() === 2, 'signal get/set')
+
+const el = h('group', { position: [ 0, 1, 0 ]}, h('mesh', null), h('mesh', null))
+assert(el.type === 'group' && el.children.length === 2, 'h() builds a group with two children')
+assert(h(Fragment, null, h('mesh', null)).type === Fragment, 'fragment element')
 
 console.log('smoke ok: all DOM-free factories resolve and behave')

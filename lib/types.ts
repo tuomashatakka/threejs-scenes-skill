@@ -133,3 +133,74 @@ export type ParamSpec =
 export type ParamValue = number | boolean | string
 
 export type ParamSpecMap = Record<string, ParamSpec>
+
+// --- loaders ---
+
+/** Normalized result of loading a model file (glTF and friends). */
+export interface LoadedModel {
+  scene:      THREE.Object3D
+  animations: THREE.AnimationClip[]
+  cameras:    THREE.Camera[]
+  asset?:     unknown
+}
+
+// --- animation ---
+
+export interface PlayOptions {
+  loop?:              THREE.AnimationActionLoopStyles
+  fadeIn?:            number
+  reset?:             boolean
+  clampWhenFinished?: boolean
+  timeScale?:         number
+}
+
+/**
+ * Wraps an AnimationMixer + its actions. `tick(ctx)` advances by ctx.delta;
+ * when built with a FrameLoop it auto-registers so playback follows the render
+ * loop. `dispose` uncaches the root and unregisters the tick.
+ */
+export interface AnimationController extends Disposable {
+  mixer:   THREE.AnimationMixer
+  actions: Map<string, THREE.AnimationAction>
+  play (name: string, options?: PlayOptions): THREE.AnimationAction | null
+  crossfade (from: string, to: string, duration?: number): void
+  stop (name?: string): void
+  tick (ctx: FrameContext): void
+}
+
+// --- props ---
+
+/** Minimal context a prop needs to build + animate itself. SceneContext satisfies it. */
+export interface PropContext {
+  rng?:  SeededRng
+  loop?: FrameLoop
+}
+
+export type InstancePlaceFn = (
+  index: number,
+  rng: () => number,
+  object: THREE.Object3D,
+  color: THREE.Color,
+) => void
+
+/**
+ * Declarative description of a reusable prop: how to build its Object3D, plus
+ * optional animation clips, embedded lights, and an instancing hint. Author one
+ * with `defineProp` and mount it with `createProp` (or via <Prop src>).
+ */
+export interface PropDefinition {
+  name:       string
+  build (ctx: PropContext): THREE.Object3D
+  clips? (root: THREE.Object3D): THREE.AnimationClip[]
+  lights? (root: THREE.Object3D): THREE.Light[]
+  instanced?: { count: number; radius?: number; seed?: number; place?: InstancePlaceFn }
+}
+
+export type PropFactory = PropDefinition
+
+/** A live, mounted prop. `dispose` frees geometry/materials/controller it owns. */
+export interface PropInstance extends Disposable {
+  object:      THREE.Object3D
+  controller?: AnimationController
+  lights:      THREE.Light[]
+}

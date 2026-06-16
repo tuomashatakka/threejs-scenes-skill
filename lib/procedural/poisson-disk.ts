@@ -15,6 +15,7 @@ export interface PoissonDiskOptions {
   k?:      number
 }
 
+// eslint-disable-next-line complexity -- self-contained sampling loop; splitting hurts readability
 export function poissonDisk ({
   width,
   height,

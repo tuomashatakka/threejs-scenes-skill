@@ -1,3 +1,5 @@
 .DS_Store
 node_modules
-dist
+# only the root build output is ignored; skill/lib/dist + public/lib/dist are
+# committed local copies the skill/showcase import from.
+/dist
