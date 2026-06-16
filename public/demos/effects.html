@@ -204,13 +204,13 @@
 
       // Effect registry — instances created lazily, toggled via `enabled` + order[].
       const reg = [
-        { id: 'bloom', label: 'Bloom', make: () => new UnrealBloomPass(new THREE.Vector2(w, h), 0.8, 0.5, 0.82),
+        { id: 'bloom', label: 'Bloom', make: () => new UnrealBloomPass(new THREE.Vector2(w, h), 0.06, 1, 0.03),
           sliders: [
             ['strength', 'strength', 0, 3, 0.01, p => p.strength, (p, v) => p.strength = v],
             ['radius', 'radius', 0, 1, 0.01, p => p.radius, (p, v) => p.radius = v],
             ['threshold', 'threshold', 0, 1, 0.01, p => p.threshold, (p, v) => p.threshold = v],
           ] },
-        { id: 'grade', label: 'Colour grade', make: () => scenes.createGradePass({}),
+        { id: 'grade', label: 'Colour grade', make: () => scenes.createGradePass({ contrast: 0.97, saturation: 1.2, vignette: 0.98, grain: 0.045, chromatic: 0.29 }),
           frame: (p, t) => p.setTime(t),
           sliders: [
             ['uContrast', 'contrast', 0.5, 2, 0.01, p => p.uniforms.uContrast.value, (p, v) => p.uniforms.uContrast.value = v],
@@ -220,7 +220,7 @@
             ['uChromatic', 'chromatic', 0, 3, 0.01, p => p.uniforms.uChromatic.value, (p, v) => p.uniforms.uChromatic.value = v],
           ] },
         { id: 'dof', label: 'DOF + CA', depth: true, make: () => {
-            const p = scenes.createDofPass({ focalDistance: 16, focalRange: 6, maxBlur: 0.018, caStrength: 0.6, near: NEAR, far: FAR })
+            const p = scenes.createDofPass({ focalDistance: 24, focalRange: 5.5, maxBlur: 0.004, caStrength: 1.72, near: NEAR, far: FAR })
             p.uniforms.tDepth.value = sceneRT.depthTexture; return p
           },
           frame: p => p.setAspect(w / h),
@@ -230,25 +230,25 @@
             ['uMaxBlur', 'max blur', 0, 0.04, 0.001, p => p.uniforms.uMaxBlur.value, (p, v) => p.uniforms.uMaxBlur.value = v],
             ['uCAStrength', 'CA', 0, 2, 0.01, p => p.uniforms.uCAStrength.value, (p, v) => p.uniforms.uCAStrength.value = v],
           ] },
-        { id: 'grain', label: 'Film grain', make: () => scenes.createFilmGrainPass({}),
+        { id: 'grain', label: 'Film grain', make: () => scenes.createFilmGrainPass({ intensity: 0.08, luma: 0.5, desat: 0 }),
           sliders: [
             ['uIntensity', 'intensity', 0, 0.3, 0.005, p => p.uniforms.uIntensity.value, (p, v) => p.uniforms.uIntensity.value = v],
             ['uLuma', 'luma mix', 0, 1, 0.01, p => p.uniforms.uLuma.value, (p, v) => p.uniforms.uLuma.value = v],
             ['uDesat', 'desat', 0, 1, 0.01, p => p.uniforms.uDesat.value, (p, v) => p.uniforms.uDesat.value = v],
           ] },
-        { id: 'rgbshift', label: 'Glitch · RGB shift', make: () => scenes.createRgbShiftPass(), time: true,
+        { id: 'rgbshift', label: 'Glitch · RGB shift', make: () => { const p = scenes.createRgbShiftPass(); p.uniforms.uIntensity.value = 2; p.uniforms.uAngle.value = 3.88; return p }, time: true,
           sliders: [
             ['uIntensity', 'intensity', 0, 2, 0.01, p => p.uniforms.uIntensity.value, (p, v) => p.uniforms.uIntensity.value = v],
             ['uAngle', 'angle', 0, 6.28, 0.01, p => p.uniforms.uAngle.value, (p, v) => p.uniforms.uAngle.value = v],
           ] },
-        { id: 'block', label: 'Glitch · block', make: () => scenes.createBlockDisplacementPass(), time: true,
+        { id: 'block', label: 'Glitch · block', make: () => { const p = scenes.createBlockDisplacementPass(); p.uniforms.uIntensity.value = 0.07; p.uniforms.uBlockSize.value = 33; return p }, time: true,
           sliders: [
             ['uIntensity', 'intensity', 0, 2, 0.01, p => p.uniforms.uIntensity.value, (p, v) => p.uniforms.uIntensity.value = v],
             ['uBlockSize', 'block size', 4, 96, 1, p => p.uniforms.uBlockSize.value, (p, v) => p.uniforms.uBlockSize.value = v],
           ] },
-        { id: 'scan', label: 'Glitch · scan', make: () => scenes.createScanCorruptionPass(), time: true,
+        { id: 'scan', label: 'Glitch · scan', make: () => { const p = scenes.createScanCorruptionPass(); p.uniforms.uIntensity.value = 0.1; return p }, time: true,
           sliders: [['uIntensity', 'intensity', 0, 2, 0.01, p => p.uniforms.uIntensity.value, (p, v) => p.uniforms.uIntensity.value = v]] },
-        { id: 'godrays', label: 'God rays', make: () => scenes.createGodRaysPass(),
+        { id: 'godrays', label: 'God rays', make: () => { const p = scenes.createGodRaysPass(); p.uniforms.uExposure.value = 0.31; p.uniforms.uDecay.value = 0.803; p.uniforms.uDensity.value = 0.59; p.uniforms.uWeight.value = 0.53; p.uniforms.uSamples.value = 79; return p },
           frame: p => p.updateFromLight(light.position, camera),
           sliders: [
             ['uExposure', 'exposure', 0, 0.6, 0.005, p => p.uniforms.uExposure.value, (p, v) => p.uniforms.uExposure.value = v],
@@ -539,7 +539,7 @@
       engine = kind === 'webgpu' ? await createWebGPUEngine(canvas) : await createWebGLEngine(canvas)
       order = engine.reg.map(e => ({ ...e, enabled: false }))
       // sensible default-on set per engine
-      const defaultsOn = kind === 'webgpu' ? ['bloom', 'ca'] : ['bloom', 'grade']
+      const defaultsOn = kind === 'webgpu' ? ['bloom', 'ca'] : ['scan','hudbeam','dof','rgbshift','grain','block','bloom','grade','godrays']
       order.forEach(e => { if (defaultsOn.includes(e.id)) e.enabled = true })
 
       scopeEl.textContent = kind === 'webgpu' ? WEBGPU_OUT_OF_SCOPE : WEBGL_OUT_OF_SCOPE
