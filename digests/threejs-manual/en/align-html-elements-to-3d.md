@@ -1,8 +1,4 @@
-<!-- ingested from https://threejs.org/manual/en/align-html-elements-to-3d.html via dry-run -->
-
-# Aligning HTML Elements to 3D
-
-Source: https://threejs.org/manual/en/align-html-elements-to-3d.html
+<!-- ingested from https://threejs.org/manual/en/align-html-elements-to-3d.html (direct markdown, no model) -->
 
 Aligning HTML Elements to 3D 
 
@@ -805,4 +801,3 @@ to the countries in the center of the view, etc ... Lots to think about.
  In any case I hope these examples gave you some idea of how to align HTML
 elements with your 3D. A few things I might change. 
  Next up let's make it so you can pick and highlight a country .
-

@@ -1,49 +1,39 @@
-<!-- ingested from https://raw.githubusercontent.com/mrdoob/three.js/dev/docs/pages/ARButton.html via dry-run -->
+<!-- ingested from https://raw.githubusercontent.com/mrdoob/three.js/dev/docs/pages/ARButton.html.md (direct markdown, no model) -->
 
 # ARButton
 
-Source: https://raw.githubusercontent.com/mrdoob/three.js/dev/docs/pages/ARButton.html
+A utility class for creating a button that allows to initiate immersive AR sessions based on WebXR. The button can be created with a factory method and then appended ot the website's DOM.
 
-ARButton 
-
- A utility class for creating a button that allows to initiate
-immersive AR sessions based on WebXR. The button can be created
-with a factory method and then appended ot the website's DOM. 
- Code Example 
-
+## Code Example
 
 ```js
 document.body.appendChild( ARButton.createButton( renderer ) );
 ```
 
+## Import
 
-
- Import 
- ARButton is an addon, and must be imported explicitly, see Installation#Addons . 
-
+ARButton is an addon, and must be imported explicitly, see [Installation#Addons](https://threejs.org/manual/#en/installation).
 
 ```js
 import { ARButton } from 'three/addons/webxr/ARButton.js';
 ```
 
+## Static Methods
 
+### .createButton( renderer : WebGLRenderer | WebGPURenderer, sessionInit : XRSessionInit ) : HTMLElement
 
- Static Methods 
- . createButton ( renderer : WebGLRenderer | WebGPURenderer , sessionInit : XRSessionInit ) : HTMLElement 
+Constructs a new AR button.
 
- Constructs a new AR button. 
+**renderer**
 
- renderer 
+The renderer.
 
- The renderer. 
+**sessionInit**
 
- sessionInit 
+The a configuration object for the AR session.
 
- The a configuration object for the AR session. 
+**Returns:** The button or an error message if `immersive-ar` isn't supported.
 
- Returns: The button or an error message if immersive-ar isn't supported. 
+## Source
 
- Source 
- 
- examples/jsm/webxr/ARButton.js
-
+[examples/jsm/webxr/ARButton.js](https://github.com/mrdoob/three.js/blob/master/examples/jsm/webxr/ARButton.js)

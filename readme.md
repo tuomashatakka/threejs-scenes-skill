@@ -5,6 +5,17 @@ vanilla three.js (WebGL2) — no React-Three-Fiber, no Drei, no WebGPU. Just
 `three` from its main entry point, authored to ship as a single self-contained
 HTML artifact that runs in a sandboxed iframe with no build step.
 
+## download
+
+- **Skill package:** [`threejs-scenes.skill`](https://tuomashatakka.github.io/threejs-scenes-skill/threejs-scenes.skill)
+  — the packaged `skill/` directory. Drop it into `~/.claude/skills/` (or
+  `~/.config/opencode/skills/`) and unzip, or install it via Claude Code.
+- **Live showcase:** [tuomashatakka.github.io/threejs-scenes-skill](https://tuomashatakka.github.io/threejs-scenes-skill/)
+  — semantic gallery of the runnable demos plus the full API reference.
+
+Both are published automatically by the **Publish showcase & skill** GitHub
+Actions workflow (`.github/workflows/publish.yml`) on every push to `main`.
+
 ## what it does
 
 When a request touches three.js / WebGL / 3D-in-the-browser, this skill gives

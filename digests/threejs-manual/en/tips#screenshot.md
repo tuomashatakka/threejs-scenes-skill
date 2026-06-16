@@ -1,0 +1,398 @@
+<!-- ingested from https://threejs.org/manual/en/tips#screenshot.html (direct markdown, no model) -->
+
+Tips 
+
+ This article is a collection of small issues you might run into
+using three.js that seemed too small to have their own article. 
+
+ Taking A Screenshot of the Canvas 
+ In the browser there are effectively 2 functions that will take a screenshot.
+The old one
+ canvas.toDataURL 
+and the new better one
+ canvas.toBlob 
+ So you'd think it would be easy to take a screenshot by just adding some code like 
+
+
+```js
+<canvas id="c"></canvas>
++<button id="screenshot" type="button">Save...</button>
+```
+
+
+
+
+```js
+const elem = document.querySelector('#screenshot');
+elem.addEventListener('click', () => {
+  canvas.toBlob((blob) => {
+    saveBlob(blob, `screencapture-${canvas.width}x${canvas.height}.png`);
+  });
+});
+
+const saveBlob = (function() {
+  const a = document.createElement('a');
+  document.body.appendChild(a);
+  a.style.display = 'none';
+  return function saveData(blob, fileName) {
+     const url = window.URL.createObjectURL(blob);
+     a.href = url;
+     a.download = fileName;
+     a.click();
+  };
+}());
+```
+
+
+ Here's the example from the article on responsiveness 
+with the code above added and some CSS to place the button 
+
+ click here to open in a separate window 
+
+ When I tried it I got this screenshot 
+
+ Yes, it's just a black image. 
+ It's possible it worked for you depending on your browser/OS but in general
+it's not likely to work. 
+ The issue is that for performance and compatibility reasons, by default the browser
+will clear a WebGL canvas's drawing buffer after you've drawn to it. 
+ The solution is to call your rendering code just before capturing. 
+ In our code we need to adjust a few things. First let's separate
+out the rendering code. 
+
+
+```js
++const state = {
++  time: 0,
++};
+
+-function render(time) {
+-  time *= 0.001;
++function render() {
+  if (resizeRendererToDisplaySize(renderer)) {
+    const canvas = renderer.domElement;
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+  }
+
+  cubes.forEach((cube, ndx) => {
+    const speed = 1 + ndx * .1;
+-    const rot = time * speed;
++    const rot = state.time * speed;
+    cube.rotation.x = rot;
+    cube.rotation.y = rot;
+  });
+
+  renderer.render(scene, camera);
+
+-  requestAnimationFrame(render);
+}
+
++function animate(time) {
++  state.time = time * 0.001;
++
++  render();
++
++  requestAnimationFrame(animate);
++}
++requestAnimationFrame(animate);
+```
+
+
+ Now that render is only concerned with actually rendering
+we can call it just before capturing the canvas. 
+
+
+```js
+const elem = document.querySelector('#screenshot');
+elem.addEventListener('click', () => {
++  render();
+  canvas.toBlob((blob) => {
+    saveBlob(blob, `screencapture-${canvas.width}x${canvas.height}.png`);
+  });
+});
+```
+
+
+ And now it should work. 
+
+ click here to open in a separate window 
+
+ For a different solution see the next item. 
+
+ Preventing the canvas being cleared 
+ Let's say you wanted to let the user paint with an animated
+object. You need to pass in preserveDrawingBuffer: true when
+you create the WebGLRenderer . This prevents the browser from
+clearing the canvas. You also need to tell three.js not to clear
+the canvas as well. 
+
+
+```js
+const canvas = document.querySelector('#c');
+-const renderer = new THREE.WebGLRenderer({antialias: true, canvas});
++const renderer = new THREE.WebGLRenderer({
++  canvas,
++  preserveDrawingBuffer: true,
++  alpha: true,
++});
++renderer.autoClearColor = false;
+```
+
+
+
+ click here to open in a separate window 
+
+ Note that if you were serious about making a drawing program this would not be a
+solution as the browser will still clear the canvas anytime we change its
+resolution. We're changing is resolution based on its display size. Its display
+size changes when the window changes size. That includes when the user downloads
+a file, even in another tab, and the browser adds a status bar. It also includes when
+the user turns their phone and the browser switches from portrait to landscape. 
+ If you really wanted to make a drawing program you'd
+ render to a texture using a render target . 
+
+ Getting Keyboard Input 
+ Throughout these tutorials we've often attached event listeners to the canvas .
+While many events work, one that does not work by default is keyboard
+events. 
+ To get keyboard events, set the tabindex 
+of the canvas to 0 or more. Eg. 
+
+
+```js
+<canvas tabindex="0"></canvas>
+```
+
+
+ This ends up causing a new issue though. Anything that has a tabindex set
+will get highlighted when it has the focus. To fix that set its focus CSS outline
+to none 
+
+
+```js
+canvas:focus {
+  outline:none;
+}
+```
+
+
+ To demonstrate here are 3 canvases 
+
+
+```js
+<canvas id="c1"></canvas>
+<canvas id="c2" tabindex="0"></canvas>
+<canvas id="c3" tabindex="1"></canvas>
+```
+
+
+ and some css just for the last canvas 
+
+
+```js
+#c3:focus {
+    outline: none;
+}
+```
+
+
+ Let's attach the same event listeners to all of them 
+
+
+```js
+document.querySelectorAll('canvas').forEach((canvas) => {
+  const ctx = canvas.getContext('2d');
+
+  function draw(str) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(str, canvas.width / 2, canvas.height / 2);
+  }
+  draw(canvas.id);
+
+  canvas.addEventListener('focus', () => {
+    draw('has focus press a key');
+  });
+
+  canvas.addEventListener('blur', () => {
+    draw('lost focus');
+  });
+
+  canvas.addEventListener('keydown', (e) => {
+    draw(`keyCode: ${e.keyCode}`);
+  });
+});
+```
+
+
+ Notice you can't get the first canvas to accept keyboard input.
+The second canvas you can but it gets highlighted. The 3rd
+canvas has both solutions applied. 
+
+ click here to open in a separate window 
+
+ Making the Canvas Transparent 
+ By default THREE.js makes the canvas opaque. If you want the
+canvas to be transparent pass in alpha:true when you create
+the WebGLRenderer 
+
+
+```js
+const canvas = document.querySelector('#c');
+-const renderer = new THREE.WebGLRenderer({antialias: true, canvas});
++const renderer = new THREE.WebGLRenderer({
++  canvas,
++  alpha: true,
++});
+```
+
+
+ You probably also want to tell it that your results are not using premultiplied alpha 
+
+
+```js
+const canvas = document.querySelector('#c');
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  alpha: true,
++  premultipliedAlpha: false,
+});
+```
+
+
+ Three.js defaults to the canvas using
+ premultipliedAlpha: true but defaults
+to materials outputting premultipliedAlpha: false . 
+ If you'd like a better understanding of when and when not to use premultiplied alpha
+here's a good article on it . 
+ In any case let's setup a simple example with a transparent canvas. 
+ We applied the settings above to the example from the article on responsiveness .
+Let's also make the materials more transparent. 
+
+
+```js
+function makeInstance(geometry, color, x) {
+-  const material = new THREE.MeshPhongMaterial({color});
++  const material = new THREE.MeshPhongMaterial({
++    color,
++    opacity: 0.5,
++  });
+
+...
+```
+
+
+ And let's add some HTML content 
+
+
+```js
+<body>
+  <canvas id="c"></canvas>
++  <div id="content">
++    <div>
++      <h1>Cubes-R-Us!</h1>
++      <p>We make the best cubes!</p>
++    </div>
++  </div>
+</body>
+```
+
+
+ as well as some CSS to put the canvas in front 
+
+
+```js
+body {
+    margin: 0;
+}
+#c {
+    width: 100%;
+    height: 100%;
+    display: block;
++    position: fixed;
++    left: 0;
++    top: 0;
++    z-index: 2;
++    pointer-events: none;
+}
++#content {
++  font-size: 7vw;
++  font-family: sans-serif;
++  text-align: center;
++  width: 100%;
++  height: 100%;
++  display: flex;
++  justify-content: center;
++  align-items: center;
++}
+```
+
+
+ note that pointer-events: none makes the canvas invisible to the mouse
+and touch events so you can select the text beneath. 
+
+ click here to open in a separate window 
+
+ Making your background a three.js animation 
+ A common question is how to make a three.js animation be the background of
+a webpage. 
+ There are 2 obvious ways. 
+ 
+ Set the canvas CSS position to fixed as in 
+ 
+
+
+```js
+#c {
+ position: fixed;
+ left: 0;
+ top: 0;
+ ...
+}
+```
+
+
+ You can basically see this exact solution on the previous example. Just set z-index to -1
+and the cubes will appear behind the text. 
+ A small disadvantage to this solution is your JavaScript must integrate with the page
+and if you have a complex page then you need to make sure none of the JavaScript in your
+three.js visualization conflict with the JavaScript doing other things in the page. 
+ 
+ Use an iframe 
+ 
+ This is the solution used on the front page of this site . 
+ In your webpage just insert an iframe, for example 
+
+
+```js
+<iframe id="background" src="responsive.html">
+<div>
+  Your content goes here.
+</div>
+```
+
+
+ Then style the iframe to fill the window and be in the background
+which is basically the same code as we used above for the canvas
+except we also need to set border to none since iframes have
+a border by default. 
+
+
+```js
+#background {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    z-index: -1;
+    border: none;
+    pointer-events: none;
+}
+```
+
+
+ 
+ click here to open in a separate window

@@ -1,8 +1,4 @@
-<!-- ingested from https://threejs.org/manual/en/animation-system.html via dry-run -->
-
-# Animation System
-
-Source: https://threejs.org/manual/en/animation-system.html
+<!-- ingested from https://threejs.org/manual/en/animation-system.html (direct markdown, no model) -->
 
 Animation System 
 
@@ -88,4 +84,3 @@ Animation System
  Example 
 
  BLOCK0
-

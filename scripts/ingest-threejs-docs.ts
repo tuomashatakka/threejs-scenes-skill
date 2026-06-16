@@ -41,6 +41,10 @@
  *   --concurrency <n> Pages digested in parallel (default: 2)
  *   --force           Re-digest even if the output .md already exists
  *   --dry             Fetch + parse only; skip the model (writes raw extracted text)
+ *   --md              Fetch the maintainers' pre-rendered markdown directly, no
+ *                     model: docs pages have a clean <Name>.html.md in the repo;
+ *                     manual pages have none, so fall back to HTML extraction.
+ *                     Fast (minutes) and highest fidelity. Recommended for docs.
  */
 
 const OLLAMA_DEFAULT = 'http://127.0.0.1:11434'
@@ -61,6 +65,7 @@ interface Options {
   concurrency: number
   force:       boolean
   dry:         boolean
+  md:          boolean
 }
 
 interface ExtractedPage {
@@ -90,6 +95,7 @@ function parseArgs (argv: string[]): Options {
     concurrency: Math.max(1, Number(flag('concurrency', '2')) || 2),
     force:       argv.includes('--force'),
     dry:         argv.includes('--dry'),
+    md:          argv.includes('--md'),
   }
 }
 
@@ -282,6 +288,7 @@ interface SourceSpec {
   outDir:  string
   paths:   string[]
   pageUrl: (path: string) => string
+  mdUrl?:  (path: string) => string // pre-rendered markdown (docs only)
 }
 
 async function buildSpec (kind: 'docs' | 'manual', opts: Options): Promise<SourceSpec> {
@@ -292,6 +299,7 @@ async function buildSpec (kind: 'docs' | 'manual', opts: Options): Promise<Sourc
       outDir:  `${opts.out}/threejs-docs`,
       paths,
       pageUrl: p => `${GH_RAW}/${opts.ref}/docs/pages/${p}.html`,
+      mdUrl:   p => `${GH_RAW}/${opts.ref}/docs/pages/${p}.html.md`,
     }
   }
 
@@ -338,6 +346,27 @@ async function ingestSource (spec: SourceSpec, opts: Options): Promise<void> {
           skipped++
           continue
         }
+      }
+
+      if (opts.md) {
+        try {
+          await sleep(150)
+          // direct markdown: docs ship a pre-rendered <Name>.html.md in the
+          // repo; manual has none, so fall back to HTML extraction (still no model).
+          const body   = spec.mdUrl
+            ? await getText(spec.mdUrl(path))
+            : extractSource(await getText(url)).source
+          const srcUrl = spec.mdUrl ? spec.mdUrl(path) : url
+          await fs.mkdir(nodePath.dirname(outPath), { recursive: true })
+          await fs.writeFile(outPath,
+                             `<!-- ingested from ${srcUrl} (direct markdown, no model) -->\n\n${body}\n`)
+          indexRows.push(`- [${path}](${path}.md)`)
+          console.log(`  md ${++done}/${paths.length}  ${path}`)
+        }
+        catch (err) {
+          console.warn(`  x ${path}: ${(err as Error).message}`)
+        }
+        continue
       }
 
       try {

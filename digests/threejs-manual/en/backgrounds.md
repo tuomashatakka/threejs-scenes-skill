@@ -1,8 +1,4 @@
-<!-- ingested from https://threejs.org/manual/en/backgrounds.html via dry-run -->
-
-# Backgrounds and Skyboxes
-
-Source: https://threejs.org/manual/en/backgrounds.html
+<!-- ingested from https://threejs.org/manual/en/backgrounds.html (direct markdown, no model) -->
 
 Backgrounds and Skyboxes 
 
@@ -245,4 +241,3 @@ surrounds us.
 
  Rather than do it at load time you can also convert an equirectangular image
 to a cubemap beforehand. Here's a site that will do it for you .
-
