@@ -7,6 +7,7 @@
 import * as THREE from 'three'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 
+
 const DOF_CA_SHADER = {
   uniforms: {
     tDiffuse:       { value: null },
@@ -80,7 +81,7 @@ export function createDofPass ({
   near = 0.1,
   far = 200,
 } = {}) {
-  const pass = new ShaderPass(DOF_CA_SHADER)
+  const pass                         = new ShaderPass(DOF_CA_SHADER)
   pass.uniforms.uFocalDistance.value = focalDistance
   pass.uniforms.uFocalRange.value    = focalRange
   pass.uniforms.uMaxBlur.value       = maxBlur
@@ -91,11 +92,12 @@ export function createDofPass ({
   // dynamic focal point — pass a world-space Vector3 each frame.
   pass.focusOn = (worldPos, camera) => {
     focalScratch.copy(worldPos)
-    const dist = focalScratch.distanceTo(camera.position)
+
+    const dist                         = focalScratch.distanceTo(camera.position)
     pass.uniforms.uFocalDistance.value = dist
   }
 
-  pass.setAspect = (aspect) => {
+  pass.setAspect = aspect => {
     pass.uniforms.uAspect.value = aspect
   }
 

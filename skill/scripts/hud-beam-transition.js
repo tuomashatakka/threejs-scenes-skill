@@ -6,6 +6,7 @@
 import * as THREE from 'three'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 
+
 const HUD_BEAM_SHADER = {
   uniforms: {
     tDiffuse:   { value: null },
@@ -53,15 +54,15 @@ export function createHudBeamTransition ({
   beamColor = '#79f7ff',
   onComplete,
 } = {}) {
-  const pass = new ShaderPass(HUD_BEAM_SHADER)
+  const pass                     = new ShaderPass(HUD_BEAM_SHADER)
   pass.uniforms.uBeamWidth.value = beamWidth
   pass.uniforms.uBeamColor.value = new THREE.Color(beamColor)
-  pass.enabled = false
+  pass.enabled                   = false
 
-  let elapsed = 0
-  let running = false
+  let elapsed   = 0
+  let running   = false
   let halfFired = false
-  let onMid = null
+  let onMid     = null
 
   function play (onMidpoint) {
     elapsed = 0
@@ -73,9 +74,11 @@ export function createHudBeamTransition ({
 
   function tick (delta, time) {
     pass.uniforms.uTime.value = time
-    if (!running) return
+    if (!running)
+      return
     elapsed += delta
-    const progress = Math.min(elapsed / duration, 1)
+
+    const progress                = Math.min(elapsed / duration, 1)
     pass.uniforms.uProgress.value = progress
     if (!halfFired && progress >= 0.5) {
       halfFired = true

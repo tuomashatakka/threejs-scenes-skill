@@ -6,6 +6,7 @@
 import * as THREE from 'three'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 
+
 const GOD_RAYS_SHADER = {
   uniforms: {
     tDiffuse:  { value: null },

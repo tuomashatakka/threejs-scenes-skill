@@ -12,12 +12,14 @@ export class VoxelChunk {
   }
 
   get (x, y, z) {
-    if (x < 0 || y < 0 || z < 0 || x >= this.size || y >= this.size || z >= this.size) return 0
+    if (x < 0 || y < 0 || z < 0 || x >= this.size || y >= this.size || z >= this.size)
+      return 0
     return this.data[this._idx(x, y, z)]
   }
 
   set (x, y, z, id) {
-    if (x < 0 || y < 0 || z < 0 || x >= this.size || y >= this.size || z >= this.size) return
+    if (x < 0 || y < 0 || z < 0 || x >= this.size || y >= this.size || z >= this.size)
+      return
     this.data[this._idx(x, y, z)] = id
   }
 
@@ -26,14 +28,13 @@ export class VoxelChunk {
   }
 
   forEach (cb) {
-    for (let y = 0; y < this.size; y++) {
-      for (let z = 0; z < this.size; z++) {
+    for (let y = 0; y < this.size; y++)
+      for (let z = 0; z < this.size; z++)
         for (let x = 0; x < this.size; x++) {
           const v = this.data[this._idx(x, y, z)]
-          if (v !== 0) cb(x, y, z, v)
+          if (v !== 0)
+            cb(x, y, z, v)
         }
-      }
-    }
   }
 }
 

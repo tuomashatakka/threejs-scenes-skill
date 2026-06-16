@@ -4,6 +4,7 @@
 
 import * as THREE from 'three'
 
+
 const VERTEX_SHADER = /* glsl */`
   varying vec3 vWorldPosition;
   varying vec3 vWorldNormal;
@@ -60,11 +61,11 @@ export function createHolographicMaterial ({
 
   const material = new THREE.ShaderMaterial({
     uniforms,
-    vertexShader: VERTEX_SHADER,
+    vertexShader:   VERTEX_SHADER,
     fragmentShader: FRAGMENT_SHADER,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
+    transparent:    true,
+    depthWrite:     false,
+    blending:       THREE.AdditiveBlending,
   })
 
   material.userData.tick = ({ elapsed }) => {

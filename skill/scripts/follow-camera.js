@@ -4,6 +4,7 @@
 
 import * as THREE from 'three'
 
+
 const scratchTargetPos = new THREE.Vector3()
 const scratchLookAt    = new THREE.Vector3()
 const scratchDesired   = new THREE.Vector3()
@@ -14,7 +15,8 @@ export function createFollowCamera (camera, target, {
   stiffness = 8,
   rotationStiffness = 6,
 } = {}) {
-  if (!offset) throw new Error('createFollowCamera: offset is required')
+  if (!offset)
+    throw new Error('createFollowCamera: offset is required')
 
   return ({ delta }) => {
     target.getWorldPosition(scratchTargetPos)
@@ -30,6 +32,7 @@ export function createFollowCamera (camera, target, {
       .copy(lookAhead)
       .applyQuaternion(target.quaternion)
       .add(scratchTargetPos)
+
     const tLook = 1 - Math.exp(-rotationStiffness * delta)
     scratchLookAt.lerp(scratchTargetPos, tLook)
     camera.lookAt(scratchLookAt)

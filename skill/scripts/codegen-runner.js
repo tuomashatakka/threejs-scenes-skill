@@ -11,12 +11,13 @@ import { resolve, dirname } from 'node:path'
 
 import { sceneTools } from './llm-functions.js'
 
-const MODEL_ID = 'gemini-2.5-pro'
+
+const MODEL_ID       = 'gemini-2.5-pro'
 const SCHEMA_VERSION = 1
 
 async function main () {
-  const [, , task, ...briefParts] = process.argv
-  const brief = briefParts.join(' ')
+  const [ , , task, ...briefParts ] = process.argv
+  const brief                       = briefParts.join(' ')
 
   if (!task || !(task in sceneTools)) {
     console.error('Usage: node codegen-runner.js <task> <brief>')
@@ -30,26 +31,28 @@ async function main () {
   const params = guessParams(task, brief)
 
   console.log(`▸ running ${task} with model ${MODEL_ID}`)
+
   const result = await t.execute(params, {})
 
   const outDir = resolve('src/generated')
   await mkdir(outDir, { recursive: true })
 
-  const outPath = resolve(outDir, `${task}.json`)
+  const outPath  = resolve(outDir, `${task}.json`)
   const metaPath = resolve(outDir, `${task}.meta.json`)
   await writeFile(outPath, JSON.stringify(result, null, 2))
   await writeFile(metaPath, JSON.stringify({
     task,
     brief,
     params,
-    model: MODEL_ID,
+    model:         MODEL_ID,
     schemaVersion: SCHEMA_VERSION,
-    generatedAt: new Date().toISOString(),
+    generatedAt:   new Date().toISOString(),
   }, null, 2))
 
   try {
     execSync(`eslint --fix ${outPath}`, { stdio: 'inherit' })
-  } catch {
+  }
+  catch {
     // eslint may not be configured for JSON; ignore failure
   }
 
@@ -59,17 +62,17 @@ async function main () {
 
 function guessParams (task, brief) {
   switch (task) {
-    case 'planScene':                 return { brief, targetFps: 60 }
+    case 'planScene': return { brief, targetFps: 60 }
     case 'generateInstancePlacement': return { purpose: brief, area: '50x50 ground plane', density: 'medium' }
-    case 'generateShaderRecipe':      return { brief, mood: 'organic', animated: true }
-    case 'generateVoxelLevel':        return { theme: brief, scale: 'medium' }
-    case 'generateTextureRecipe':     return { purpose: brief, mood: 'organic' }
-    case 'designEffectChain':         return { mood: brief, perfTier: 'desktop' }
-    default:                          return { brief }
+    case 'generateShaderRecipe': return { brief, mood: 'organic', animated: true }
+    case 'generateVoxelLevel': return { theme: brief, scale: 'medium' }
+    case 'generateTextureRecipe': return { purpose: brief, mood: 'organic' }
+    case 'designEffectChain': return { mood: brief, perfTier: 'desktop' }
+    default: return { brief }
   }
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error(err)
   process.exit(1)
 })

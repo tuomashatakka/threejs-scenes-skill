@@ -4,6 +4,7 @@
 
 import * as THREE from 'three'
 
+
 const scratchCenter = new THREE.Vector3()
 
 export function createChunkManager ({
@@ -12,13 +13,16 @@ export function createChunkManager ({
   rebaseThreshold = 4096,
   build,
 } = {}) {
-  if (!chunkSize) throw new Error('chunkSize required')
-  if (!viewRadius) throw new Error('viewRadius required')
-  if (!build) throw new Error('build callback required')
+  if (!chunkSize)
+    throw new Error('chunkSize required')
+  if (!viewRadius)
+    throw new Error('viewRadius required')
+  if (!build)
+    throw new Error('build callback required')
 
-  const root = new THREE.Group()
+  const root   = new THREE.Group()
   const active = new Map()
-  const pool = []
+  const pool   = []
   const origin = new THREE.Vector3()
 
   const keyOf = (cx, cz) => `${cx}:${cz}`
@@ -30,8 +34,9 @@ export function createChunkManager ({
   }
 
   function releaseChunk (g) {
-    g.traverse((child) => {
-      if (child.geometry) child.geometry.dispose()
+    g.traverse(child => {
+      if (child.geometry)
+        child.geometry.dispose()
     })
     g.clear()
     root.remove(g)
@@ -43,10 +48,10 @@ export function createChunkManager ({
     const ccz = Math.floor((cameraWorldPos.z + origin.z) / chunkSize)
 
     const needed = new Set()
-    for (let dz = -viewRadius; dz <= viewRadius; dz++) {
+    for (let dz = -viewRadius; dz <= viewRadius; dz++)
       for (let dx = -viewRadius; dx <= viewRadius; dx++) {
-        const cx = ccx + dx
-        const cz = ccz + dz
+        const cx  = ccx + dx
+        const cz  = ccz + dz
         const key = keyOf(cx, cz)
         needed.add(key)
         if (!active.has(key)) {
@@ -57,26 +62,26 @@ export function createChunkManager ({
           Promise.resolve(build(cx, cz, chunk)).catch(err => console.error('chunk build failed', err))
         }
       }
-    }
 
-    for (const [key, chunk] of active) {
+    for (const [ key, chunk ] of active)
       if (!needed.has(key)) {
         active.delete(key)
         releaseChunk(chunk)
       }
-    }
 
     // rebase if camera drifts far
     if (cameraWorldPos.lengthSq() > rebaseThreshold * rebaseThreshold) {
       const offset = scratchCenter.copy(cameraWorldPos)
       cameraWorldPos.sub(offset)
       origin.add(offset)
-      for (const chunk of active.values()) chunk.position.sub(offset)
+      for (const chunk of active.values())
+        chunk.position.sub(offset)
     }
   }
 
   function dispose () {
-    for (const chunk of active.values()) releaseChunk(chunk)
+    for (const chunk of active.values())
+      releaseChunk(chunk)
     active.clear()
     pool.length = 0
   }
@@ -85,8 +90,12 @@ export function createChunkManager ({
     root,
     update,
     dispose,
-    get loadedCount () { return active.size },
-    get pooledCount () { return pool.length },
+    get loadedCount () {
+      return active.size
+    },
+    get pooledCount () {
+      return pool.length
+    },
   }
 }
 

@@ -4,6 +4,7 @@
 
 import * as THREE from 'three'
 
+
 export function createRenderer ({
   canvas,
   antialias = true,
@@ -15,29 +16,29 @@ export function createRenderer ({
   const renderer = new THREE.WebGLRenderer({
     canvas,
     antialias,
-    alpha: false,
+    alpha:           false,
     powerPreference: 'high-performance',
-    stencil: false,
+    stencil:         false,
   })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatioMax))
 
   const parent = canvas.parentElement ?? document.body
   renderer.setSize(parent.clientWidth, parent.clientHeight, false)
 
-  renderer.outputColorSpace = THREE.SRGBColorSpace
-  renderer.toneMapping = toneMapping
+  renderer.outputColorSpace    = THREE.SRGBColorSpace
+  renderer.toneMapping         = toneMapping
   renderer.toneMappingExposure = toneMappingExposure
 
   if (shadows) {
     renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.shadowMap.type    = THREE.PCFSoftShadowMap
   }
 
   return renderer
 }
 
 export function attachResizeObserver (renderer, camera, canvas, onResize) {
-  const ro = new ResizeObserver((entries) => {
+  const ro = new ResizeObserver(entries => {
     const { width, height } = entries[0].contentRect
     renderer.setSize(width, height, false)
     if (camera.isPerspectiveCamera) {

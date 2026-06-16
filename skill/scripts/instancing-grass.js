@@ -6,6 +6,7 @@ import * as THREE from 'three'
 
 import { mulberry32 } from './rng.js'
 
+
 const scratchObject = new THREE.Object3D()
 const scratchColor  = new THREE.Color()
 
@@ -26,7 +27,7 @@ export function createInstancedField (geometry, material, {
   const rng = mulberry32(seed)
   for (let i = 0; i < count; i++) {
     const angle = rng() * Math.PI * 2
-    const dist = Math.sqrt(rng()) * radius
+    const dist  = Math.sqrt(rng()) * radius
     scratchObject.position.set(
       Math.cos(angle) * dist,
       0,
@@ -40,7 +41,8 @@ export function createInstancedField (geometry, material, {
     mesh.setColorAt(i, scratchColor)
   }
   mesh.instanceMatrix.needsUpdate = true
-  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+  if (mesh.instanceColor)
+    mesh.instanceColor.needsUpdate = true
 
   return mesh
 }

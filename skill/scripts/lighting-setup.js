@@ -5,19 +5,19 @@
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 
+
 export function applyEnvironment (scene, renderer, {
   intensity = 1,
   envScene,
 } = {}) {
-  const pmrem = new THREE.PMREMGenerator(renderer)
-  const env = envScene ?? new RoomEnvironment()
-  const envTexture = pmrem.fromScene(env, 0.04).texture
-  scene.environment = envTexture
+  const pmrem                = new THREE.PMREMGenerator(renderer)
+  const env                  = envScene ?? new RoomEnvironment()
+  const envTexture           = pmrem.fromScene(env, 0.04).texture
+  scene.environment          = envTexture
   scene.environmentIntensity = intensity
   pmrem.dispose()
-  if (!envScene) {
+  if (!envScene)
     env.traverse(o => o.geometry?.dispose())
-  }
   return envTexture
 }
 
@@ -33,14 +33,14 @@ export function createSun ({
   sun.position.copy(position)
   sun.castShadow = true
   sun.shadow.mapSize.set(shadowMapSize, shadowMapSize)
-  sun.shadow.camera.near = 1
-  sun.shadow.camera.far = shadowFar
+  sun.shadow.camera.near   = 1
+  sun.shadow.camera.far    = shadowFar
   sun.shadow.camera.top    =  shadowFrustum
   sun.shadow.camera.right  =  shadowFrustum
   sun.shadow.camera.bottom = -shadowFrustum
   sun.shadow.camera.left   = -shadowFrustum
-  sun.shadow.bias = -0.0001
-  sun.shadow.normalBias = 0.02
+  sun.shadow.bias          = -0.0001
+  sun.shadow.normalBias    = 0.02
   return sun
 }
 
@@ -53,8 +53,8 @@ export function createHemisphereFill ({
 }
 
 export function setupStandardLighting (scene, renderer, options = {}) {
-  const env = applyEnvironment(scene, renderer, options.env)
-  const sun = createSun(options.sun)
+  const env  = applyEnvironment(scene, renderer, options.env)
+  const sun  = createSun(options.sun)
   const hemi = createHemisphereFill(options.hemi)
   scene.add(sun, sun.target, hemi)
   return {

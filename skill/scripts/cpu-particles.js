@@ -7,6 +7,7 @@ import * as THREE from 'three'
 
 import { mulberry32 } from './rng.js'
 
+
 export function createCpuParticleSystem ({
   count,
   texture,
@@ -15,28 +16,28 @@ export function createCpuParticleSystem ({
   gravity = -1.5,
   damping = 0.96,
 } = {}) {
-  const geometry = new THREE.PlaneGeometry(0.1, 0.1)
+  const geometry  = new THREE.PlaneGeometry(0.1, 0.1)
   const instanced = new THREE.InstancedBufferGeometry()
   instanced.setAttribute('position', geometry.getAttribute('position'))
   instanced.setAttribute('uv', geometry.getAttribute('uv'))
   instanced.setIndex(geometry.getIndex())
   instanced.instanceCount = count
 
-  const positions = new Float32Array(count * 3)
+  const positions  = new Float32Array(count * 3)
   const velocities = new Float32Array(count * 3)
-  const lifetimes = new Float32Array(count)
-  const ages = new Float32Array(count)
+  const lifetimes  = new Float32Array(count)
+  const ages       = new Float32Array(count)
 
   const rng = mulberry32(seed)
   for (let i = 0; i < count; i++) {
-    positions[i * 3 + 0] = (rng() - 0.5) * bounds
-    positions[i * 3 + 1] = rng() * bounds
-    positions[i * 3 + 2] = (rng() - 0.5) * bounds
+    positions[i * 3 + 0]  = (rng() - 0.5) * bounds
+    positions[i * 3 + 1]  = rng() * bounds
+    positions[i * 3 + 2]  = (rng() - 0.5) * bounds
     velocities[i * 3 + 0] = (rng() - 0.5) * 0.5
     velocities[i * 3 + 1] = rng() * 0.2
     velocities[i * 3 + 2] = (rng() - 0.5) * 0.5
-    lifetimes[i] = 2 + rng() * 4
-    ages[i] = rng() * lifetimes[i]
+    lifetimes[i]          = 2 + rng() * 4
+    ages[i]               = rng() * lifetimes[i]
   }
 
   const aPos = new THREE.InstancedBufferAttribute(positions, 3)
@@ -45,7 +46,7 @@ export function createCpuParticleSystem ({
   instanced.setAttribute('aAge', aAge)
 
   const material = new THREE.ShaderMaterial({
-    uniforms: { uMap: { value: texture } },
+    uniforms:     { uMap: { value: texture }},
     vertexShader: /* glsl */`
       attribute vec3 aInstancePos;
       attribute float aAge;
@@ -71,11 +72,11 @@ export function createCpuParticleSystem ({
       }
     `,
     transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
+    depthWrite:  false,
+    blending:    THREE.AdditiveBlending,
   })
 
-  const mesh = new THREE.Mesh(instanced, material)
+  const mesh         = new THREE.Mesh(instanced, material)
   mesh.frustumCulled = false
 
   function tick ({ delta }) {
@@ -92,13 +93,13 @@ export function createCpuParticleSystem ({
 
       // respawn on death
       if (ages[i] > lifetimes[i] || positions[ix + 1] < -bounds) {
-        positions[ix + 0] = (rng() - 0.5) * bounds * 0.2
-        positions[ix + 1] = bounds
-        positions[ix + 2] = (rng() - 0.5) * bounds * 0.2
+        positions[ix + 0]  = (rng() - 0.5) * bounds * 0.2
+        positions[ix + 1]  = bounds
+        positions[ix + 2]  = (rng() - 0.5) * bounds * 0.2
         velocities[ix + 0] = (rng() - 0.5) * 0.5
         velocities[ix + 1] = rng() * 0.2
         velocities[ix + 2] = (rng() - 0.5) * 0.5
-        ages[i] = 0
+        ages[i]            = 0
       }
     }
     aPos.needsUpdate = true

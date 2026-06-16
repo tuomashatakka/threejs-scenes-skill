@@ -4,9 +4,10 @@
 
 import * as THREE from 'three'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
-import { RenderPass }     from 'three/addons/postprocessing/RenderPass.js'
-import { OutputPass }     from 'three/addons/postprocessing/OutputPass.js'
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
+
 
 export function createComposer ({
   renderer,
@@ -24,9 +25,9 @@ export function createComposer ({
   composer.setSize(width, height)
 
   if (withDepth) {
-    const depthTexture = new THREE.DepthTexture(width, height)
-    depthTexture.format = THREE.DepthFormat
-    depthTexture.type = THREE.UnsignedIntType
+    const depthTexture                  = new THREE.DepthTexture(width, height)
+    depthTexture.format                 = THREE.DepthFormat
+    depthTexture.type                   = THREE.UnsignedIntType
     composer.renderTarget1.depthTexture = depthTexture
     composer.renderTarget2.depthTexture = depthTexture
   }
@@ -47,10 +48,10 @@ export function createComposer ({
 
   function setSize (w, h) {
     composer.setSize(w, h)
-    if (bloom) bloom.setSize(w, h)
-    if (composer.renderTarget1.depthTexture) {
+    if (bloom)
+      bloom.setSize(w, h)
+    if (composer.renderTarget1.depthTexture)
       composer.renderTarget1.depthTexture.image = { width: w, height: h }
-    }
   }
 
   function dispose () {

@@ -4,14 +4,15 @@
 
 import * as THREE from 'three'
 
+
 export function createIsoCamera (aspect, {
   viewSize = 20,
   flavor = 'dimetric',
   near = 0.1,
   far = 500,
 } = {}) {
-  const h = viewSize / 2
-  const w = h * aspect
+  const h      = viewSize / 2
+  const w      = h * aspect
   const camera = new THREE.OrthographicCamera(-w, w, h, -h, near, far)
 
   const tilt = flavor === 'true-iso'
@@ -25,15 +26,15 @@ export function createIsoCamera (aspect, {
   )
   camera.lookAt(0, 0, 0)
   camera.userData.viewSize = viewSize
-  camera.userData.flavor = flavor
+  camera.userData.flavor   = flavor
   return camera
 }
 
 export function resizeIsoCamera (camera, aspect) {
-  const h = camera.userData.viewSize / 2
-  const w = h * aspect
+  const h     = camera.userData.viewSize / 2
+  const w     = h * aspect
   camera.left = -w; camera.right = w
-  camera.top  =  h; camera.bottom = -h
+  camera.top                     =  h; camera.bottom = -h
   camera.updateProjectionMatrix()
 }
 

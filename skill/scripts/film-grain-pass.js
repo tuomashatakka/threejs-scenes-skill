@@ -4,12 +4,13 @@
 
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 
+
 const FILM_GRAIN_SHADER = {
   uniforms: {
     tDiffuse:   { value: null },
     uTime:      { value: 0 },
     uIntensity: { value: 0.08 },
-    uLuma:      { value: 0.5 },   // 0 = color grain, 1 = luma grain
+    uLuma:      { value: 0.5 }, // 0 = color grain, 1 = luma grain
     uDesat:     { value: 0.0 },
   },
   vertexShader: /* glsl */`
@@ -46,10 +47,10 @@ export function createFilmGrainPass ({
   luma = 0.5,
   desat = 0,
 } = {}) {
-  const pass = new ShaderPass(FILM_GRAIN_SHADER)
+  const pass                     = new ShaderPass(FILM_GRAIN_SHADER)
   pass.uniforms.uIntensity.value = intensity
-  pass.uniforms.uLuma.value = luma
-  pass.uniforms.uDesat.value = desat
+  pass.uniforms.uLuma.value      = luma
+  pass.uniforms.uDesat.value     = desat
   return pass
 }
 

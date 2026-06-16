@@ -4,6 +4,7 @@
 
 import * as THREE from 'three'
 
+
 const VERTEX_SHADER = /* glsl */`
   attribute vec3 aInstancePos;
   attribute vec2 aInstanceScale;
@@ -60,16 +61,16 @@ export function createSpriteBatch ({
   nearFade = 1,
   farFade = 100,
 } = {}) {
-  const geometry = new THREE.PlaneGeometry(1, 1)
+  const geometry          = new THREE.PlaneGeometry(1, 1)
   const instancedGeometry = new THREE.InstancedBufferGeometry()
   instancedGeometry.setAttribute('position', geometry.getAttribute('position'))
   instancedGeometry.setAttribute('uv', geometry.getAttribute('uv'))
   instancedGeometry.setIndex(geometry.getIndex())
 
-  const aInstancePos = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3)
-  const aInstanceScale = new THREE.InstancedBufferAttribute(new Float32Array(count * 2), 2)
+  const aInstancePos      = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3)
+  const aInstanceScale    = new THREE.InstancedBufferAttribute(new Float32Array(count * 2), 2)
   const aInstanceUvOffset = new THREE.InstancedBufferAttribute(new Float32Array(count * 2), 2)
-  const aInstanceUvScale = new THREE.InstancedBufferAttribute(new Float32Array(count * 2), 2)
+  const aInstanceUvScale  = new THREE.InstancedBufferAttribute(new Float32Array(count * 2), 2)
 
   // sensible defaults
   for (let i = 0; i < count; i++) {
@@ -77,10 +78,10 @@ export function createSpriteBatch ({
     aInstanceUvScale.setXY(i, 1, 1)
   }
 
-  instancedGeometry.setAttribute('aInstancePos',      aInstancePos)
-  instancedGeometry.setAttribute('aInstanceScale',    aInstanceScale)
+  instancedGeometry.setAttribute('aInstancePos', aInstancePos)
+  instancedGeometry.setAttribute('aInstanceScale', aInstanceScale)
   instancedGeometry.setAttribute('aInstanceUvOffset', aInstanceUvOffset)
-  instancedGeometry.setAttribute('aInstanceUvScale',  aInstanceUvScale)
+  instancedGeometry.setAttribute('aInstanceUvScale', aInstanceUvScale)
   instancedGeometry.instanceCount = count
 
   const material = new THREE.ShaderMaterial({
@@ -90,29 +91,29 @@ export function createSpriteBatch ({
       uNearFade: { value: nearFade },
       uFarFade:  { value: farFade },
     },
-    vertexShader: VERTEX_SHADER,
+    vertexShader:   VERTEX_SHADER,
     fragmentShader: FRAGMENT_SHADER,
-    transparent: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
+    transparent:    true,
+    depthWrite:     false,
+    side:           THREE.DoubleSide,
   })
 
-  const mesh = new THREE.Mesh(instancedGeometry, material)
+  const mesh         = new THREE.Mesh(instancedGeometry, material)
   mesh.frustumCulled = false
 
   return {
     mesh,
-    setInstance (i, { x, y, z, width = 1, height = 1, uvOffset = [0, 0], uvScale = [1, 1] }) {
+    setInstance (i, { x, y, z, width = 1, height = 1, uvOffset = [ 0, 0 ], uvScale = [ 1, 1 ]}) {
       aInstancePos.setXYZ(i, x, y, z)
       aInstanceScale.setXY(i, width, height)
       aInstanceUvOffset.setXY(i, uvOffset[0], uvOffset[1])
       aInstanceUvScale.setXY(i, uvScale[0], uvScale[1])
     },
     flush () {
-      aInstancePos.needsUpdate = true
-      aInstanceScale.needsUpdate = true
+      aInstancePos.needsUpdate      = true
+      aInstanceScale.needsUpdate    = true
       aInstanceUvOffset.needsUpdate = true
-      aInstanceUvScale.needsUpdate = true
+      aInstanceUvScale.needsUpdate  = true
     },
     dispose () {
       instancedGeometry.dispose()

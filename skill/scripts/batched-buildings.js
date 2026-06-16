@@ -5,6 +5,7 @@
 
 import * as THREE from 'three'
 
+
 export function createBuildingBatch (geometries, material, transforms, {
   sortObjects = false,
   perObjectFrustumCulled = true,
@@ -12,8 +13,8 @@ export function createBuildingBatch (geometries, material, transforms, {
   const totalVerts = geometries.reduce((s, g) => s + g.attributes.position.count, 0)
   const totalIndex = geometries.reduce((s, g) => s + (g.index?.count ?? 0), 0)
 
-  const batch = new THREE.BatchedMesh(transforms.length, totalVerts, totalIndex, material)
-  batch.sortObjects = sortObjects
+  const batch                  = new THREE.BatchedMesh(transforms.length, totalVerts, totalIndex, material)
+  batch.sortObjects            = sortObjects
   batch.perObjectFrustumCulled = perObjectFrustumCulled
 
   const geometryIds = geometries.map(g => batch.addGeometry(g))

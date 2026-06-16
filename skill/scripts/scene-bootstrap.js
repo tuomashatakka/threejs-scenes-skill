@@ -11,11 +11,13 @@ import { attachPointerGesture } from './pointer-gesture.js'
 import { setupStandardLighting } from './lighting-setup.js'
 import { disposeScene } from './dispose-scene.js'
 
-export function bootstrapScene ({ canvas, onSetup } = {}) {
-  if (!canvas) throw new Error('canvas required')
 
-  const renderer = createRenderer({ canvas })
-  const scene = new THREE.Scene()
+export function bootstrapScene ({ canvas, onSetup } = {}) {
+  if (!canvas)
+    throw new Error('canvas required')
+
+  const renderer   = createRenderer({ canvas })
+  const scene      = new THREE.Scene()
   scene.background = new THREE.Color('#0a0a14')
 
   const aspect = canvas.clientWidth / canvas.clientHeight
@@ -26,8 +28,8 @@ export function bootstrapScene ({ canvas, onSetup } = {}) {
   const lighting = setupStandardLighting(scene, renderer)
 
   // pointer-driven camera orbit
-  let theta = Math.atan2(camera.position.x, camera.position.z)
-  let phi = Math.atan2(camera.position.y, Math.hypot(camera.position.x, camera.position.z))
+  let theta  = Math.atan2(camera.position.x, camera.position.z)
+  let phi    = Math.atan2(camera.position.y, Math.hypot(camera.position.x, camera.position.z))
   let radius = camera.position.length()
 
   const detachGesture = attachPointerGesture(canvas, {
@@ -58,15 +60,17 @@ export function bootstrapScene ({ canvas, onSetup } = {}) {
   const userTicks = []
   if (onSetup) {
     const tick = onSetup({ scene, camera, renderer })
-    if (tick) userTicks.push(tick)
+    if (tick)
+      userTicks.push(tick)
   }
 
   // pre-warm shaders so the first frame doesn't stall
   renderer.compile(scene, camera)
 
   // single combined frame callback
-  const stopFrameTick = onFrame((ctx) => {
-    for (const t of userTicks) t(ctx)
+  const stopFrameTick = onFrame(ctx => {
+    for (const t of userTicks)
+      t(ctx)
   })
   const stopRender = startRenderLoop({ renderer, scene, camera })
 

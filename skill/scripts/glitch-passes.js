@@ -4,6 +4,7 @@
 
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 
+
 const FULL_SCREEN_VERTEX = /* glsl */`
   varying vec2 vUv;
   void main () {
@@ -19,7 +20,7 @@ const RGB_SHIFT_SHADER = {
     uIntensity: { value: 0.5 },
     uAngle:     { value: 0.0 },
   },
-  vertexShader: FULL_SCREEN_VERTEX,
+  vertexShader:   FULL_SCREEN_VERTEX,
   fragmentShader: /* glsl */`
     uniform sampler2D tDiffuse;
     uniform float uTime, uIntensity, uAngle;
@@ -41,7 +42,7 @@ const BLOCK_DISPLACEMENT_SHADER = {
     uIntensity: { value: 0.5 },
     uBlockSize: { value: 32.0 },
   },
-  vertexShader: FULL_SCREEN_VERTEX,
+  vertexShader:   FULL_SCREEN_VERTEX,
   fragmentShader: /* glsl */`
     uniform sampler2D tDiffuse;
     uniform float uTime, uIntensity, uBlockSize;
@@ -67,7 +68,7 @@ const SCAN_CORRUPTION_SHADER = {
     uTime:      { value: 0 },
     uIntensity: { value: 0.5 },
   },
-  vertexShader: FULL_SCREEN_VERTEX,
+  vertexShader:   FULL_SCREEN_VERTEX,
   fragmentShader: /* glsl */`
     uniform sampler2D tDiffuse;
     uniform float uTime, uIntensity;
@@ -82,9 +83,15 @@ const SCAN_CORRUPTION_SHADER = {
   `,
 }
 
-export function createRgbShiftPass         () { return new ShaderPass(RGB_SHIFT_SHADER) }
-export function createBlockDisplacementPass () { return new ShaderPass(BLOCK_DISPLACEMENT_SHADER) }
-export function createScanCorruptionPass    () { return new ShaderPass(SCAN_CORRUPTION_SHADER) }
+export function createRgbShiftPass () {
+  return new ShaderPass(RGB_SHIFT_SHADER)
+}
+export function createBlockDisplacementPass () {
+  return new ShaderPass(BLOCK_DISPLACEMENT_SHADER)
+}
+export function createScanCorruptionPass () {
+  return new ShaderPass(SCAN_CORRUPTION_SHADER)
+}
 
 // perf: medium. Each pass is one fullscreen fragment shader. Disable on mobile
 // or gate behind a "stylized" quality flag.
