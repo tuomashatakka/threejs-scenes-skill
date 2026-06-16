@@ -29,6 +29,7 @@ Load only what the current task needs. Don't read every file by default.
 | File | Load when… |
 |------|-----------|
 | `references/core-principles.md` | starting any new three.js work — read first |
+| `references/fundamentals.md` | the three.js mental model — primitives, scenegraph, materials, textures, lights, cameras, shadows, fog, render targets, custom BufferGeometry, physics (manual distilled, mapped to modules) |
 | `references/project-architecture.md` | scaffolding a project, organizing folders, wiring the frame loop |
 | `references/instancing.md` | rendering many copies of geometry; choosing `InstancedMesh` vs `BatchedMesh` |
 | `references/textures-and-maps.md` | working with diffuse/normal/ORM maps, UV offsets, procedural textures |
