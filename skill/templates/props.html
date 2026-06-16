@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Props — threejs-scenes</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0a0a14; overflow: hidden; }
+    canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://esm.sh/three@0.184.0",
+      "three/addons/": "https://esm.sh/three@0.184.0/examples/jsm/",
+      "@scenes": "../lib/dist/index.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="app"></canvas>
+  <script type="module">
+    import * as THREE from 'three'
+    import {
+      bootstrapScene, createStandardMaterial,
+      defineProp, createProp, createInstancedProp, createPropComposite,
+      spinClip, bobClip,
+    } from '@scenes'
+
+    const canvas = document.getElementById('app')
+
+    // A "crystal" prop: a mesh + a point light + a bob/spin animation.
+    const crystal = defineProp({
+      name: 'crystal',
+      build: () => new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.5, 0),
+        createStandardMaterial('emissive', { emissive: '#79f7ff', emissiveIntensity: 3 }),
+      ),
+      lights: () => [ new THREE.PointLight('#79f7ff', 6, 6) ],
+      clips: () => [ spinClip('y', 4), bobClip(0.25, 2) ],
+    })
+
+    // A simple "tree" prop (single mesh -> instanceable).
+    const treeTrunk = defineProp({
+      name: 'tree',
+      build: () => new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.6, 6), createStandardMaterial('matte', { color: '#3f7d4f' })),
+    })
+
+    bootstrapScene({
+      canvas,
+      onSetup ({ scene, loop }) {
+        // ground
+        const ground = new THREE.Mesh(new THREE.CircleGeometry(14, 48), createStandardMaterial('matte', { color: '#1b2230' }))
+        ground.rotation.x = -Math.PI / 2
+        ground.receiveShadow = true
+        scene.add(ground)
+
+        // a hero composite: crystal hovering over a ring base
+        const base = createProp(defineProp({
+          name: 'base',
+          build: () => new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1, 0.3, 24), createStandardMaterial('metal')),
+        }), { loop })
+        const hero = createProp(crystal, { loop })
+        const composite = createPropComposite([
+          { prop: base, position: [ 0, 0.15, 0 ] },
+          { prop: hero, position: [ 0, 1.1, 0 ] },
+        ])
+        scene.add(composite.object)
+
+        // instanced forest — single-mesh prop -> one draw call
+        const forest = createInstancedProp(treeTrunk, { count: 120, radius: 12, seed: 5 }, { loop })
+        forest.object.position.y = 0.8
+        scene.add(forest.object)
+      },
+    })
+  </script>
+</body>
+</html>

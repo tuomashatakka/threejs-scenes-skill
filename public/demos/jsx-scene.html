@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>JSX layer — threejs-scenes</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0a0a14; overflow: hidden; }
+    canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://esm.sh/three@0.184.0",
+      "three/addons/": "https://esm.sh/three@0.184.0/examples/jsm/",
+      "@scenes/jsx": "../lib/dist/jsx/index.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="app"></canvas>
+  <script type="module">
+    import * as THREE from 'three'
+    // Hyperscript form (h) — the same tree a JSX transpile would produce, but
+    // no build step. Reactive props are accessor functions, re-read every frame
+    // by the reconciler (which IS the render loop).
+    import { render, h, signal } from '@scenes/jsx'
+
+    const canvas = document.getElementById('app')
+    const [ angle, setAngle ] = signal(0)
+
+    const cyan = new THREE.MeshStandardMaterial({ color: '#79f7ff', flatShading: true })
+    const pink = new THREE.MeshStandardMaterial({ color: '#ff7ad9', roughness: 0.3, metalness: 0.4 })
+
+    const app = render(
+      h('scene', { background: '#0a0a14' },
+        h('camera', { type: 'perspective', position: [ 0, 2.5, 7 ], makeDefault: true }),
+        h('light', { type: 'hemisphere', intensity: 0.7 }),
+        h('light', { type: 'spot', position: [ 5, 8, 3 ], intensity: 60, penumbra: 0.4, castShadow: true }),
+        // reactive: rotation is an accessor, re-evaluated each frame
+        h('group', { rotation: () => [ 0, angle(), 0 ] },
+          h('mesh', { geometry: new THREE.IcosahedronGeometry(1, 0), material: cyan, position: [ -1.8, 0, 0 ] }),
+          h('mesh', { geometry: new THREE.TorusKnotGeometry(0.6, 0.2, 100, 16), material: pink, position: [ 1.8, 0, 0 ] }),
+        ),
+      ),
+      { canvas, background: '#0a0a14' },
+    )
+
+    // a signal driven from the same loop drives the reactive rotation prop
+    app.loop.onFrame(({ delta }) => setAngle(a => a + delta * 0.6))
+  </script>
+</body>
+</html>

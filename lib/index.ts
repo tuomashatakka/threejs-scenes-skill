@@ -2,7 +2,7 @@
 // threejs-scenes — strictly-typed factories and interfaces for production
 // vanilla three.js scenes. Re-exports every submodule. For tree-shaking you
 // may also import from the subpaths: 'threejs-scenes/core',
-// 'threejs-scenes/post', etc.
+// 'threejs-scenes/post', 'threejs-scenes/jsx', etc.
 
 export * from './types.js'
 
@@ -17,9 +17,13 @@ export * from './props/index.js'
 export * from './lighting/index.js'
 export * from './particles/index.js'
 export * from './post/index.js'
-// WebGPU/TSL post effects are namespaced to avoid clashing with the WebGL
-// post exports above. Require a WebGPURenderer. Also at the './post/webgpu' subpath.
-export * as webgpuPost from './post/webgpu/index.js'
 export * from './procedural/index.js'
 export * from './voxels/index.js'
 export * from './architecture/index.js'
+
+// NOTE: WebGPU/TSL post effects are intentionally NOT re-exported from this
+// barrel — they pull in `three/webgpu` + `three/tsl`, which would force every
+// consumer of this WebGL barrel (including importmap / CDN users) to resolve
+// those modules. Import them from the dedicated subpath instead:
+//   import * as webgpuPost from '@tuomashatakka/threejs-scenes/post/webgpu'
+// The reactive JSX layer is likewise its own subpath: '@tuomashatakka/threejs-scenes/jsx'.

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Materials — threejs-scenes</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0a0a14; overflow: hidden; }
+    canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://esm.sh/three@0.184.0",
+      "three/addons/": "https://esm.sh/three@0.184.0/examples/jsm/",
+      "@scenes": "../lib/dist/index.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="app"></canvas>
+  <script type="module">
+    import * as THREE from 'three'
+    import {
+      bootstrapScene, createStandardMaterial, createToonMaterial, createMatcapMaterial, layoutGrid,
+    } from '@scenes'
+
+    const canvas = document.getElementById('app')
+
+    bootstrapScene({
+      canvas,
+      onSetup ({ scene }) {
+        const sphere = new THREE.SphereGeometry(0.8, 48, 48)
+
+        const materials = [
+          createStandardMaterial('metal'),
+          createStandardMaterial('gold'),
+          createStandardMaterial('chrome'),
+          createStandardMaterial('glass'),
+          createStandardMaterial('plastic'),
+          createStandardMaterial('rubber'),
+          createStandardMaterial('matte'),
+          createStandardMaterial('emissive'),
+          createToonMaterial({ color: '#ff7ad9', steps: 4 }),
+          createMatcapMaterial(), // flat default matcap
+        ]
+
+        const balls = materials.map(m => new THREE.Mesh(sphere, m))
+        layoutGrid(balls, { cols: 5, spacing: 2 })
+
+        const group = new THREE.Group()
+        balls.forEach(b => group.add(b))
+        scene.add(group)
+
+        return ({ delta }) => { group.rotation.y += delta * 0.15 }
+      },
+    })
+  </script>
+</body>
+</html>

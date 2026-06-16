@@ -4,16 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>threejs-scenes — strictly-typed three.js scene factories</title>
-  <meta name="description" content="threejs-scenes is a strictly-typed library of production three.js factories: renderer and frame-loop scaffolding, procedural generation, cameras, instancing, materials, lighting, particles, post-processing, voxels, and a context-injection scene architecture.">
+  <meta name="description" content="threejs-scenes is a strictly-typed library of production three.js factories: renderer and frame-loop scaffolding, procedural generation, geometry, materials, props, animation, cameras, instancing, lighting, particles, post-processing, voxels, a context-injection scene architecture, and a reactive JSX layer.">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .preview-wrap { margin: 1rem 0 2.4rem; }
+    .tabs { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .8rem; }
+    .tabs button { font: 13px/1 system-ui, sans-serif; padding: .5rem .8rem; border: 1px solid #2a3346; background: #141a28; color: #c7d2e0; border-radius: 8px; cursor: pointer; }
+    .tabs button:hover { border-color: #46566f; }
+    .tabs button[aria-selected="true"] { background: #79f7ff; color: #06121a; border-color: #79f7ff; font-weight: 600; }
+    .preview { width: 100%; aspect-ratio: 16 / 9; border: 1px solid #2a3346; border-radius: 12px; background: #0a0a14; overflow: hidden; }
+    .preview iframe { width: 100%; height: 100%; border: 0; display: block; }
+    .preview-cap { font: 13px/1.5 system-ui, sans-serif; color: #9fb0c8; margin-top: .6rem; min-height: 2.6em; }
+    @media (max-width: 700px) { .preview { aspect-ratio: 4 / 3; } }
+  </style>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header>
     <h1>threejs-scenes</h1>
-    <p>Strictly-typed factories and interfaces for production vanilla three.js scenes — renderer scaffolding, procedural generation, cameras, instancing, materials, lighting, particles, post-processing, voxels, and a context-injection architecture.</p>
-    <p><code>npm install threejs-scenes</code></p>
+    <p>Strictly-typed factories and interfaces for production vanilla three.js scenes — renderer scaffolding, procedural generation, geometry, materials, props, animation, cameras, instancing, lighting, particles, post-processing, voxels, a context-injection architecture, and a reactive JSX layer.</p>
+    <p><code>npm install @tuomashatakka/threejs-scenes</code></p>
     <p class="actions">
       <a href="threejs-scenes.skill" download="threejs-scenes.skill">Download the <code>.skill</code> package</a>
       <a href="https://github.com/tuomashatakka/threejs-scenes-skill">Source on GitHub</a>
@@ -26,113 +37,33 @@
         <li><a href="#demos">Live demos</a></li>
         <li><a href="#core">core</a></li>
         <li><a href="#procedural">procedural</a></li>
+        <li><a href="#geometry">geometry</a></li>
         <li><a href="#camera">camera</a></li>
         <li><a href="#instancing">instancing</a></li>
         <li><a href="#materials">materials</a></li>
+        <li><a href="#loaders">loaders</a></li>
+        <li><a href="#animation">animation</a></li>
+        <li><a href="#props">props</a></li>
         <li><a href="#lighting">lighting</a></li>
         <li><a href="#particles">particles</a></li>
         <li><a href="#post">post (WebGL)</a></li>
         <li><a href="#post-webgpu">post (WebGPU)</a></li>
         <li><a href="#voxels">voxels</a></li>
         <li><a href="#architecture">architecture</a></li>
+        <li><a href="#jsx">jsx</a></li>
       </ul>
     </nav>
 
     <section id="demos" aria-labelledby="demos-h">
       <h2 id="demos-h">Live demos</h2>
-      <p>Fifteen self-contained templates, each loading three.js from the esm.sh CDN with no build step. Every demo maps to the library capability it exercises — there is at least one live scene per module.</p>
-      <ul class="gallery">
-        <li>
-          <figure>
-            <iframe src="demos/minimal-scene.html" title="Minimal scene: renderer, frame loop, pointer-orbit and dispose" loading="lazy"></iframe>
-            <figcaption><code>minimal-scene.html</code> — <strong>core</strong>: WebGLRenderer factory, Clock-driven frame loop, unified pointer-gesture orbit, ResizeObserver and an explicit dispose path.</figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <iframe src="demos/instanced-field.html" title="Instanced field: thousands of transforms sharing one geometry" loading="lazy"></iframe>
-            <figcaption><code>instanced-field.html</code> — <strong>instancing</strong>: <code>createInstancedField</code> drawing thousands of seeded transforms from a single geometry.</figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <iframe src="demos/shader-material.html" title="Shader material: holographic fresnel rim and scanlines" loading="lazy"></iframe>
-            <figcaption><code>shader-material.html</code> — <strong>materials / shaders</strong>: <code>createHolographicMaterial</code> with fresnel rim, animated scanlines and noise opacity.</figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <iframe src="demos/post-processing.html" title="Post-processing: WebGL EffectComposer with bloom, grade and depth-driven passes" loading="lazy"></iframe>
-            <figcaption><code>post-processing.html</code> — <strong>post (WebGL)</strong>: the <code>createComposer</code> chain with bloom, colour grade and depth-sampling passes.</figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <iframe src="demos/isometric.html" title="Isometric scene: orthographic iso camera over an instanced field" loading="lazy"></iframe>
-            <figcaption><code>isometric.html</code> — <strong>camera (iso) + instancing</strong>: <code>createIsoCamera</code> framing an instanced field of props.</figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <iframe src="demos/particles.html" title="Particles: CPU-driven billboarded particle emitter" loading="lazy"></iframe>
-            <figcaption><code>particles.html</code> — <strong>particles</strong>: <code>createParticleEmitter</code>, a CPU-driven billboarded particle system.</figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <iframe src="demos/procedural.html" title="Procedural: seeded RNG, Poisson-disk scatter and value-noise texture" loading="lazy"></iframe>
-            <figcaption><code>procedural.html</code> — <strong>procedural</strong>: a forest that is a pure function of one seed — <code>poissonDisk</code> scatter + a seamless <code>createNoiseTexture</code> ground, reproducible across reloads.</figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <iframe src="demos/follow-camera.html" title="Follow camera: framerate-independent third-person chase" loading="lazy"></iframe>
-            <figcaption><code>follow-camera.html</code> — <strong>camera (follow)</strong>: <code>createFollowCamera</code> chasing a self-driving target with <code>1 − e<sup>−k·dt</sup></code> damping — identical feel at any FPS.</figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <iframe src="demos/lighting.html" title="Lighting: IBL environment, shadow-tuned sun and hemisphere fill" loading="lazy"></iframe>
-            <figcaption><code>lighting.html</code> — <strong>lighting</strong>: <code>setupStandardLighting</code> — toggle the IBL environment, shadow-casting sun and hemisphere fill independently.</figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <iframe src="demos/batched-buildings.html" title="Batched buildings: N geometries, one material, one draw call" loading="lazy"></iframe>
-            <figcaption><code>batched-buildings.html</code> — <strong>instancing (batched)</strong>: <code>createBatchedBuildings</code> drawing 600 distinct shapes in one call; click to hide an instance via <code>setVisibleAt</code>.</figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <iframe src="demos/voxels.html" title="Voxels: greedy meshing with a triangle-count comparison" loading="lazy"></iframe>
-            <figcaption><code>voxels.html</code> — <strong>voxels</strong>: <code>VoxelChunk</code> + <code>greedyMesh</code> turning noise terrain into merged quads — the HUD shows 10–30× fewer triangles than naive meshing.</figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <iframe src="demos/architecture.html" title="Architecture: scene modules, material pool and click-to-pick ownership" loading="lazy"></iframe>
-            <figcaption><code>architecture.html</code> — <strong>architecture</strong>: <code>createSceneModule</code> + <code>MaterialPool</code> + <code>pickTopLevel</code> — toggle modules, share pooled materials, click to find a hit's owning module.</figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <iframe src="demos/glitch.html" title="Glitch: stacked RGB-shift, block-displacement and scanline passes" loading="lazy"></iframe>
-            <figcaption><code>glitch.html</code> — <strong>post (glitch)</strong>: <code>createRgbShiftPass</code> / <code>createBlockDisplacementPass</code> / <code>createScanCorruptionPass</code> stacked into layered datamosh over bloom.</figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <iframe src="demos/god-rays.html" title="God rays: screen-space volumetric light shafts" loading="lazy"></iframe>
-            <figcaption><code>god-rays.html</code> — <strong>post (god rays)</strong>: <code>createGodRaysPass</code> radial-marches toward the light's projected screen position; occluders carve the shafts.</figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <iframe src="demos/dof.html" title="Depth of field: CoC-driven blur plus chromatic aberration" loading="lazy"></iframe>
-            <figcaption><code>dof.html</code> — <strong>post (DOF + CA)</strong>: <code>createDofPass</code> sampling a real <code>DepthTexture</code> — rack the focal plane front-to-back with CoC-driven chromatic aberration.</figcaption>
-          </figure>
-        </li>
-      </ul>
+      <p>Twenty self-contained scenes — pick one from the tab bar to load it full-width below. Feature demos import the library from a local, version-pinned copy (<code>lib/dist/</code>) via importmap; three.js loads from the esm.sh CDN. No build step.</p>
+      <div class="preview-wrap">
+        <div class="tabs" role="tablist" aria-label="Demo selector"></div>
+        <div class="preview">
+          <iframe id="preview-frame" title="Live demo preview" src="demos/minimal-scene.html"></iframe>
+        </div>
+        <p class="preview-cap" id="preview-cap"></p>
+      </div>
     </section>
 
     <section id="core" aria-labelledby="core-h">
@@ -148,21 +79,11 @@
             <tr><th scope="row">createFrameLoop</th><td>Self-contained Clock-driven loop; subsystems register via <code>onFrame</code> / <code>registerUpdate</code> and share one <code>FrameContext</code>.</td></tr>
             <tr><th scope="row">bootstrapScene</th><td>Wires renderer + scene + camera + frame loop + pointer gesture + resize observer + dispose into one call.</td></tr>
             <tr><th scope="row">attachPointerGesture</th><td>Unified drag / pinch / wheel / tap layer; identical for mouse, touch and pen.</td></tr>
-            <tr><th scope="row">attachResizeObserver</th><td>Resizes the renderer and camera off the canvas parent (never <code>window.resize</code>).</td></tr>
             <tr><th scope="row">disposeScene</th><td>Recursive teardown that frees GPU memory three.js never auto-disposes.</td></tr>
             <tr><th scope="row">detectTier / getQualitySettings / QUALITY_PRESETS</th><td>Detect device tier (mobile / desktop / highEnd) to gate shadows, post-fx, particle budgets and view radius.</td></tr>
           </tbody>
         </table>
       </details>
-      <pre><code>import { bootstrapScene, disposeScene, detectTier } from 'threejs-scenes'
-
-const app = bootstrapScene({
-  canvas,
-  onSetup ({ scene, camera, loop }) {
-    // build content, register per-frame work via loop.onFrame(...)
-  },
-})
-// later: app.dispose() — or disposeScene(scene)</code></pre>
     </section>
 
     <section id="procedural" aria-labelledby="procedural-h">
@@ -175,17 +96,31 @@ const app = bootstrapScene({
           <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
           <tbody>
             <tr><th scope="row">createSeededRng</th><td>Seeded stream with <code>range</code> / <code>int</code> / <code>pick</code> and <code>fork(label)</code> for deterministic per-consumer sub-streams.</td></tr>
-            <tr><th scope="row">poissonDisk</th><td>2D Poisson-disk sampling: points with guaranteed minimum spacing, ideal for forests, asteroid fields and star scatter.</td></tr>
-            <tr><th scope="row">createNoiseTexture</th><td>Seamless tileable value-noise <code>DataTexture</code> sampled on a torus; DOM-guarded (returns null headless).</td></tr>
-            <tr><th scope="row">mulberry32 / hash2 / hash3 / lerp / smoothstep</th><td>Low-level deterministic primitives backing the RNG and noise helpers.</td></tr>
+            <tr><th scope="row">poissonDisk</th><td>2D Poisson-disk sampling: points with guaranteed minimum spacing for forests, asteroid fields and star scatter.</td></tr>
+            <tr><th scope="row">createNoiseTexture</th><td>Seamless tileable value-noise <code>DataTexture</code>; DOM-guarded (returns null headless).</td></tr>
           </tbody>
         </table>
       </details>
-      <pre><code>import { createSeededRng, poissonDisk } from 'threejs-scenes'
+    </section>
 
-const rng = createSeededRng(1337)
-const trees = rng.fork('trees')           // stable sub-stream
-const points = poissonDisk({ width: 100, height: 100, radius: 4, rng: trees })</code></pre>
+    <section id="geometry" aria-labelledby="geometry-h">
+      <h2 id="geometry-h">geometry <span class="badge">New in 1.1</span></h2>
+      <p>Programmatic mesh generation and grouping: 2D shape builders, extrusion, lathe surfaces, vertex deformers, static-batch merging, and layout helpers.</p>
+      <p class="demo-link"><a href="demos/geometry.html">Live demo — geometry.html</a></p>
+      <details>
+        <summary>Exports</summary>
+        <table>
+          <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">roundedRectShape / polygonShape / starShape / gearShape / ringShape</th><td><code>THREE.Shape</code> builders for bespoke silhouettes.</td></tr>
+            <tr><th scope="row">createExtrudedMesh / extrudeAlongPath</th><td>Extrude a shape (or 2D points) to depth with bevels, or sweep it along a 3D curve.</td></tr>
+            <tr><th scope="row">createLatheMesh</th><td>Surface of revolution from a half-profile — vases, columns, lamp bodies.</td></tr>
+            <tr><th scope="row">applyTwist / applyTaper / applyBend / displaceByNoise</th><td>In-place vertex deformers; <code>displaceByNoise</code> reuses the seeded RNG.</td></tr>
+            <tr><th scope="row">simplifyGeometry / tessellateGeometry / edgeSplit / mergeVertices</th><td>Thin wrappers over the <code>three/addons</code> modifiers + BufferGeometryUtils.</td></tr>
+            <tr><th scope="row">mergeMeshes / createGroup / layoutGrid / layoutRadial / layoutStack</th><td>Static-batch merge to cut draw calls, plus grouping and arrangement helpers.</td></tr>
+          </tbody>
+        </table>
+      </details>
     </section>
 
     <section id="camera" aria-labelledby="camera-h">
@@ -197,16 +132,11 @@ const points = poissonDisk({ width: 100, height: 100, radius: 4, rng: trees })</
         <table>
           <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
           <tbody>
-            <tr><th scope="row">createIsoCamera</th><td>Orthographic iso camera: <code>true-iso</code> (35.264° tilt) or readable game-style <code>dimetric</code> (30°).</td></tr>
-            <tr><th scope="row">resizeIsoCamera</th><td>Reframes an orthographic iso camera for a new aspect ratio.</td></tr>
-            <tr><th scope="row">createFollowCamera</th><td>Third-person follow with <code>1 - exp(-k·delta)</code> damping — consistent behaviour at any FPS.</td></tr>
+            <tr><th scope="row">createIsoCamera / resizeIsoCamera</th><td>Orthographic iso camera: <code>true-iso</code> (35.264°) or readable <code>dimetric</code> (30°).</td></tr>
+            <tr><th scope="row">createFollowCamera</th><td>Third-person follow with <code>1 − exp(−k·delta)</code> damping — consistent at any FPS.</td></tr>
           </tbody>
         </table>
       </details>
-      <pre><code>import { createIsoCamera, createFollowCamera } from 'threejs-scenes'
-
-const iso = createIsoCamera(innerWidth / innerHeight, { mode: 'dimetric' })
-const follow = createFollowCamera(camera, { target, distance: 8 })</code></pre>
     </section>
 
     <section id="instancing" aria-labelledby="instancing-h">
@@ -218,34 +148,79 @@ const follow = createFollowCamera(camera, { target, distance: 8 })</code></pre>
         <table>
           <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
           <tbody>
-            <tr><th scope="row">createInstancedField</th><td><code>InstancedMesh</code> — one geometry × N transforms for grass, trees, asteroids, prop scatter; optional custom <code>place</code> callback.</td></tr>
-            <tr><th scope="row">createBatchedBuildings</th><td><code>BatchedMesh</code> — N distinct geometries, one shared material; per-instance <code>setVisibleAt(id, bool)</code>.</td></tr>
+            <tr><th scope="row">createInstancedField</th><td><code>InstancedMesh</code> — one geometry × N transforms; optional custom <code>place</code> callback.</td></tr>
+            <tr><th scope="row">createBatchedBuildings</th><td><code>BatchedMesh</code> — N distinct geometries, one material; per-instance <code>setVisibleAt</code>.</td></tr>
           </tbody>
         </table>
       </details>
-      <pre><code>import { createInstancedField } from 'threejs-scenes'
-
-const grass = createInstancedField({ geometry, material, count: 20000, radius: 50 })
-scene.add(grass.mesh)</code></pre>
     </section>
 
     <section id="materials" aria-labelledby="materials-h">
-      <h2 id="materials-h">materials</h2>
-      <p>A reference <code>ShaderMaterial</code> composition demonstrating the standard custom-material pattern.</p>
-      <p class="demo-link"><a href="demos/shader-material.html">Live demo — shader-material.html</a></p>
+      <h2 id="materials-h">materials <span class="badge">Expanded in 1.1</span></h2>
+      <p>Common starting materials — PBR presets plus toon and matcap factories — alongside the reference holographic <code>ShaderMaterial</code>.</p>
+      <p class="demo-link"><a href="demos/materials.html">Live demo — materials.html</a> · <a href="demos/shader-material.html">shader-material.html</a></p>
       <details>
         <summary>Exports</summary>
         <table>
           <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
           <tbody>
-            <tr><th scope="row">createHolographicMaterial</th><td>Holographic <code>ShaderMaterial</code> with fresnel rim, animated scanlines and noise-driven opacity.</td></tr>
+            <tr><th scope="row">createStandardMaterial / MATERIAL_PRESETS</th><td>Tuned PBR material from a preset (<code>metal</code>, <code>gold</code>, <code>chrome</code>, <code>glass</code>, <code>plastic</code>, <code>rubber</code>, <code>matte</code>, <code>emissive</code>) plus overrides; <code>glass</code> returns a physical transmissive material.</td></tr>
+            <tr><th scope="row">createToonMaterial / createGradientToonMap</th><td>Cel-shaded <code>MeshToonMaterial</code> with a quantized gradient ramp.</td></tr>
+            <tr><th scope="row">createMatcapMaterial</th><td><code>MeshMatcapMaterial</code> from a texture or URL (DOM-guarded).</td></tr>
+            <tr><th scope="row">createHolographicMaterial</th><td>Reference <code>ShaderMaterial</code>: fresnel rim, animated scanlines, noise opacity.</td></tr>
           </tbody>
         </table>
       </details>
-      <pre><code>import { createHolographicMaterial } from 'threejs-scenes'
+    </section>
 
-const mat = createHolographicMaterial({ color: 0x6ad0ff })
-loop.onFrame(({ elapsed }) => { mat.uniforms.uTime.value = elapsed })</code></pre>
+    <section id="loaders" aria-labelledby="loaders-h">
+      <h2 id="loaders-h">loaders <span class="badge">New in 1.1</span></h2>
+      <p>Model loading: a GLTF wrapper that lazily wires the optional DRACO / KTX2 / meshopt decoders and normalizes the result, plus a format-dispatching loader with caching.</p>
+      <details>
+        <summary>Exports</summary>
+        <table>
+          <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">createGLTFLoader / loadGLTF</th><td>Configure decoders and resolve to a <code>LoadedModel</code> (<code>scene</code>, <code>animations</code>, <code>cameras</code>, <code>asset</code>).</td></tr>
+            <tr><th scope="row">loadModel / FORMAT_LOADERS</th><td>Dispatch by extension (.glb/.gltf) with a per-URL cache; used by <code>&lt;Prop src&gt;</code>.</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </section>
+
+    <section id="animation" aria-labelledby="animation-h">
+      <h2 id="animation-h">animation <span class="badge">New in 1.1</span></h2>
+      <p>An <code>AnimationMixer</code> convenience layer plus programmatic <code>AnimationClip</code> builders, so procedural props animate without an imported model.</p>
+      <p class="demo-link"><a href="demos/animation.html">Live demo — animation.html</a></p>
+      <details>
+        <summary>Exports</summary>
+        <table>
+          <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">createAnimationController</th><td>Wraps a mixer + actions with <code>play</code> / <code>crossfade</code> / <code>stop</code> / <code>tick</code>; auto-registers on a <code>FrameLoop</code> and disposes cleanly.</td></tr>
+            <tr><th scope="row">spinClip / bobClip / pulseScaleClip / combineClips</th><td>Ready-made looping clips and a combiner.</td></tr>
+            <tr><th scope="row">numberTrack / vectorTrack / quaternionTrack / trackFromKeyframes</th><td>Low-level keyframe-track constructors for custom clips.</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </section>
+
+    <section id="props" aria-labelledby="props-h">
+      <h2 id="props-h">props <span class="badge">New in 1.1</span></h2>
+      <p>A prop factory: bundle an Object3D with animation clips, embedded lights, and an instancing hint behind one declarative definition — then mount, instance, or compose them.</p>
+      <p class="demo-link"><a href="demos/props.html">Live demo — props.html</a></p>
+      <details>
+        <summary>Exports</summary>
+        <table>
+          <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">defineProp / createProp</th><td>Author a reusable prop; mount it into a live <code>PropInstance</code> with controller, lights, and one <code>dispose</code>.</td></tr>
+            <tr><th scope="row">registerProp / resolveProp</th><td>Resolve a prop from a factory, a registered name, a <code>.ts</code> module, or a model file — one async code path.</td></tr>
+            <tr><th scope="row">createInstancedProp</th><td>Instance a prop N times — single-mesh props collapse to one draw call.</td></tr>
+            <tr><th scope="row">createPropComposite</th><td>Assemble several props into one group with relative transforms and aggregate disposal.</td></tr>
+          </tbody>
+        </table>
+      </details>
     </section>
 
     <section id="lighting" aria-labelledby="lighting-h">
@@ -258,15 +233,10 @@ loop.onFrame(({ elapsed }) => { mat.uniforms.uTime.value = elapsed })</code></pr
           <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
           <tbody>
             <tr><th scope="row">setupStandardLighting</th><td>Composes environment + sun + hemisphere fill into a ready-to-use rig.</td></tr>
-            <tr><th scope="row">createSun</th><td>Directional key light with a shadow frustum tuned for mid-scale scenes.</td></tr>
-            <tr><th scope="row">createHemisphereFill</th><td>Sky/ground hemisphere light for soft ambient fill.</td></tr>
-            <tr><th scope="row">applyEnvironment</th><td>Applies an IBL environment map to the scene for PBR reflections.</td></tr>
+            <tr><th scope="row">createSun / createHemisphereFill / applyEnvironment</th><td>Shadow-tuned key light, soft fill, and an IBL environment map.</td></tr>
           </tbody>
         </table>
       </details>
-      <pre><code>import { setupStandardLighting } from 'threejs-scenes'
-
-const lights = setupStandardLighting(scene, renderer)</code></pre>
     </section>
 
     <section id="particles" aria-labelledby="particles-h">
@@ -282,11 +252,6 @@ const lights = setupStandardLighting(scene, renderer)</code></pre>
           </tbody>
         </table>
       </details>
-      <pre><code>import { createParticleEmitter } from 'threejs-scenes'
-
-const emitter = createParticleEmitter({ count: 20000 })
-scene.add(emitter.points)
-loop.onFrame(ctx => emitter.update(ctx))</code></pre>
     </section>
 
     <section id="post" aria-labelledby="post-h">
@@ -299,64 +264,20 @@ loop.onFrame(ctx => emitter.update(ctx))</code></pre>
           <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
           <tbody>
             <tr><th scope="row">createComposer</th><td>EffectComposer wired with a DepthTexture so DOF / god-rays / soft particles can sample scene depth.</td></tr>
-            <tr><th scope="row">createGradePass / GradeShader</th><td>Linear-HDR colour grade: tint, contrast, saturation, vignette, grain and corner chromatic aberration, before tone-mapping.</td></tr>
-            <tr><th scope="row">createGodRaysPass</th><td>Screen-space volumetric light shafts radiating from the light's screen position.</td></tr>
-            <tr><th scope="row">createDofPass</th><td>Depth of field + chromatic aberration in one pass, driven by the circle of confusion (needs the depth texture).</td></tr>
-            <tr><th scope="row">createFilmGrainPass</th><td>Procedural per-fragment grain (colour or luminance) with optional desaturation.</td></tr>
-            <tr><th scope="row">createRgbShiftPass / createBlockDisplacementPass / createScanCorruptionPass</th><td>Stackable glitch passes for layered datamosh.</td></tr>
-            <tr><th scope="row">createHudBeamTransition</th><td>Left→right luminous beam reveal with a midpoint callback to swap content under the beam.</td></tr>
-            <tr><th scope="row">createStereoRenderer</th><td>Anaglyph (red/cyan) or side-by-side stereo render modes (these bypass the composer).</td></tr>
+            <tr><th scope="row">createGradePass</th><td>Linear-HDR colour grade: tint, contrast, saturation, vignette, grain, corner chromatic aberration.</td></tr>
+            <tr><th scope="row">createGodRaysPass / createDofPass / createFilmGrainPass</th><td>Screen-space light shafts; CoC depth-of-field + CA; procedural grain.</td></tr>
+            <tr><th scope="row">glitch passes / createHudBeamTransition / createStereoRenderer</th><td>Stackable datamosh, a beam reveal, and anaglyph / side-by-side stereo.</td></tr>
           </tbody>
         </table>
       </details>
-      <pre><code>import { createComposer, createGradePass } from 'threejs-scenes'
-
-const composer = createComposer({ renderer, scene, camera })
-composer.addPass(createGradePass({ saturation: 1.1, vignette: 0.4 }))
-loop.onFrame(() => composer.render())</code></pre>
     </section>
 
     <section id="post-webgpu" aria-labelledby="post-webgpu-h">
       <h2 id="post-webgpu-h">post (WebGPU / TSL) <span class="badge">Experimental — requires WebGPURenderer</span></h2>
-      <p>Node-based TSL effects built on <code>three/webgpu</code> and <code>three/tsl</code>, distinct from the WebGL composer passes above. This subtree is mid-development; the listing below is documentation only and is not loaded or executed by this page.</p>
+      <p>Node-based TSL effects built on <code>three/webgpu</code> and <code>three/tsl</code>, distinct from the WebGL composer passes above. Documentation only; not loaded by this page.</p>
       <details>
-        <summary>Pipeline entry points</summary>
-        <dl>
-          <dt>createScenePass</dt><dd>Build the base scene pass.</dd>
-          <dt>createScenePassMRT</dt><dd>Scene pass exposing normal + viewZ via MRT for geometry-aware effects.</dd>
-          <dt>createPostProcessing</dt><dd>Wrap a composed output node in a <code>PostProcessing</code> instance.</dd>
-        </dl>
-      </details>
-      <details>
-        <summary>Effect factories</summary>
-        <table>
-          <thead><tr><th scope="col">Factory</th><th scope="col">Summary</th></tr></thead>
-          <tbody>
-            <tr><th scope="row">createBloom</th><td>Glow spread from bright pixels (colour-input).</td></tr>
-            <tr><th scope="row">createBloomSelective</th><td>Bloom only objects tagged via an MRT bloom-intensity channel.</td></tr>
-            <tr><th scope="row">createBloomEmissive</th><td>Bloom only the emissive contribution of PBR materials.</td></tr>
-            <tr><th scope="row">createDof / createDofBasic</th><td>Depth-of-field bokeh by distance from the focus plane (colour + viewZ).</td></tr>
-            <tr><th scope="row">createAo</th><td>GTAO contact shadows in creases (geometry-aware, needs MRT depth + normal).</td></tr>
-            <tr><th scope="row">createOutline</th><td>Edge highlight around selected objects (renders its own selection pass).</td></tr>
-            <tr><th scope="row">createGodrays</th><td>Depth-ray-marched volumetric light shafts (geometry-aware).</td></tr>
-            <tr><th scope="row">createAnamorphic</th><td>Horizontal anamorphic lens streaks from highlights.</td></tr>
-            <tr><th scope="row">createLensflare</th><td>Screen-space ghost reflections and halo from bright spots.</td></tr>
-            <tr><th scope="row">createChromaticAberration</th><td>Radial R/G/B split for lens fringing.</td></tr>
-            <tr><th scope="row">createRadialBlur</th><td>Zoom/speed blur streaking outward from a centre point.</td></tr>
-            <tr><th scope="row">createMotionBlur</th><td>Per-pixel velocity smear (needs a velocity MRT channel).</td></tr>
-            <tr><th scope="row">createAfterImage</th><td>Damped echo trail leaving motion ghosts.</td></tr>
-            <tr><th scope="row">createDifference</th><td>Boosts saturation where the frame differs from the previous one.</td></tr>
-            <tr><th scope="row">createSobel</th><td>Sobel-gradient edge detection outlines.</td></tr>
-            <tr><th scope="row">createLut</th><td>3D LUT colour grading through a loaded .cube/.3dl/.png LUT.</td></tr>
-            <tr><th scope="row">createPixelationPass</th><td>Chunky pixel rendering with optional edge outlines (a PassNode).</td></tr>
-            <tr><th scope="row">createRetroPass</th><td>PSX-style low-res render with vertex snapping and affine warping (a PassNode).</td></tr>
-            <tr><th scope="row">createFxaa</th><td>Fast-approximate anti-aliasing on the final image.</td></tr>
-            <tr><th scope="row">createSmaa</th><td>Subpixel morphological anti-aliasing (higher quality than FXAA).</td></tr>
-            <tr><th scope="row">createSsaaPass</th><td>Supersampling AA: jittered subpixel renders averaged for reference-quality edges (a PassNode).</td></tr>
-            <tr><th scope="row">createTransition</th><td>Cross-fade between two scene passes, optionally masked for wipes/dissolves.</td></tr>
-            <tr><th scope="row">createMasking</th><td>Stencil-style compositing into regions covered by helper mask scenes.</td></tr>
-          </tbody>
-        </table>
+        <summary>Effect factories (30+)</summary>
+        <p>createScenePass / createScenePassMRT, createBloom (+ selective / emissive), createDof, createAo, createOutline, createGodrays, createAnamorphic, createLensflare, createChromaticAberration, createRadialBlur, createMotionBlur, createAfterImage, createDifference, createSobel, createLut, createPixelationPass, createRetroPass, createFxaa, createSmaa, createSsaaPass, createSsr, createSsgi, createSss, createTraa, createTransition, createMasking.</p>
       </details>
     </section>
 
@@ -370,15 +291,11 @@ loop.onFrame(() => composer.render())</code></pre>
           <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
           <tbody>
             <tr><th scope="row">VoxelChunk</th><td>Flat <code>Uint16Array</code> chunk storage with bounds-checked accessors.</td></tr>
-            <tr><th scope="row">greedyMesh</th><td>Merges coplanar same-id faces into max-size rectangles — 10–30× fewer triangles than naive meshing.</td></tr>
-            <tr><th scope="row">createChunkManager</th><td>Infinite-world manager: pools Groups, recycles on movement, rebases origin to dodge float32 precision drift.</td></tr>
+            <tr><th scope="row">greedyMesh</th><td>Merges coplanar same-id faces into max-size rectangles — 10–30× fewer triangles.</td></tr>
+            <tr><th scope="row">createChunkManager</th><td>Infinite-world manager: pools Groups, recycles on movement, rebases origin against float drift.</td></tr>
           </tbody>
         </table>
       </details>
-      <pre><code>import { VoxelChunk, greedyMesh } from 'threejs-scenes'
-
-const chunk = new VoxelChunk(32)
-const geometry = greedyMesh(chunk)</code></pre>
     </section>
 
     <section id="architecture" aria-labelledby="architecture-h">
@@ -391,22 +308,29 @@ const geometry = greedyMesh(chunk)</code></pre>
           <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
           <tbody>
             <tr><th scope="row">createSceneModule</th><td>Wraps a feature as <code>{ name, build(ctx), dispose() }</code>; modules receive a <code>SceneContext</code>, never globals.</td></tr>
-            <tr><th scope="row">MaterialPool</th><td>Caches materials by key and owns disposal — modules reuse via <code>get(key, factory)</code> and never dispose pooled materials.</td></tr>
-            <tr><th scope="row">EditStack</th><td>Snapshot-based undo/redo: push before applying edits, restore atomically on failure so no partial state escapes.</td></tr>
-            <tr><th scope="row">createProceduralTexture / proceduralTextureCache</th><td>Lazy seeded <code>CanvasTexture</code> cache; DOM-guarded to degrade to flat colour headless.</td></tr>
-            <tr><th scope="row">resolveParam / resolveParams</th><td>Coerce config- or LLM-driven values: clamp, validate enums, fall back to defaults — never throw.</td></tr>
-            <tr><th scope="row">pickTopLevel</th><td>Raycast and walk up to the scene's direct child to map a hit back to its owning module.</td></tr>
+            <tr><th scope="row">MaterialPool / EditStack</th><td>Key-cached material ownership and snapshot undo/redo.</td></tr>
+            <tr><th scope="row">resolveParam / resolveParams / pickTopLevel</th><td>Never-throw config coercion and raycast-to-owning-module introspection.</td></tr>
           </tbody>
         </table>
       </details>
-      <pre><code>import { createSceneModule, MaterialPool, resolveParams } from 'threejs-scenes'
+    </section>
 
-const pool = new MaterialPool()
-const trees = createSceneModule({
-  name: 'trees',
-  build (ctx) { /* register loop work, add objects */ },
-  dispose () { /* free only what this module created */ },
-})</code></pre>
+    <section id="jsx" aria-labelledby="jsx-h">
+      <h2 id="jsx-h">jsx <span class="badge">New in 1.1</span></h2>
+      <p>A higher-level declarative layer over the library. Author scenes as elements; <code>render()</code> mounts them and drives reactivity from the main frame loop — function-valued props are accessors re-read every frame, so reconciliation <em>is</em> the render tick. Works as JSX or, with no build step, as hyperscript (<code>h</code>). Import from <code>@tuomashatakka/threejs-scenes/jsx</code>.</p>
+      <p class="demo-link"><a href="demos/jsx-scene.html">Live demo — jsx-scene.html</a></p>
+      <details>
+        <summary>Exports &amp; elements</summary>
+        <table>
+          <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">render</th><td>Bootstrap + mount a tree onto a canvas; returns <code>{ scene, renderer, loop, getCamera, dispose }</code>.</td></tr>
+            <tr><th scope="row">h / jsx / jsxs / Fragment</th><td>Element constructors — hyperscript and the transpile-target runtime.</td></tr>
+            <tr><th scope="row">signal / derived</th><td>Minimal reactivity; accessors are re-evaluated by the loop.</td></tr>
+            <tr><th scope="row">Intrinsics</th><td><code>&lt;scene&gt;</code> <code>&lt;camera&gt;</code> <code>&lt;light&gt;</code> <code>&lt;group&gt;</code> <code>&lt;mesh&gt;</code> <code>&lt;primitive&gt;</code> <code>&lt;prop&gt;</code> <code>&lt;instances&gt;</code> <code>&lt;post&gt;</code>.</td></tr>
+          </tbody>
+        </table>
+      </details>
     </section>
   </main>
 
@@ -414,13 +338,63 @@ const trees = createSceneModule({
     <p>
       <a href="https://github.com/tuomashatakka/threejs-scenes-skill">Source on GitHub</a>
       · Licensed ISC
-      · three.js loaded from the esm.sh CDN — demos run with no build step.
+      · Feature demos import a local copy of the library; three.js loads from the esm.sh CDN — no build step.
     </p>
   </footer>
 
   <script>
-    // Progressive enhancement only: highlight the nav link for the section in view.
-    // The page is fully functional and readable with JS disabled.
+    // Single-preview tab bar: one full-width iframe, scene chosen by the tabs.
+    const DEMOS = [
+      [ 'minimal-scene', 'Minimal', 'core — renderer, frame loop, pointer-orbit, ResizeObserver and an explicit dispose path.' ],
+      [ 'geometry', 'Geometry', 'geometry — extruded shapes (star, gear, rounded panel) with twist/taper deformers and noise-displaced solids, laid out in a grid.' ],
+      [ 'materials', 'Materials', 'materials — a sphere per preset: metal, gold, chrome, glass, plastic, rubber, matte, emissive, plus toon and matcap.' ],
+      [ 'props', 'Props', 'props — a defineProp crystal (mesh + light + spin/bob clips) in a composite, and a 120-tree instanced forest in one draw call.' ],
+      [ 'animation', 'Animation', 'animation — programmatic AnimationClips driven by createAnimationController; tap to crossfade spin ↔ bob+pulse.' ],
+      [ 'jsx-scene', 'JSX layer', 'jsx — a hyperscript tree rendered by the reactive layer; a signal drives a rotation accessor re-read every frame.' ],
+      [ 'instanced-field', 'Instancing', 'instancing — createInstancedField drawing thousands of seeded transforms from one geometry.' ],
+      [ 'batched-buildings', 'Batched', 'instancing — createBatchedBuildings: 600 distinct shapes in one call; click to hide an instance.' ],
+      [ 'procedural', 'Procedural', 'procedural — a forest that is a pure function of one seed: Poisson-disk scatter + seamless noise ground.' ],
+      [ 'shader-material', 'Shader', 'materials — createHolographicMaterial with fresnel rim, animated scanlines and noise opacity.' ],
+      [ 'lighting', 'Lighting', 'lighting — setupStandardLighting: toggle the IBL environment, shadow sun and hemisphere fill.' ],
+      [ 'particles', 'Particles', 'particles — createParticleEmitter, a CPU-driven billboarded particle system.' ],
+      [ 'isometric', 'Isometric', 'camera — createIsoCamera framing an instanced field of props.' ],
+      [ 'follow-camera', 'Follow cam', 'camera — createFollowCamera chasing a self-driving target with framerate-independent damping.' ],
+      [ 'post-processing', 'Post FX', 'post — the createComposer chain with bloom, colour grade and depth-sampling passes.' ],
+      [ 'glitch', 'Glitch', 'post — stacked RGB-shift, block-displacement and scan-corruption passes over bloom.' ],
+      [ 'god-rays', 'God rays', 'post — createGodRaysPass radial-marching toward the light’s projected screen position.' ],
+      [ 'dof', 'DOF + CA', 'post — createDofPass sampling a real DepthTexture with CoC-driven chromatic aberration.' ],
+      [ 'voxels', 'Voxels', 'voxels — VoxelChunk + greedyMesh turning noise terrain into merged quads.' ],
+      [ 'architecture', 'Architecture', 'architecture — createSceneModule + MaterialPool + pickTopLevel; click to find a hit’s owning module.' ],
+    ]
+
+    const tabs = document.querySelector('.tabs')
+    const frame = document.getElementById('preview-frame')
+    const cap = document.getElementById('preview-cap')
+
+    function select (i) {
+      DEMOS.forEach((d, j) => buttons[j].setAttribute('aria-selected', String(j === i)))
+      const [ slug, , caption ] = DEMOS[i]
+      if (frame.dataset.slug !== slug) {
+        frame.src = 'demos/' + slug + '.html'
+        frame.dataset.slug = slug
+      }
+      cap.textContent = caption
+    }
+
+    const buttons = DEMOS.map(([ slug, label ], i) => {
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.setAttribute('role', 'tab')
+      b.textContent = label
+      b.addEventListener('click', () => select(i))
+      tabs.appendChild(b)
+      return b
+    })
+
+    frame.dataset.slug = 'minimal-scene'
+    select(0)
+
+    // Highlight the in-view module section in the nav (progressive enhancement).
     const links = new Map(
       [...document.querySelectorAll('nav[aria-label] a')].map(a => [a.hash.slice(1), a])
     )

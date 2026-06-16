@@ -1,0 +1,1 @@
+{"version":3,"file":"quality.d.ts","sourceRoot":"","sources":["../../lib/core/quality.ts"],"names":[],"mappings":"AAIA,OAAO,KAAK,EAAE,aAAa,EAAE,eAAe,EAAE,WAAW,EAAE,MAAM,aAAa,CAAA;AAG9E,eAAO,MAAM,eAAe,EAAE,MAAM,CAAC,WAAW,EAAE,aAAa,CA4B9D,CAAA;AAED,wBAAgB,UAAU,IAAK,WAAW,CASzC;AAED,wBAAgB,kBAAkB,CAAE,IAAI,GAAE,WAA0B,GAAG,eAAe,CAErF"}

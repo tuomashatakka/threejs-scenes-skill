@@ -47,6 +47,12 @@ Load only what the current task needs. Don't read every file by default.
 | `references/code-style.md` | `@tuomashatakka/eslint-config` + Semantic Nodes style guide rules |
 | `references/anti-patterns.md` | quick scan before committing — avoid these |
 | `references/production-lessons.md` | architecting beyond a single demo — context injection, disposal ownership, determinism, draw-call budgets, headless capture (distilled from a shipping project) |
+| `references/geometry.md` | programmatic mesh generation — shapes, extrusion, lathe, vertex modifiers, merge, layout |
+| `references/materials.md` | starting materials — PBR presets, toon, matcap (+ holographic shader) |
+| `references/props-and-factories.md` | prop factory — meshes with clips/lights/instancing, registry, composites |
+| `references/animation-system.md` | AnimationMixer/AnimationClip — controller + programmatic clip builders |
+| `references/jsx-layer.md` | declarative reactive JSX layer over the lib (frame-loop driven) |
+| `references/library-local.md` | importing the bundled local lib via importmap; subpath entry points |
 
 **Minimal scene:** `core-principles.md` + `project-architecture.md` + `camera-handling.md`.
 **Isometric game:** add `isometric-and-infinite-scenes.md` + `instancing.md` + `billboards.md`.
@@ -54,6 +60,8 @@ Load only what the current task needs. Don't read every file by default.
 **Stylized post-fx:** add `post-processing.md` + `shaders.md`.
 **LLM-driven content:** add `prompt-handling-flow.md` + `llm-function-definitions.md`.
 **Multi-module / shipping scene:** always read `production-lessons.md` first.
+**Mesh / material / prop authoring:** `geometry.md` + `materials.md` + `props-and-factories.md`.
+**Animation:** `animation-system.md`. **Declarative scenes:** `jsx-layer.md` + `library-local.md`.
 
 ## Scripts Index
 
@@ -64,6 +72,11 @@ script to its reference section and a one-line summary.
 When asked to build something covered by a script, read the script directly rather
 than re-deriving the code. Adapt the function signatures and options to the user's
 specific request — the scripts are templates, not black boxes.
+
+The 1.1 scripts (`extruded-mesh.js`, `geometry-modifiers.js`, `material-presets.js`,
+`prop-factory.js`, `prop-composite.js`, `animation-controller.js`, `gltf-prop.js`,
+`jsx-scene.js`) import the **local library** (`@tuomashatakka/threejs-scenes`)
+rather than inlining helpers — see **Using the Local Library** below.
 
 ## Runnable Templates
 
@@ -85,9 +98,65 @@ For multi-module projects, graduate to the `scripts/` modules + an importmap.
 | `templates/post-processing.html` | `EffectComposer`: `RenderPass → UnrealBloom → grade(ShaderPass) → OutputPass`; grade in linear HDR, tone-map once. |
 | `templates/isometric.html` | Orthographic true-iso camera + instanced height-grid terrain (value-noise) + pan/zoom. |
 | `templates/particles.html` | GC-proof instanced emitter — 20k particles, deterministic phase math, zero per-frame allocation. |
+| `templates/geometry.html` | Library demo — extrusion + vertex modifiers + grid layout via the local lib (`@scenes`). |
+| `templates/materials.html` | Library demo — PBR / toon / matcap presets. |
+| `templates/props.html` | Library demo — `defineProp` crystal (mesh + light + clips) + instanced forest + composite. |
+| `templates/animation.html` | Library demo — `createAnimationController` + programmatic clips; tap to crossfade. |
+| `templates/jsx-scene.html` | Library demo — reactive JSX/hyperscript layer; a signal drives a per-frame rotation. |
+
+The first six templates are self-contained (inlined helpers, esm.sh `three`). The
+five **library-backed** templates (`geometry`, `materials`, `props`, `animation`,
+`jsx-scene`) instead import a **local copy of the lib** via importmap (`@scenes` →
+`./lib/dist/index.js`, `@scenes/jsx` → `.../jsx/index.js`, `three` from esm.sh) —
+see `references/library-local.md`. The skill ships that copy under `lib/dist/`;
+rebuild it with `bun run copy:lib`.
 
 These templates encode the patterns in `references/production-lessons.md` — read
 that doc when adapting them into anything multi-module.
+
+## Using the Local Library
+
+For multi-module scenes prefer importing the bundled library over copy-pasting
+scripts. The skill ships a local, version-pinned copy at `lib/dist/` (mirrored to
+the showcase at `public/lib/dist/`; regenerate with `bun run copy:lib`). Import it
+through an importmap so artifacts stay self-contained:
+
+```html
+<script type="importmap">
+{
+  "imports": {
+    "three":         "https://esm.sh/three@0.184.0",
+    "three/addons/": "https://esm.sh/three@0.184.0/examples/jsm/",
+    "@scenes":       "./lib/dist/index.js",
+    "@scenes/jsx":   "./lib/dist/jsx/index.js"
+  }
+}
+</script>
+<script type="module">
+  import { bootstrapScene, createExtrudedMesh, createStandardMaterial } from '@scenes'
+  import { render, h, signal } from '@scenes/jsx'
+</script>
+```
+
+Subpath entry points: `@tuomashatakka/threejs-scenes/{core,camera,geometry,
+materials,loaders,animation,props,instancing,lighting,particles,post,post/webgpu,
+procedural,voxels,architecture,jsx}`. New in 1.1: **geometry** (extrusion, vertex
+modifiers, merge/layout), **materials** presets (PBR/toon/matcap), **loaders**
+(GLTF + DRACO/KTX2/meshopt), **animation** (AnimationMixer controller + programmatic
+clips), **props** (`defineProp` / composites / instancing), and the reactive **jsx**
+layer. See `references/library-local.md`, `geometry.md`, `materials.md`,
+`props-and-factories.md`, `animation-system.md`, and `jsx-layer.md`.
+
+### JSX layer (declarative, reactive)
+
+`@scenes/jsx` is a higher-level layer over the factories — author a scene as
+elements and `render(tree, { canvas })` mounts it, driving reactivity from the
+**main frame loop**: a function-valued prop is an accessor re-read every frame,
+plain values apply once. Use hyperscript `h(...)` for a no-build artifact, or JSX
+with `jsxImportSource: "@tuomashatakka/threejs-scenes/jsx"`. Intrinsics: `<scene>`,
+`<camera type=perspective|iso|follow>`, `<light type=spot|point|directional|ambient|
+hemisphere>`, `<group>`, `<mesh>`, `<primitive>`, `<prop src=…>` (factory / `.ts`
+module / model file), `<instances>`, `<post>`. See `references/jsx-layer.md`.
 
 ## Embedding Scripts in Live Artifacts
 

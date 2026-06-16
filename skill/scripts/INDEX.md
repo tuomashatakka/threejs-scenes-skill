@@ -36,6 +36,8 @@ section "Embedding Scripts in Live Artifacts".
 | Script | Purpose | Reference |
 |--------|---------|-----------|
 | `procedural-crystal-geometry.js` | Programmatic geometry — crystal-shard cluster. Template for any procedural BufferGeometry. | `programmatic-generation.md` |
+| `extruded-mesh.js` | Extruded shapes (star/gear/panel) + a lathe vase via `createExtrudedMesh` / `createLatheMesh`. | `geometry.md` |
+| `geometry-modifiers.js` | Vertex deformers (`applyTwist`, `displaceByNoise`) + static-batch `mergeMeshes`. | `geometry.md` |
 | `instancing-grass.js` | `InstancedMesh` field — 1 draw call for N copies of one geometry. | `instancing.md` |
 | `batched-buildings.js` | `BatchedMesh` — 1 draw call for N varied geometries sharing one material. | `instancing.md` |
 | `poisson-disk.js` | Poisson disk 2D sampling for natural placement (forests, asteroids). | `programmatic-generation.md` |
@@ -64,7 +66,23 @@ section "Embedding Scripts in Live Artifacts".
 
 | Script | Purpose | Reference |
 |--------|---------|-----------|
+| `material-presets.js` | PBR presets (`createStandardMaterial`) + toon + matcap factories. | `materials.md` |
 | `holographic-material.js` | Example `ShaderMaterial` with fresnel rim, scanlines, animated noise. Template for any custom shader. | `shaders.md` |
+
+## Props & Animation
+
+| Script | Purpose | Reference |
+|--------|---------|-----------|
+| `prop-factory.js` | `defineProp` (mesh + light + clips) + `createProp` + `createInstancedProp`. | `props-and-factories.md` |
+| `prop-composite.js` | Assemble props into one group with relative transforms via `createPropComposite`. | `props-and-factories.md` |
+| `animation-controller.js` | `createAnimationController` + programmatic clips; crossfade on the frame loop. | `animation-system.md` |
+| `gltf-prop.js` | `loadGLTF` a model and play its baked `AnimationClip`s through the loop. | `animation-system.md` |
+
+## JSX Layer
+
+| Script | Purpose | Reference |
+|--------|---------|-----------|
+| `jsx-scene.js` | Reactive `render()` + `h()` + `signal()`; a signal drives a rotation accessor re-read each frame. | `jsx-layer.md` |
 
 ## Lighting
 

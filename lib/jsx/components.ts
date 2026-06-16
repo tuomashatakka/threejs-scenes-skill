@@ -74,8 +74,10 @@ function createLight (type: string): THREE.Light {
 }
 
 function lightHost (props: Record<string, unknown>): Host {
-  const light      = createLight(String(props.type ?? 'point'))
-  light.castShadow = true
+  const light = createLight(String(props.type ?? 'point'))
+  // ambient/hemisphere lights have no shadow camera — enabling castShadow on
+  // them spams "<light> has no shadow" every frame.
+  light.castShadow = 'shadow' in light
   return {
     object:    light,
     container: light,

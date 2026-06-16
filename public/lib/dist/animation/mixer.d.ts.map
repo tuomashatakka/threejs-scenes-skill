@@ -1,0 +1,1 @@
+{"version":3,"file":"mixer.d.ts","sourceRoot":"","sources":["../../lib/animation/mixer.ts"],"names":[],"mappings":"AAOA,OAAO,KAAK,KAAK,MAAM,OAAO,CAAA;AAE9B,OAAO,KAAK,EAAE,mBAAmB,EAAgB,SAAS,EAAe,MAAM,aAAa,CAAA;AAG5F,wBAAgB,yBAAyB,CACvC,IAAI,EAAE,KAAK,CAAC,QAAQ,EACpB,KAAK,GAAE,KAAK,CAAC,aAAa,EAAO,EACjC,IAAI,CAAC,EAAE,SAAS,GACf,mBAAmB,CA0DrB"}

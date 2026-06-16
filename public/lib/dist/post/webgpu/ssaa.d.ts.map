@@ -1,0 +1,1 @@
+{"version":3,"file":"ssaa.d.ts","sourceRoot":"","sources":["../../../lib/post/webgpu/ssaa.ts"],"names":[],"mappings":"AAMA,OAAO,KAAK,KAAK,MAAM,OAAO,CAAA;AAI9B,MAAM,WAAW,WAAW;IAE1B,WAAW,CAAC,EAAE,MAAM,CAAA;IAEpB,QAAQ,CAAC,EAAK,OAAO,CAAA;CACtB;AAED,wBAAgB,cAAc,CAAE,KAAK,EAAE,KAAK,CAAC,KAAK,EAAE,MAAM,EAAE,KAAK,CAAC,MAAM,EAAE,OAAO,GAAE,WAAgB,8DAOlG"}

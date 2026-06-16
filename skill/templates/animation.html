@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Animation — threejs-scenes</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0a0a14; overflow: hidden; }
+    canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+    .hint { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+      font: 13px/1.4 system-ui, sans-serif; color: #9fb0c8; background: rgba(10,12,22,.6);
+      padding: 6px 12px; border-radius: 8px; pointer-events: none; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://esm.sh/three@0.184.0",
+      "three/addons/": "https://esm.sh/three@0.184.0/examples/jsm/",
+      "@scenes": "../lib/dist/index.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="app"></canvas>
+  <div class="hint">tap to crossfade spin &harr; bob</div>
+  <script type="module">
+    import * as THREE from 'three'
+    import {
+      bootstrapScene, createStandardMaterial, createAnimationController,
+      spinClip, bobClip, pulseScaleClip, combineClips,
+    } from '@scenes'
+
+    const canvas = document.getElementById('app')
+
+    bootstrapScene({
+      canvas,
+      onSetup ({ scene, loop }) {
+        const mesh = new THREE.Mesh(
+          new THREE.TorusKnotGeometry(0.7, 0.25, 120, 24),
+          createStandardMaterial('gold'),
+        )
+        mesh.castShadow = true
+        scene.add(mesh)
+
+        // programmatic clips, wired into the loop via the controller
+        const spin = spinClip('y', 4)
+        const bob  = combineClips('bob', [ bobClip(0.4, 2), pulseScaleClip(0.9, 1.1, 2) ])
+        const ctrl = createAnimationController(mesh, [ spin, bob ], loop)
+        ctrl.play('spin', { loop: THREE.LoopRepeat })
+
+        let current = 'spin'
+        canvas.addEventListener('pointerup', () => {
+          const next = current === 'spin' ? 'bob' : 'spin'
+          ctrl.crossfade(current, next, 0.6)
+          current = next
+        })
+      },
+    })
+  </script>
+</body>
+</html>
