@@ -1,6 +1,9 @@
 {
-  "name": "threejs-scenes",
+  "name": "@tuomashatakka/threejs-scenes",
   "version": "1.0.0",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "description": "Strictly-typed factories and interfaces for building production-quality vanilla three.js (WebGL2) scenes: renderer/loop/dispose scaffolding, cameras, instancing, shaders, lighting, particles, post-processing, voxels, infinite worlds, and the context-injection module architecture distilled from a shipping project.",
   "type": "module",
   "main": "./dist/index.js",
