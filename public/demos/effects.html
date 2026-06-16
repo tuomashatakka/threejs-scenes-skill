@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<!--
+  effects.html — interactive post-processing playground
+  ────────────────────────────────────────────────────────────────────────────
+  Self-contained. Open directly in a browser (loads `three` + the local @scenes
+  build from CDN/relative paths). Two tabbed engines:
+
+    • WebGL  — EffectComposer + ShaderPass factories from `@scenes` (lib/post).
+               Reorder = rebuild the linear `composer.passes` array.
+    • WebGPU — TSL node effects from `@scenes/post/webgpu`. Reorder = recompose
+               the `PostProcessing.outputNode` expression tree.
+
+  Every effect has an enable checkbox, a drag handle (native HTML DnD reorders an
+  in-memory order[] array) and per-effect sliders. Depth-sampling WebGL passes
+  (DOF, god-rays) read a dedicated render target's DepthTexture kept OUT of the
+  composer ping-pong — see dof.html for why that avoids a feedback loop.
+
+  Out of scope (don't fit a single-scene reorderable colour chain): WebGL
+  stereoscopy (wraps the renderer); WebGPU ssr (bespoke metalrough MRT),
+  pixelation/retro/ssaa (scene-pass replacements), outline/masking/transition
+  (selection or multi-scene). HUD-beam is a one-shot transition → "Play" button.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>three.js · effects playground</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #06070d; overflow: hidden;
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace; color: #cfe0ff }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+
+    aside { position: fixed; top: 12px; left: 12px; width: 268px; max-height: calc(100% - 24px);
+      display: flex; flex-direction: column; gap: 8px; padding: 10px 12px;
+      background: rgba(8, 10, 16, 0.78); border: 1px solid #2a3450; border-radius: 8px;
+      font-size: 12px; line-height: 1.5; backdrop-filter: blur(8px); overflow: hidden }
+    .title { font-weight: 600; color: #9fbfff; letter-spacing: 0.02em }
+    .engines { display: flex; gap: 4px }
+    .engines button { flex: 1; padding: 5px 0; background: #131a2c; color: #8fa6cf;
+      border: 1px solid #2a3450; border-radius: 5px; cursor: pointer; font: inherit }
+    .engines button[aria-selected="true"] { background: #1d3b66; color: #cfe6ff; border-color: #3f6db0 }
+    .engines button:disabled { opacity: 0.4; cursor: not-allowed }
+    .hint { color: #6f80a8; font-size: 11px }
+
+    .list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1 }
+    .fx { border: 1px solid #232c44; border-radius: 6px; margin-bottom: 6px; background: #0d1322 }
+    .fx.dragover { border-color: #4f86d6 }
+    .fx-head { display: flex; align-items: center; gap: 7px; padding: 6px 8px; cursor: grab }
+    .fx-head .grip { color: #50607f; cursor: grab; user-select: none }
+    .fx-head label { display: flex; align-items: center; gap: 6px; flex: 1; cursor: pointer }
+    .fx-head .name { flex: 1 }
+    .fx-head .idx { color: #50607f; font-size: 10px }
+    .fx.off { opacity: 0.5 }
+    .fx-body { padding: 0 8px 8px 24px; display: none }
+    .fx.open .fx-body { display: block }
+    .row { display: flex; align-items: center; gap: 6px; margin: 3px 0 }
+    .row span { width: 78px; color: #8fa6cf; font-size: 11px }
+    .row input[type=range] { flex: 1 }
+    .row b { width: 36px; text-align: right; color: #9fbfff; font-size: 11px }
+    .fx button.play { font: inherit; font-size: 11px; padding: 3px 8px; color: #79f7ff;
+      background: #10202a; border: 1px solid #1d4450; border-radius: 4px; cursor: pointer }
+    .scope { color: #6f80a8; font-size: 10px; padding-top: 4px; border-top: 1px solid #1a2236 }
+    .notice { color: #ffb38a }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three":          "https://esm.sh/three@0.184.0",
+      "three/addons/":  "https://esm.sh/three@0.184.0/addons/",
+      "three/webgpu":   "https://esm.sh/three@0.184.0/webgpu",
+      "three/tsl":      "https://esm.sh/three@0.184.0/tsl",
+      "@scenes":        "../lib/dist/index.js",
+      "@scenes/post/webgpu": "../lib/dist/post/webgpu/index.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <main><canvas id="scene"></canvas></main>
+  <aside>
+    <div class="title">post-processing playground</div>
+    <div class="engines">
+      <button id="eng-webgl"  aria-selected="true">WebGL</button>
+      <button id="eng-webgpu">WebGPU</button>
+    </div>
+    <div class="hint" id="hint">drag to reorder · click name for sliders</div>
+    <ul class="list" id="list"></ul>
+    <div class="scope" id="scope"></div>
+  </aside>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+
+    let canvas = document.querySelector('#scene')
+    const listEl = document.querySelector('#list')
+    const scopeEl = document.querySelector('#scope')
+    const hintEl = document.querySelector('#hint')
+
+    const NEAR = 0.1, FAR = 160
+
+    // ── shared subject scene ──────────────────────────────────────────────────
+    // A diagonal row of torus-knots receding in depth makes DOF / bloom / god-rays
+    // legible. Built fresh into whichever engine's renderer is active. Returns a
+    // handle exposing the bits the effects need (camera, key light, animated set).
+    function buildSubject () {
+      const scene = new THREE.Scene()
+      scene.background = new THREE.Color('#06070d')
+      const camera = new THREE.PerspectiveCamera(45, 1, NEAR, FAR)
+
+      const light = new THREE.DirectionalLight('#fff5e0', 2.4)
+      light.position.set(6, 10, 8)
+      scene.add(light)
+      scene.add(new THREE.HemisphereLight('#9fc0ff', '#101018', 0.4))
+
+      const geo = new THREE.TorusKnotGeometry(0.7, 0.26, 120, 18)
+      const spin = []
+      for (let i = 0; i < 14; i++) {
+        const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+          color: new THREE.Color().setHSL(i / 14, 0.62, 0.55),
+          roughness: 0.28, metalness: 0.35,
+          emissive: new THREE.Color().setHSL(i / 14, 0.7, 0.5), emissiveIntensity: 0.18,
+        }))
+        m.position.set((i - 6.5) * 1.6, 0.5, -(i - 6.5) * 2.6)
+        scene.add(m); spin.push(m)
+      }
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(160, 160),
+        new THREE.MeshStandardMaterial({ color: '#0c1018', roughness: 0.92 }))
+      floor.rotation.x = -Math.PI / 2; floor.position.y = -0.9; scene.add(floor)
+
+      return { scene, camera, light, spin, geo, dispose () {
+        geo.dispose(); floor.geometry.dispose(); floor.material.dispose()
+        spin.forEach(m => m.material.dispose())
+      } }
+    }
+
+    // ── orbit (pointer + wheel + pinch), framerate-independent ───────────────
+    function attachOrbit (canvas, camera) {
+      const orbit = { theta: 0.35, phi: 0.25, radius: 26 }
+      const apply = () => {
+        const r = orbit.radius * Math.cos(orbit.phi)
+        camera.position.set(Math.sin(orbit.theta) * r, Math.sin(orbit.phi) * orbit.radius + 1.5, Math.cos(orbit.theta) * r)
+        camera.lookAt(0, 0.5, 0)
+      }
+      apply()
+      const pts = new Map(); let lastPinch = 0
+      const down = e => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
+        if (pts.size === 2) { const [a, b] = [...pts.values()]; lastPinch = Math.hypot(a.x - b.x, a.y - b.y) } }
+      const move = e => { const p = pts.get(e.pointerId); if (!p) return
+        const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY
+        if (pts.size === 1) { orbit.theta -= dx * 0.005; orbit.phi = Math.max(0.02, Math.min(0.9, orbit.phi + dy * 0.005)); apply() }
+        else if (pts.size === 2) { const [a, b] = [...pts.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y)
+          if (lastPinch > 0) { orbit.radius = Math.max(12, Math.min(60, orbit.radius / (d / lastPinch))); apply() } lastPinch = d } }
+      const up = e => { pts.delete(e.pointerId); if (pts.size < 2) lastPinch = 0 }
+      canvas.addEventListener('pointerdown', down); canvas.addEventListener('pointermove', move)
+      canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up)
+      const wheel = e => { e.preventDefault(); orbit.radius = Math.max(12, Math.min(60, orbit.radius * (1 + e.deltaY * 0.001))); apply() }
+      canvas.addEventListener('wheel', wheel, { passive: false })
+      return () => {
+        canvas.removeEventListener('pointerdown', down); canvas.removeEventListener('pointermove', move)
+        canvas.removeEventListener('pointerup', up); canvas.removeEventListener('pointercancel', up)
+        canvas.removeEventListener('wheel', wheel)
+      }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    //  WebGL engine — imperative EffectComposer pass chain
+    // ════════════════════════════════════════════════════════════════════════
+    async function createWebGLEngine (canvas) {
+      const { EffectComposer } = await import('three/addons/postprocessing/EffectComposer.js')
+      const { RenderPass } = await import('three/addons/postprocessing/RenderPass.js')
+      const { TexturePass } = await import('three/addons/postprocessing/TexturePass.js')
+      const { OutputPass } = await import('three/addons/postprocessing/OutputPass.js')
+      const { UnrealBloomPass } = await import('three/addons/postprocessing/UnrealBloomPass.js')
+      const scenes = await import('@scenes')
+
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+      renderer.outputColorSpace = THREE.SRGBColorSpace
+
+      const subject = buildSubject()
+      const { scene, camera, light } = subject
+      const pmrem = new THREE.PMREMGenerator(renderer)
+      const env = new RoomEnvironment()
+      scene.environment = pmrem.fromScene(env, 0.04).texture
+      scene.environmentIntensity = 0.65
+      pmrem.dispose(); env.traverse(o => o.geometry?.dispose())
+      const detachOrbit = attachOrbit(canvas, camera)
+
+      let w = canvas.clientWidth, h = canvas.clientHeight
+      // Dedicated colour+depth target kept OUT of the composer ping-pong, so DOF /
+      // god-rays sample depth read-only (see dof.html). Composer base = a copy.
+      const makeRT = (ww, hh) => {
+        const depthTexture = new THREE.DepthTexture(ww, hh); depthTexture.type = THREE.UnsignedIntType
+        return new THREE.WebGLRenderTarget(ww, hh, { depthTexture, depthBuffer: true })
+      }
+      let sceneRT = makeRT(w, h)
+      const composer = new EffectComposer(renderer)
+      const basePass = new TexturePass(sceneRT.texture)
+      const outputPass = new OutputPass()
+
+      // Effect registry — instances created lazily, toggled via `enabled` + order[].
+      const reg = [
+        { id: 'bloom', label: 'Bloom', make: () => new UnrealBloomPass(new THREE.Vector2(w, h), 0.8, 0.5, 0.82),
+          sliders: [
+            ['strength', 'strength', 0, 3, 0.01, p => p.strength, (p, v) => p.strength = v],
+            ['radius', 'radius', 0, 1, 0.01, p => p.radius, (p, v) => p.radius = v],
+            ['threshold', 'threshold', 0, 1, 0.01, p => p.threshold, (p, v) => p.threshold = v],
+          ] },
+        { id: 'grade', label: 'Colour grade', make: () => scenes.createGradePass({}),
+          frame: (p, t) => p.setTime(t),
+          sliders: [
+            ['uContrast', 'contrast', 0.5, 2, 0.01, p => p.uniforms.uContrast.value, (p, v) => p.uniforms.uContrast.value = v],
+            ['uSaturation', 'saturation', 0, 2, 0.01, p => p.uniforms.uSaturation.value, (p, v) => p.uniforms.uSaturation.value = v],
+            ['uVignette', 'vignette', 0, 1, 0.01, p => p.uniforms.uVignette.value, (p, v) => p.uniforms.uVignette.value = v],
+            ['uGrain', 'grain', 0, 0.3, 0.005, p => p.uniforms.uGrain.value, (p, v) => p.uniforms.uGrain.value = v],
+            ['uChromatic', 'chromatic', 0, 3, 0.01, p => p.uniforms.uChromatic.value, (p, v) => p.uniforms.uChromatic.value = v],
+          ] },
+        { id: 'dof', label: 'DOF + CA', depth: true, make: () => {
+            const p = scenes.createDofPass({ focalDistance: 16, focalRange: 6, maxBlur: 0.018, caStrength: 0.6, near: NEAR, far: FAR })
+            p.uniforms.tDepth.value = sceneRT.depthTexture; return p
+          },
+          frame: p => p.setAspect(w / h),
+          sliders: [
+            ['uFocalDistance', 'focal dist', 2, 50, 0.5, p => p.uniforms.uFocalDistance.value, (p, v) => p.uniforms.uFocalDistance.value = v],
+            ['uFocalRange', 'focal range', 0.5, 20, 0.5, p => p.uniforms.uFocalRange.value, (p, v) => p.uniforms.uFocalRange.value = v],
+            ['uMaxBlur', 'max blur', 0, 0.04, 0.001, p => p.uniforms.uMaxBlur.value, (p, v) => p.uniforms.uMaxBlur.value = v],
+            ['uCAStrength', 'CA', 0, 2, 0.01, p => p.uniforms.uCAStrength.value, (p, v) => p.uniforms.uCAStrength.value = v],
+          ] },
+        { id: 'grain', label: 'Film grain', make: () => scenes.createFilmGrainPass({}),
+          sliders: [
+            ['uIntensity', 'intensity', 0, 0.3, 0.005, p => p.uniforms.uIntensity.value, (p, v) => p.uniforms.uIntensity.value = v],
+            ['uLuma', 'luma mix', 0, 1, 0.01, p => p.uniforms.uLuma.value, (p, v) => p.uniforms.uLuma.value = v],
+            ['uDesat', 'desat', 0, 1, 0.01, p => p.uniforms.uDesat.value, (p, v) => p.uniforms.uDesat.value = v],
+          ] },
+        { id: 'rgbshift', label: 'Glitch · RGB shift', make: () => scenes.createRgbShiftPass(), time: true,
+          sliders: [
+            ['uIntensity', 'intensity', 0, 2, 0.01, p => p.uniforms.uIntensity.value, (p, v) => p.uniforms.uIntensity.value = v],
+            ['uAngle', 'angle', 0, 6.28, 0.01, p => p.uniforms.uAngle.value, (p, v) => p.uniforms.uAngle.value = v],
+          ] },
+        { id: 'block', label: 'Glitch · block', make: () => scenes.createBlockDisplacementPass(), time: true,
+          sliders: [
+            ['uIntensity', 'intensity', 0, 2, 0.01, p => p.uniforms.uIntensity.value, (p, v) => p.uniforms.uIntensity.value = v],
+            ['uBlockSize', 'block size', 4, 96, 1, p => p.uniforms.uBlockSize.value, (p, v) => p.uniforms.uBlockSize.value = v],
+          ] },
+        { id: 'scan', label: 'Glitch · scan', make: () => scenes.createScanCorruptionPass(), time: true,
+          sliders: [['uIntensity', 'intensity', 0, 2, 0.01, p => p.uniforms.uIntensity.value, (p, v) => p.uniforms.uIntensity.value = v]] },
+        { id: 'godrays', label: 'God rays', make: () => scenes.createGodRaysPass(),
+          frame: p => p.updateFromLight(light.position, camera),
+          sliders: [
+            ['uExposure', 'exposure', 0, 0.6, 0.005, p => p.uniforms.uExposure.value, (p, v) => p.uniforms.uExposure.value = v],
+            ['uDecay', 'decay', 0.8, 1, 0.001, p => p.uniforms.uDecay.value, (p, v) => p.uniforms.uDecay.value = v],
+            ['uDensity', 'density', 0, 1.5, 0.01, p => p.uniforms.uDensity.value, (p, v) => p.uniforms.uDensity.value = v],
+            ['uWeight', 'weight', 0, 1, 0.01, p => p.uniforms.uWeight.value, (p, v) => p.uniforms.uWeight.value = v],
+            ['uSamples', 'samples', 10, 100, 1, p => p.uniforms.uSamples.value, (p, v) => p.uniforms.uSamples.value = v],
+          ] },
+        { id: 'hudbeam', label: 'HUD beam (transition)', trigger: true, make: () => scenes.createHudBeamTransition({ duration: 1.0 }),
+          sliders: [] },
+      ]
+
+      // Eagerly create every pass so sliders bind to live uniforms from the start
+      // and make()'s initial values are the single source of truth. instances holds
+      // the raw make() result (the hudbeam handle for the trigger entry).
+      const instances = new Map()
+      for (const e of reg) instances.set(e.id, e.make())
+      const passOf = e => e.trigger ? instances.get(e.id).pass : instances.get(e.id)
+      // passFor: the object whose uniforms sliders mutate (always the ShaderPass).
+      const passFor = id => { const m = instances.get(id); return m && m.pass && reg.find(r => r.id === id)?.trigger ? m.pass : m }
+
+      function rebuild (order) {
+        const mids = order.filter(e => e.enabled).map(e => { const p = passOf(e); p.enabled = true; return p })
+        composer.passes = [basePass, ...mids, outputPass]
+      }
+
+      function setSize () {
+        w = canvas.clientWidth; h = canvas.clientHeight
+        renderer.setSize(w, h, false); composer.setSize(w, h); sceneRT.setSize(w, h)
+        camera.aspect = w / h; camera.updateProjectionMatrix()
+        const bloom = instances.get('bloom'); if (bloom) bloom.setSize(w, h)
+      }
+      const ro = new ResizeObserver(setSize); ro.observe(canvas.parentElement); setSize()
+
+      const clock = new THREE.Clock()
+      let raf = 0
+      function tick (order) {
+        const dt = clock.getDelta(), t = clock.elapsedTime
+        subject.spin.forEach(m => { m.rotation.x += dt * 0.3; m.rotation.y += dt * 0.4 })
+        for (const e of order) {
+          if (!e.enabled) continue
+          const made = instances.get(e.id); if (!made) continue
+          if (e.time) made.uniforms.uTime.value = t
+          if (e.frame) e.frame(made, t)
+          if (e.trigger) made.tick(dt, t)
+        }
+        renderer.setRenderTarget(sceneRT); renderer.render(scene, camera); renderer.setRenderTarget(null)
+        composer.render()
+      }
+
+      return {
+        reg, kind: 'webgl', passFor,
+        start (order, getOrder) { const loop = () => { tick(getOrder()); raf = requestAnimationFrame(loop) }; loop(); rebuild(order) },
+        rebuild,
+        // HUD beam fires on demand rather than as a steady pass.
+        fire (id) { const m = instances.get(id); if (m && m.play) { m.pass.enabled = true; m.play() } },
+        setSize,
+        dispose () {
+          cancelAnimationFrame(raf); ro.disconnect(); detachOrbit()
+          composer.dispose(); sceneRT.dispose(); subject.dispose()
+          scene.environment?.dispose?.(); renderer.dispose()
+        },
+      }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    //  WebGPU engine — declarative TSL node graph
+    // ════════════════════════════════════════════════════════════════════════
+    async function createWebGPUEngine (canvas) {
+      const { WebGPURenderer, PostProcessing } = await import('three/webgpu')
+      const { pass, mrt, output, normalView, velocity } = await import('three/tsl')
+      const fx = await import('@scenes/post/webgpu')
+
+      const renderer = new WebGPURenderer({ canvas, antialias: true })
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+      await renderer.init()
+
+      const subject = buildSubject()
+      const { scene, camera, light } = subject
+      const detachOrbit = attachOrbit(canvas, camera)
+      const pp = new PostProcessing(renderer)
+
+      // Effect registry. `apply(node, ctx)` returns the new colour node. Each is
+      // wrapped in try/catch at rebuild time so a mis-wired effect self-disables.
+      const reg = [
+        { id: 'bloom', label: 'Bloom', o: { strength: 1, radius: 0.4, threshold: 0.8 },
+          apply: (n, c, o) => n.add(fx.createBloom(n, o)),
+          sliders: [['strength', 'strength', 0, 3, 0.01], ['radius', 'radius', 0, 1, 0.01], ['threshold', 'threshold', 0, 1, 0.01]] },
+        { id: 'ca', label: 'Chromatic aberration', o: { strength: 1, scale: 1.2 },
+          apply: (n, c, o) => fx.createChromaticAberration(n, o),
+          sliders: [['strength', 'strength', 0, 4, 0.01], ['scale', 'scale', 0.5, 3, 0.01]] },
+        { id: 'dof', label: 'Depth of field', o: { focusDistance: 14, focalLength: 1.2, bokehScale: 2 },
+          apply: (n, c, o) => fx.createDof(n, c.viewZ, o),
+          sliders: [['focusDistance', 'focus', 2, 50, 0.5], ['focalLength', 'focal len', 0.2, 4, 0.05], ['bokehScale', 'bokeh', 0, 6, 0.1]] },
+        { id: 'radial', label: 'Radial blur', o: { weight: 0.9, decay: 0.95, exposure: 5, count: 32 },
+          apply: (n, c, o) => fx.createRadialBlur(n, o),
+          sliders: [['weight', 'weight', 0, 2, 0.01], ['decay', 'decay', 0.8, 1, 0.001], ['exposure', 'exposure', 0, 12, 0.5], ['count', 'samples', 8, 64, 1]] },
+        { id: 'afterimage', label: 'After-image trail', o: { damp: 0.85 },
+          apply: (n, c, o) => fx.createAfterImage(n, o),
+          sliders: [['damp', 'damp', 0, 0.98, 0.01]] },
+        { id: 'anamorphic', label: 'Anamorphic flare', o: { threshold: 1.2, scale: 5, samples: 32 },
+          apply: (n, c, o) => fx.createAnamorphic(n, o),
+          sliders: [['threshold', 'threshold', 0, 3, 0.05], ['scale', 'stretch', 1, 12, 0.5], ['samples', 'samples', 8, 64, 1]] },
+        { id: 'lensflare', label: 'Lens flare ghosts', o: { threshold: 0.6, ghostSamples: 4, ghostSpacing: 0.3 },
+          apply: (n, c, o) => fx.createLensflare(n, o),
+          sliders: [['threshold', 'threshold', 0, 1.5, 0.02], ['ghostSamples', 'ghosts', 1, 8, 1], ['ghostSpacing', 'spacing', 0.05, 1, 0.01]] },
+        { id: 'godrays', label: 'God rays (raymarched)', o: { density: 1, maxDensity: 0.5, distanceAttenuation: 0.6 },
+          apply: (n, c, o) => n.add(fx.createGodrays(c.depth, c.camera, c.light, o)),
+          sliders: [['density', 'density', 0, 2, 0.01], ['maxDensity', 'max', 0, 1, 0.01], ['distanceAttenuation', 'falloff', 0, 2, 0.01]] },
+        { id: 'motionblur', label: 'Motion blur', o: { numSamples: 16 },
+          apply: (n, c, o) => fx.createMotionBlur(n, c.velocity, o),
+          sliders: [['numSamples', 'samples', 4, 48, 1]] },
+        { id: 'ao', label: 'Ambient occlusion (GTAO)', o: {},
+          apply: (n, c) => n.mul(fx.createAo(c.viewZ, c.normal, c.camera)),
+          geo: true, sliders: [] },
+        { id: 'ssgi', label: 'SSGI (indirect + AO)', o: { giIntensity: 1, aoIntensity: 1, radius: 1 },
+          apply: (n, c, o) => fx.createSsgi(n, c.depth, c.normal, c.camera, o),
+          geo: true, sliders: [['giIntensity', 'GI', 0, 3, 0.05], ['aoIntensity', 'AO', 0, 3, 0.05], ['radius', 'radius', 0.1, 4, 0.05]] },
+        { id: 'sss', label: 'Subsurface scatter', o: { shadowIntensity: 0.5, thickness: 0.2 },
+          apply: (n, c, o) => n.add(fx.createSss(c.depth, c.camera, c.light, o).mul(0.6)),
+          geo: true, sliders: [['shadowIntensity', 'shadow', 0, 1, 0.01], ['thickness', 'thickness', 0, 1, 0.01]] },
+        { id: 'traa', label: 'TRAA (temporal AA)', o: {},
+          apply: (n, c) => fx.createTraa(n, c.depth, c.velocity, c.camera),
+          geo: true, sliders: [] },
+        { id: 'difference', label: 'Frame difference', o: { gain: 1000, maxSaturation: 3 },
+          apply: (n, c, o) => fx.createDifference(c.scenePass, o),
+          sliders: [['gain', 'gain', 100, 4000, 50], ['maxSaturation', 'max sat', 0, 6, 0.1]] },
+        { id: 'fxaa', label: 'FXAA', o: {}, apply: (n) => fx.createFxaa(n), sliders: [] },
+        { id: 'smaa', label: 'SMAA', o: {}, apply: (n) => fx.createSmaa(n), sliders: [] },
+        { id: 'sobel', label: 'Sobel edges', o: {}, apply: (n) => fx.createSobel(n), sliders: [] },
+      ]
+
+      let w = canvas.clientWidth, h = canvas.clientHeight
+      function setSize () {
+        w = canvas.clientWidth; h = canvas.clientHeight
+        renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix()
+      }
+      const ro = new ResizeObserver(setSize); ro.observe(canvas.parentElement); setSize()
+
+      function rebuild (order) {
+        const scenePass = pass(scene, camera)
+        // One rich MRT pass feeds every geometry-aware effect (normal + velocity);
+        // viewZ and depth come for free off the pass node.
+        scenePass.setMRT(mrt({ output, normal: normalView, velocity }))
+        const ctx = {
+          camera, light, scenePass,
+          color:    scenePass.getTextureNode('output'),
+          normal:   scenePass.getTextureNode('normal'),
+          velocity: scenePass.getTextureNode('velocity'),
+          viewZ:    scenePass.getViewZNode(),
+          get depth () { return scenePass.getTextureNode('depth') },
+        }
+        let node = ctx.color
+        for (const e of order) {
+          if (!e.enabled) continue
+          try { node = e.apply(node, ctx, e.o) ?? node }
+          catch (err) { console.warn('[effects] WebGPU effect "' + e.id + '" failed, skipping:', err.message); e.enabled = false }
+        }
+        pp.outputNode = node
+        pp.needsUpdate = true
+      }
+
+      let raf = 0
+      const clock = new THREE.Clock()
+      function start (order, getOrder) {
+        rebuild(order)
+        const loop = () => {
+          const dt = clock.getDelta()
+          subject.spin.forEach(m => { m.rotation.x += dt * 0.3; m.rotation.y += dt * 0.4 })
+          pp.render()
+          raf = requestAnimationFrame(loop)
+        }
+        loop()
+      }
+
+      return {
+        reg, kind: 'webgpu', start, rebuild, setSize,
+        fire () {},
+        dispose () {
+          cancelAnimationFrame(raf); ro.disconnect(); detachOrbit()
+          subject.dispose(); pp.dispose?.(); renderer.dispose()
+        },
+      }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    //  Shared UI — generated from the active engine's registry
+    // ════════════════════════════════════════════════════════════════════════
+    const WEBGPU_OUT_OF_SCOPE = 'Not chainable here: ssr, pixelation, retro, ssaa, outline, masking, transition.'
+    const WEBGL_OUT_OF_SCOPE  = 'Stereoscopy excluded (wraps the renderer, bypasses the composer).'
+
+    let engine = null
+    let order = []                 // [{ ...regEntry, enabled }]
+    const getOrder = () => order
+
+    function fmt (v) { return Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 1 ? v.toFixed(2) : v.toFixed(3) }
+
+    function renderList () {
+      listEl.innerHTML = ''
+      order.forEach((e, i) => {
+        const li = document.createElement('li')
+        li.className = 'fx' + (e.enabled ? '' : ' off')
+        li.draggable = true; li.dataset.id = e.id
+
+        const head = document.createElement('div'); head.className = 'fx-head'
+        const grip = document.createElement('span'); grip.className = 'grip'; grip.textContent = '⠿'
+        const label = document.createElement('label')
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!e.enabled
+        cb.addEventListener('click', ev => ev.stopPropagation())
+        cb.addEventListener('change', () => { e.enabled = cb.checked; li.classList.toggle('off', !e.enabled); engine.rebuild(order) })
+        const name = document.createElement('span'); name.className = 'name'; name.textContent = e.label
+        const idx = document.createElement('span'); idx.className = 'idx'; idx.textContent = '#' + (i + 1)
+        label.append(cb, name); head.append(grip, label, idx)
+
+        const body = document.createElement('div'); body.className = 'fx-body'
+        if (e.trigger) {
+          const btn = document.createElement('button'); btn.className = 'play'; btn.textContent = '▶ play transition'
+          btn.addEventListener('click', () => engine.fire(e.id)); body.append(btn)
+        }
+        ;(e.sliders || []).forEach(s => body.append(makeSlider(e, s)))
+        if (!e.trigger && (!e.sliders || !e.sliders.length)) {
+          const none = document.createElement('div'); none.className = 'hint'; none.textContent = 'no params'; body.append(none)
+        }
+
+        // click name toggles the slider drawer (but not when toggling the checkbox)
+        name.addEventListener('click', () => li.classList.toggle('open'))
+        li.append(head, body)
+        wireDrag(li)
+        listEl.append(li)
+      })
+    }
+
+    function makeSlider (e, s) {
+      const [key, lbl, min, max, step] = s
+      const row = document.createElement('div'); row.className = 'row'
+      const span = document.createElement('span'); span.textContent = lbl
+      const input = document.createElement('input'); input.type = 'range'
+      input.min = min; input.max = max; input.step = step
+      const out = document.createElement('b')
+
+      // WebGL slider get/set live in the registry tuple [key,lbl,min,max,step,get,set];
+      // WebGPU sliders mutate e.o[key] and trigger a graph rebuild.
+      const isWebGL = engine.kind === 'webgl'
+      const get = isWebGL ? s[5] : () => e.o[key]
+      const set = isWebGL ? s[6] : (v => { e.o[key] = v })
+      const passOf = () => engine.passFor ? engine.passFor(e.id) : null
+
+      const read = () => isWebGL ? (passOf() ? get(passOf()) : min) : get()
+      const cur = read()
+      input.value = cur; out.textContent = fmt(cur)
+      input.addEventListener('input', () => {
+        const v = +input.value; out.textContent = fmt(v)
+        if (isWebGL) { const p = passOf(); if (p) set(p, v) }
+        else { set(v); engine.rebuild(order) }
+      })
+      row.append(span, input, out)
+      return row
+    }
+
+    // native HTML drag-and-drop reordering of order[]
+    let dragId = null
+    function wireDrag (li) {
+      li.addEventListener('dragstart', () => { dragId = li.dataset.id; li.style.opacity = '0.4' })
+      li.addEventListener('dragend', () => { li.style.opacity = ''; dragId = null })
+      li.addEventListener('dragover', ev => { ev.preventDefault(); li.classList.add('dragover') })
+      li.addEventListener('dragleave', () => li.classList.remove('dragover'))
+      li.addEventListener('drop', ev => {
+        ev.preventDefault(); li.classList.remove('dragover')
+        if (dragId == null || dragId === li.dataset.id) return
+        const from = order.findIndex(e => e.id === dragId)
+        const to = order.findIndex(e => e.id === li.dataset.id)
+        const [moved] = order.splice(from, 1); order.splice(to, 0, moved)
+        renderList(); engine.rebuild(order)
+      })
+    }
+
+    // ── engine lifecycle ──────────────────────────────────────────────────────
+    async function activate (kind) {
+      if (engine) { engine.dispose(); engine = null }
+      window.__SCENE_READY__ = false
+      hintEl.textContent = 'initialising ' + kind + '…'
+
+      // A canvas can only ever hold ONE context type for its lifetime, so swap in
+      // a fresh node on every engine switch (WebGL2 → WebGPU on one canvas fails).
+      const fresh = document.createElement('canvas'); fresh.id = 'scene'
+      canvas.replaceWith(fresh); canvas = fresh
+
+      engine = kind === 'webgpu' ? await createWebGPUEngine(canvas) : await createWebGLEngine(canvas)
+      order = engine.reg.map(e => ({ ...e, enabled: false }))
+      // sensible default-on set per engine
+      const defaultsOn = kind === 'webgpu' ? ['bloom', 'ca'] : ['bloom', 'grade']
+      order.forEach(e => { if (defaultsOn.includes(e.id)) e.enabled = true })
+
+      scopeEl.textContent = kind === 'webgpu' ? WEBGPU_OUT_OF_SCOPE : WEBGL_OUT_OF_SCOPE
+      hintEl.textContent = 'drag to reorder · click name for sliders'
+      renderList()
+      engine.start(order, getOrder)
+      window.__SCENE_READY__ = true
+    }
+
+    // engine tab buttons
+    const btnGL = document.querySelector('#eng-webgl')
+    const btnGPU = document.querySelector('#eng-webgpu')
+    function selectEngine (kind) {
+      btnGL.setAttribute('aria-selected', String(kind === 'webgl'))
+      btnGPU.setAttribute('aria-selected', String(kind === 'webgpu'))
+      activate(kind)
+    }
+    btnGL.addEventListener('click', () => selectEngine('webgl'))
+    btnGPU.addEventListener('click', () => selectEngine('webgpu'))
+
+    // feature-detect WebGPU
+    if (!navigator.gpu) {
+      btnGPU.disabled = true
+      btnGPU.title = 'WebGPU unavailable in this browser'
+    }
+
+    selectEngine('webgl')
+  </script>
+</body>
+</html>
