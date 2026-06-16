@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "lib",
+    "strict": true,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": false,
+    "isolatedModules": true
+  },
+  "include": ["lib/**/*.ts"],
+  "exclude": ["node_modules", "dist", "lib/__smoke__.ts"]
+}

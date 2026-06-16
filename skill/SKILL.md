@@ -46,12 +46,14 @@ Load only what the current task needs. Don't read every file by default.
 | `references/llm-function-definitions.md` | Gemini / ai-sdk tool schemas for procedural scene generation |
 | `references/code-style.md` | `@tuomashatakka/eslint-config` + Semantic Nodes style guide rules |
 | `references/anti-patterns.md` | quick scan before committing — avoid these |
+| `references/production-lessons.md` | architecting beyond a single demo — context injection, disposal ownership, determinism, draw-call budgets, headless capture (distilled from a shipping project) |
 
 **Minimal scene:** `core-principles.md` + `project-architecture.md` + `camera-handling.md`.
 **Isometric game:** add `isometric-and-infinite-scenes.md` + `instancing.md` + `billboards.md`.
 **Voxel world:** add `voxel-geometry.md` + `performance.md`.
 **Stylized post-fx:** add `post-processing.md` + `shaders.md`.
 **LLM-driven content:** add `prompt-handling-flow.md` + `llm-function-definitions.md`.
+**Multi-module / shipping scene:** always read `production-lessons.md` first.
 
 ## Scripts Index
 
@@ -62,6 +64,30 @@ script to its reference section and a one-line summary.
 When asked to build something covered by a script, read the script directly rather
 than re-deriving the code. Adapt the function signatures and options to the user's
 specific request — the scripts are templates, not black boxes.
+
+## Runnable Templates
+
+The `templates/` directory holds complete, **self-contained HTML scenes that run
+by just opening the file in a browser** — no build step, no dev server, no install.
+Each loads `three` from the `esm.sh` CDN via an importmap (so it needs internet),
+and inlines its own helpers (frame loop, pointer gesture, disposal) so there are
+no local module imports to break under `file://`.
+
+Use a template as the fastest path to a working scene: copy it, then replace the
+clearly-marked content section (e.g. `buildContent()` in `minimal-scene.html`).
+For multi-module projects, graduate to the `scripts/` modules + an importmap.
+
+| Template | Demonstrates |
+|----------|--------------|
+| `templates/minimal-scene.html` | Starter scaffold — renderer + orbit camera + lit flat-shaded mesh + `ResizeObserver` + dispose + `__SCENE_READY__`. Copy and replace `buildContent()`. |
+| `templates/instanced-field.html` | `InstancedMesh` — ~5000 objects, 1 draw call, seeded `mulberry32` placement, draw-call HUD. |
+| `templates/shader-material.html` | Custom GLSL `ShaderMaterial` — fresnel rim + scanlines + noise; uniforms mutated allocation-free. |
+| `templates/post-processing.html` | `EffectComposer`: `RenderPass → UnrealBloom → grade(ShaderPass) → OutputPass`; grade in linear HDR, tone-map once. |
+| `templates/isometric.html` | Orthographic true-iso camera + instanced height-grid terrain (value-noise) + pan/zoom. |
+| `templates/particles.html` | GC-proof instanced emitter — 20k particles, deterministic phase math, zero per-frame allocation. |
+
+These templates encode the patterns in `references/production-lessons.md` — read
+that doc when adapting them into anything multi-module.
 
 ## Embedding Scripts in Live Artifacts
 

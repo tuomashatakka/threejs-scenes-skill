@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<!--
+  minimal-scene.html — three.js starter scaffold
+  ───────────────────────────────────────────────
+  Self-contained. No build step. Open this file directly in a browser
+  (needs internet: `three` loads from the esm.sh CDN via the importmap).
+
+  Demonstrates the foundational skill patterns:
+    - WebGLRenderer factory (DPR capped at 2, ACES tone mapping, sRGB output)
+    - Clock-driven frame loop with a register/unregister callback set
+    - Unified pointer-gesture orbit (mouse/touch/pen identical)
+    - ResizeObserver on the canvas parent (never window.resize)
+    - Flat-shaded low-poly aesthetic + standard 3-light rig
+    - Explicit dispose() path — three.js never auto-frees GPU memory
+    - window.__SCENE_READY__ signal for headless screenshot tooling
+
+  Copy this file and replace the `buildContent()` body with your scene.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>three.js · minimal scene</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0a0a14; overflow: hidden; font-family: ui-monospace, monospace }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside {
+      position: fixed; top: 12px; left: 12px; padding: 8px 12px;
+      color: #b8c0e0; background: rgba(10, 10, 20, 0.6); border: 1px solid #2a2f4a;
+      border-radius: 6px; font-size: 12px; line-height: 1.6; pointer-events: none;
+    }
+    b { color: #8fffd0 }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>three.js · minimal scene</div>
+      <div>drag to orbit · wheel / pinch to zoom</div>
+      <div>fps <b id="fps">–</b> · draw calls <b id="calls">–</b></div>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://esm.sh/three@0.184.0",
+      "three/addons/": "https://esm.sh/three@0.184.0/addons/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+
+    // ── renderer factory ─────────────────────────────────────────────
+    // perf: cheap. one renderer per scene, never recreated.
+    function createRenderer ({ canvas, pixelRatioMax = 2 } = {}) {
+      const renderer = new THREE.WebGLRenderer({
+        canvas, antialias: true, powerPreference: 'high-performance', stencil: false,
+      })
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatioMax))
+      renderer.outputColorSpace = THREE.SRGBColorSpace
+      renderer.toneMapping = THREE.ACESFilmicToneMapping
+      renderer.toneMappingExposure = 1
+      renderer.shadowMap.enabled = true
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap
+      return renderer
+    }
+
+    function attachResizeObserver (renderer, camera, canvas, onResize) {
+      const ro = new ResizeObserver((entries) => {
+        const { width, height } = entries[0].contentRect
+        renderer.setSize(width, height, false)
+        camera.aspect = width / height
+        camera.updateProjectionMatrix()
+        onResize?.(width, height)
+      })
+      ro.observe(canvas.parentElement ?? document.body)
+      return () => ro.disconnect()
+    }
+
+    // ── frame loop ───────────────────────────────────────────────────
+    // Clock-driven singleton. Subsystems register via onFrame(cb) and get
+    // { delta, elapsed, frame }. Mirrors the scene/core AnimationLoop pattern.
+    // perf: cheap. one rAF, one Set iteration per frame, zero allocations.
+    function createLoop () {
+      const subs = new Set()
+      const clock = new THREE.Clock()
+      let frame = 0
+      let raf = 0
+      const tick = () => {
+        const delta = clock.getDelta()
+        const elapsed = clock.getElapsedTime()
+        frame += 1
+        for (const cb of subs) cb({ delta, elapsed, frame })
+        raf = requestAnimationFrame(tick)
+      }
+      raf = requestAnimationFrame(tick)
+      return {
+        onFrame (cb) { subs.add(cb); return () => subs.delete(cb) },
+        dispose () { cancelAnimationFrame(raf); subs.clear() },
+      }
+    }
+
+    // ── unified pointer gestures ─────────────────────────────────────
+    // Drag, pinch, wheel — identical on mouse/touch/pen. Never use mouse*/touch*.
+    // perf: cheap. one Map for active pointers; no per-frame work.
+    function attachPointerGesture (el, callbacks) {
+      const pointers = new Map()
+      let lastPinch = 0
+      el.style.touchAction = 'none'
+      const onDown = (e) => {
+        el.setPointerCapture(e.pointerId)
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+        if (pointers.size === 2) {
+          const [a, b] = [...pointers.values()]
+          lastPinch = Math.hypot(a.x - b.x, a.y - b.y)
+        }
+      }
+      const onMove = (e) => {
+        const p = pointers.get(e.pointerId)
+        if (!p) return
+        const dx = e.clientX - p.x, dy = e.clientY - p.y
+        p.x = e.clientX; p.y = e.clientY
+        if (pointers.size === 1) callbacks.onDrag?.(dx, dy)
+        else if (pointers.size === 2) {
+          const [a, b] = [...pointers.values()]
+          const dist = Math.hypot(a.x - b.x, a.y - b.y)
+          if (lastPinch > 0) callbacks.onPinch?.(dist / lastPinch)
+          lastPinch = dist
+        }
+      }
+      const onUp = (e) => { pointers.delete(e.pointerId); if (pointers.size < 2) lastPinch = 0 }
+      const onWheel = (e) => { e.preventDefault(); callbacks.onWheel?.(e.deltaY) }
+      el.addEventListener('pointerdown', onDown)
+      el.addEventListener('pointermove', onMove)
+      el.addEventListener('pointerup', onUp)
+      el.addEventListener('pointercancel', onUp)
+      el.addEventListener('wheel', onWheel, { passive: false })
+      return () => {
+        el.removeEventListener('pointerdown', onDown)
+        el.removeEventListener('pointermove', onMove)
+        el.removeEventListener('pointerup', onUp)
+        el.removeEventListener('pointercancel', onUp)
+        el.removeEventListener('wheel', onWheel)
+      }
+    }
+
+    // ── recursive disposal ───────────────────────────────────────────
+    // three.js never auto-disposes. Call on teardown to free GPU memory.
+    // NOTE: only dispose materials/geometry the scene OWNS. Pooled/shared
+    // materials must NOT be disposed here — that nukes every mesh using them.
+    function disposeScene (root) {
+      root.traverse((obj) => {
+        obj.geometry?.dispose()
+        const mats = Array.isArray(obj.material) ? obj.material : obj.material ? [obj.material] : []
+        for (const m of mats) {
+          for (const k in m) {
+            const v = m[k]
+            if (v && typeof v === 'object' && 'minFilter' in v) v.dispose?.()
+          }
+          m.dispose()
+        }
+      })
+    }
+
+    // ── standard lighting rig ────────────────────────────────────────
+    // IBL env (RoomEnvironment) + sun (shadows) + hemisphere fill.
+    function setupLighting (scene, renderer) {
+      const pmrem = new THREE.PMREMGenerator(renderer)
+      const env = new RoomEnvironment()
+      scene.environment = pmrem.fromScene(env, 0.04).texture
+      scene.environmentIntensity = 0.6
+      pmrem.dispose()
+      env.traverse((o) => o.geometry?.dispose())
+
+      const sun = new THREE.DirectionalLight('#fff5e0', 2.5)
+      sun.position.set(8, 12, 6)
+      sun.castShadow = true
+      sun.shadow.mapSize.set(2048, 2048)
+      sun.shadow.camera.near = 1
+      sun.shadow.camera.far = 40
+      for (const side of ['top', 'right', 'bottom', 'left']) {
+        sun.shadow.camera[side] = side === 'bottom' || side === 'left' ? -15 : 15
+      }
+      sun.shadow.bias = -0.0001
+      sun.shadow.normalBias = 0.02
+
+      const hemi = new THREE.HemisphereLight('#a0c0ff', '#3a2a1a', 0.4)
+      scene.add(sun, sun.target, hemi)
+    }
+
+    // ── scene content (REPLACE THIS) ─────────────────────────────────
+    // Returns an optional per-frame tick. Build your scene here.
+    function buildContent ({ scene }) {
+      // flat-shaded low-poly aesthetic: detail from form, not smooth curvature
+      const mat = new THREE.MeshStandardMaterial({ color: '#6ea8ff', flatShading: true, roughness: 0.5, metalness: 0.1 })
+      const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1.2, 1), mat)
+      mesh.castShadow = true
+      scene.add(mesh)
+
+      const floorMat = new THREE.MeshStandardMaterial({ color: '#1a1f33', roughness: 0.9 })
+      const floor = new THREE.Mesh(new THREE.CircleGeometry(8, 48), floorMat)
+      floor.rotation.x = -Math.PI / 2
+      floor.position.y = -1.4
+      floor.receiveShadow = true
+      scene.add(floor)
+
+      return ({ elapsed }) => { mesh.rotation.y = elapsed * 0.4; mesh.position.y = Math.sin(elapsed) * 0.15 }
+    }
+
+    // ── wiring ───────────────────────────────────────────────────────
+    const canvas = document.querySelector('#scene')
+    const renderer = createRenderer({ canvas })
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color('#0a0a14')
+
+    const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 200)
+    camera.position.set(4, 3, 6)
+
+    // spherical orbit state — single writer for camera position (no double-lerp)
+    let theta = Math.atan2(camera.position.x, camera.position.z)
+    let phi = Math.atan2(camera.position.y, Math.hypot(camera.position.x, camera.position.z))
+    let radius = camera.position.length()
+    const updateCamera = () => {
+      const r = radius * Math.cos(phi)
+      camera.position.set(Math.sin(theta) * r, Math.sin(phi) * radius, Math.cos(theta) * r)
+      camera.lookAt(0, 0, 0)
+    }
+    updateCamera()
+
+    setupLighting(scene, renderer)
+    attachResizeObserver(renderer, camera, canvas)
+    attachPointerGesture(canvas, {
+      onDrag (dx, dy) { theta -= dx * 0.005; phi = Math.max(-1.3, Math.min(1.3, phi + dy * 0.005)); updateCamera() },
+      onPinch (s) { radius = Math.max(2, Math.min(40, radius / s)); updateCamera() },
+      onWheel (d) { radius = Math.max(2, Math.min(40, radius * (1 + d * 0.001))); updateCamera() },
+    })
+
+    const tick = buildContent({ scene, camera, renderer })
+    renderer.compile(scene, camera) // pre-warm shaders so frame 1 doesn't stall
+
+    const loop = createLoop()
+    const fpsEl = document.querySelector('#fps')
+    const callsEl = document.querySelector('#calls')
+    let acc = 0, frames = 0
+    loop.onFrame((ctx) => {
+      tick?.(ctx)
+      renderer.render(scene, camera)
+      acc += ctx.delta; frames += 1
+      if (acc >= 0.5) {
+        fpsEl.textContent = Math.round(frames / acc)
+        callsEl.textContent = renderer.info.render.calls
+        acc = 0; frames = 0
+      }
+    })
+
+    // teardown hook — call when unmounting (route change, quality swap)
+    window.__disposeScene = () => { loop.dispose(); disposeScene(scene); renderer.dispose() }
+    // headless capture signal (Playwright + SwiftShader waits on this)
+    window.__SCENE_READY__ = true
+  </script>
+</body>
+</html>

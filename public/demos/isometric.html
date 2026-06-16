@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<!--
+  isometric.html — orthographic iso camera + height grid
+  ──────────────────────────────────────────────────────
+  Self-contained. Open directly in a browser (loads `three` from esm.sh).
+
+  Lessons:
+    - true isometric uses an OrthographicCamera looking down (35.264°, 45° yaw)
+    - ortho resize keeps a fixed world-height; width follows aspect (NOT fov)
+    - the whole terrain is ONE InstancedMesh — 1 draw call for the grid
+    - heights come from seeded value-noise, so the world is deterministic
+    - pan moves the camera + target together; zoom scales the ortho frustum
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>three.js · isometric</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; font-family: ui-monospace, monospace }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #c0d0ff;
+      background: rgba(11, 16, 32, 0.6); border: 1px solid #2a3a5a; border-radius: 6px;
+      font-size: 12px; line-height: 1.6; pointer-events: none }
+    b { color: #9fffd0 }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>three.js · isometric grid</div>
+      <div>drag to pan · wheel / pinch to zoom · <b id="calls">–</b> draw calls</div>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  { "imports": { "three": "https://esm.sh/three@0.184.0" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+
+    // seeded value-noise for terrain heights
+    function mulberry32 (seed) {
+      let s = seed >>> 0
+      return () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 }
+    }
+    const rand = mulberry32(99)
+    const GRID = 48
+    const lattice = new Float32Array((GRID + 1) * (GRID + 1))
+    for (let i = 0; i < lattice.length; i++) lattice[i] = rand()
+    const fade = (t) => t * t * (3 - 2 * t)
+    const lerp = (a, b, t) => a + (b - a) * t
+    function noise (x, y) {
+      const xi = Math.floor(x), yi = Math.floor(y)
+      const xf = x - xi, yf = y - yi
+      const at = (gx, gy) => lattice[((gy % (GRID + 1)) + (GRID + 1)) % (GRID + 1) * (GRID + 1) + (((gx % (GRID + 1)) + (GRID + 1)) % (GRID + 1))]
+      const u = fade(xf), v = fade(yf)
+      return lerp(lerp(at(xi, yi), at(xi + 1, yi), u), lerp(at(xi, yi + 1), at(xi + 1, yi + 1), u), v)
+    }
+
+    // ── true-isometric orthographic camera ──────────────────────────
+    const canvas = document.querySelector('#scene')
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    renderer.shadowMap.enabled = true
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color('#0b1020')
+
+    let viewHeight = 30 // world units shown vertically; zoom adjusts this
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 500)
+    const target = new THREE.Vector3(0, 0, 0)
+    const isoDir = new THREE.Vector3(1, Math.atan(1 / Math.sqrt(2)) > 0 ? 0.8165 : 0.8165, 1).normalize() // ~35.264° elevation
+    function placeCamera () {
+      camera.position.copy(target).addScaledVector(isoDir, 120)
+      camera.lookAt(target)
+    }
+    function resize () {
+      const w = canvas.parentElement.clientWidth, h = canvas.parentElement.clientHeight
+      renderer.setSize(w, h, false)
+      const aspect = w / h
+      camera.top = viewHeight / 2; camera.bottom = -viewHeight / 2
+      camera.left = -viewHeight * aspect / 2; camera.right = viewHeight * aspect / 2
+      camera.updateProjectionMatrix()
+    }
+    new ResizeObserver(resize).observe(canvas.parentElement)
+    placeCamera(); resize()
+
+    // lighting
+    const sun = new THREE.DirectionalLight('#fff0d8', 2.4)
+    sun.position.set(20, 30, 10)
+    sun.castShadow = true
+    sun.shadow.mapSize.set(2048, 2048)
+    sun.shadow.camera.left = -30; sun.shadow.camera.right = 30
+    sun.shadow.camera.top = 30; sun.shadow.camera.bottom = -30
+    sun.shadow.camera.far = 200
+    scene.add(sun, new THREE.HemisphereLight('#aac4ff', '#2a3320', 0.45))
+
+    // ── terrain as ONE InstancedMesh ────────────────────────────────
+    const COUNT = GRID * GRID
+    const box = new THREE.BoxGeometry(0.9, 1, 0.9)
+    const mat = new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.85 })
+    const tiles = new THREE.InstancedMesh(box, mat, COUNT)
+    tiles.castShadow = true
+    tiles.receiveShadow = true
+    const dummy = new THREE.Object3D()
+    const color = new THREE.Color()
+    let i = 0
+    for (let gx = 0; gx < GRID; gx++) {
+      for (let gz = 0; gz < GRID; gz++) {
+        const n = noise(gx * 0.12, gz * 0.12)
+        const height = 0.5 + n * 8
+        dummy.position.set(gx - GRID / 2, height / 2, gz - GRID / 2)
+        dummy.scale.set(1, height, 1)
+        dummy.updateMatrix()
+        tiles.setMatrixAt(i, dummy.matrix)
+        // green lowlands → grey/white peaks
+        if (n < 0.45) color.setHSL(0.32, 0.45, 0.3 + n * 0.2)
+        else if (n < 0.7) color.setHSL(0.1, 0.3, 0.35)
+        else color.setHSL(0, 0, 0.6 + (n - 0.7) * 1.2)
+        tiles.setColorAt(i, color)
+        i++
+      }
+    }
+    tiles.instanceMatrix.needsUpdate = true
+    tiles.instanceColor.needsUpdate = true
+    scene.add(tiles)
+    renderer.compile(scene, camera)
+
+    // ── pan + zoom ───────────────────────────────────────────────────
+    const pts = new Map(); let lastPinch = 0
+    canvas.style.touchAction = 'none'
+    canvas.addEventListener('pointerdown', (e) => {
+      canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      if (pts.size === 2) { const [a, b] = [...pts.values()]; lastPinch = Math.hypot(a.x - b.x, a.y - b.y) }
+    })
+    canvas.addEventListener('pointermove', (e) => {
+      const p = pts.get(e.pointerId); if (!p) return
+      const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY
+      if (pts.size === 1) {
+        // screen-space pan mapped onto the ground plane (iso axes)
+        const scale = viewHeight / canvas.clientHeight
+        const pan = new THREE.Vector3(-dx * scale, 0, -dx * scale).add(new THREE.Vector3(-dy * scale, 0, dy * scale))
+        target.add(pan); placeCamera()
+      } else if (pts.size === 2) {
+        const [a, b] = [...pts.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y)
+        if (lastPinch > 0) { viewHeight = Math.max(8, Math.min(60, viewHeight / (d / lastPinch))); resize() }
+        lastPinch = d
+      }
+    })
+    const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) lastPinch = 0 }
+    canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up)
+    canvas.addEventListener('wheel', (e) => { e.preventDefault(); viewHeight = Math.max(8, Math.min(60, viewHeight * (1 + e.deltaY * 0.001))); resize() }, { passive: false })
+
+    document.querySelector('#calls').textContent = '?'
+    function tick () {
+      renderer.render(scene, camera)
+      document.querySelector('#calls').textContent = renderer.info.render.calls
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+    window.__SCENE_READY__ = true
+
+    // perf: 2304 tiles, 1 draw call. The ortho camera never changes fov on
+    // resize — it preserves a fixed vertical world span.
+  </script>
+</body>
+</html>

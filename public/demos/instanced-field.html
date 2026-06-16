@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<!--
+  instanced-field.html — InstancedMesh + seeded placement
+  ───────────────────────────────────────────────────────
+  Self-contained. Open directly in a browser (loads `three` from esm.sh).
+
+  The core performance lesson: N copies of ONE geometry sharing ONE material
+  render in a SINGLE draw call via InstancedMesh. The draw-calls HUD proves it —
+  ~5000 shards, 1 draw call. Placement is deterministic (mulberry32 seed), so
+  the field is pixel-identical across reloads.
+
+  Swap the geometry / count / placement to reuse for grass, rocks, crowds, etc.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>three.js · instanced field</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #07101a; overflow: hidden; font-family: ui-monospace, monospace }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #b8e0d0;
+      background: rgba(7, 16, 26, 0.6); border: 1px solid #1f3a33; border-radius: 6px;
+      font-size: 12px; line-height: 1.6; pointer-events: none }
+    b { color: #8fffd0 }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>three.js · instanced field</div>
+      <div><b id="count">–</b> instances · <b id="calls">–</b> draw calls · <b id="fps">–</b> fps</div>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  { "imports": { "three": "https://esm.sh/three@0.184.0", "three/addons/": "https://esm.sh/three@0.184.0/addons/" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+
+    // seeded RNG — deterministic placement, pixel-identical reloads
+    function mulberry32 (seed) {
+      let s = seed >>> 0
+      return () => {
+        s = (s + 0x6d2b79f5) | 0
+        let t = Math.imul(s ^ (s >>> 15), 1 | s)
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+      }
+    }
+    const rand = mulberry32(1337)
+    const range = (a, b) => a + rand() * (b - a)
+
+    // ── compact scaffold (see minimal-scene.html for the annotated version) ──
+    function createRenderer (canvas) {
+      const r = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', stencil: false })
+      r.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+      r.outputColorSpace = THREE.SRGBColorSpace
+      r.toneMapping = THREE.ACESFilmicToneMapping
+      return r
+    }
+    function attachResize (renderer, camera, canvas) {
+      const ro = new ResizeObserver((e) => {
+        const { width, height } = e[0].contentRect
+        renderer.setSize(width, height, false)
+        camera.aspect = width / height; camera.updateProjectionMatrix()
+      })
+      ro.observe(canvas.parentElement)
+    }
+    function attachOrbit (el, state, onChange) {
+      const pts = new Map(); let lastPinch = 0
+      el.style.touchAction = 'none'
+      el.addEventListener('pointerdown', (e) => {
+        el.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
+        if (pts.size === 2) { const [a, b] = [...pts.values()]; lastPinch = Math.hypot(a.x - b.x, a.y - b.y) }
+      })
+      el.addEventListener('pointermove', (e) => {
+        const p = pts.get(e.pointerId); if (!p) return
+        const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY
+        if (pts.size === 1) { state.theta -= dx * 0.005; state.phi = Math.max(-1.3, Math.min(1.3, state.phi + dy * 0.005)); onChange() }
+        else if (pts.size === 2) { const [a, b] = [...pts.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (lastPinch > 0) { state.radius = Math.max(6, Math.min(80, state.radius / (d / lastPinch))); onChange() } lastPinch = d }
+      })
+      const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) lastPinch = 0 }
+      el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up)
+      el.addEventListener('wheel', (e) => { e.preventDefault(); state.radius = Math.max(6, Math.min(80, state.radius * (1 + e.deltaY * 0.001))); onChange() }, { passive: false })
+    }
+
+    const canvas = document.querySelector('#scene')
+    const renderer = createRenderer(canvas)
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color('#07101a')
+    const camera = new THREE.PerspectiveCamera(55, canvas.clientWidth / canvas.clientHeight, 0.1, 300)
+    const orbit = { theta: 0.6, phi: 0.5, radius: 32 }
+    const updateCamera = () => {
+      const r = orbit.radius * Math.cos(orbit.phi)
+      camera.position.set(Math.sin(orbit.theta) * r, Math.sin(orbit.phi) * orbit.radius, Math.cos(orbit.theta) * r)
+      camera.lookAt(0, 1, 0)
+    }
+    updateCamera()
+    attachResize(renderer, camera, canvas)
+    attachOrbit(canvas, orbit, updateCamera)
+
+    // lighting
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    const env = new RoomEnvironment()
+    scene.environment = pmrem.fromScene(env, 0.04).texture
+    scene.environmentIntensity = 0.5
+    pmrem.dispose(); env.traverse((o) => o.geometry?.dispose())
+    const sun = new THREE.DirectionalLight('#fff5e0', 2.2)
+    sun.position.set(10, 18, 8)
+    scene.add(sun, new THREE.HemisphereLight('#9fc0ff', '#22331f', 0.5))
+
+    // ── the lesson: ONE InstancedMesh = ONE draw call for N copies ──────
+    const COUNT = 5000
+    const geometry = new THREE.ConeGeometry(0.25, 1.4, 5) // shared geometry, low-poly
+    const material = new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.6 }) // shared material
+    const field = new THREE.InstancedMesh(geometry, material, COUNT)
+
+    const dummy = new THREE.Object3D()          // module-scope scratch — no per-instance alloc
+    const color = new THREE.Color()
+    const radiusField = 28
+    for (let i = 0; i < COUNT; i++) {
+      // poisson-ish disk scatter via rejection on radius
+      const a = rand() * Math.PI * 2
+      const d = Math.sqrt(rand()) * radiusField
+      dummy.position.set(Math.cos(a) * d, 0, Math.sin(a) * d)
+      dummy.rotation.y = range(0, Math.PI * 2)
+      dummy.scale.setScalar(range(0.6, 1.4))
+      dummy.updateMatrix()
+      field.setMatrixAt(i, dummy.matrix)
+      // per-instance tint within a green band
+      color.setHSL(0.28 + range(-0.04, 0.06), 0.55, range(0.32, 0.5))
+      field.setColorAt(i, color)
+    }
+    field.instanceMatrix.needsUpdate = true
+    field.instanceColor.needsUpdate = true
+    scene.add(field)
+
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(radiusField + 2, 64), new THREE.MeshStandardMaterial({ color: '#101a14', roughness: 1 }))
+    ground.rotation.x = -Math.PI / 2
+    scene.add(ground)
+
+    renderer.compile(scene, camera)
+
+    // hud + loop
+    document.querySelector('#count').textContent = COUNT.toLocaleString()
+    const callsEl = document.querySelector('#calls'), fpsEl = document.querySelector('#fps')
+    const clock = new THREE.Clock(); let acc = 0, frames = 0
+    function tick () {
+      const dt = clock.getDelta()
+      field.rotation.y += dt * 0.04
+      renderer.render(scene, camera)
+      acc += dt; frames += 1
+      if (acc >= 0.5) { fpsEl.textContent = Math.round(frames / acc); callsEl.textContent = renderer.info.render.calls; acc = 0; frames = 0 }
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+    window.__SCENE_READY__ = true
+
+    // perf: ~5000 cones, 1 draw call. Naive Mesh-per-cone would be 5000 calls
+    // and blow past the ~100-call budget many GPUs/mobile tiles choke on.
+  </script>
+</body>
+</html>
