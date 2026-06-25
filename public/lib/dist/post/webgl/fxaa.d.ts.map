@@ -1,0 +1,1 @@
+{"version":3,"file":"fxaa.d.ts","sourceRoot":"","sources":["../../../lib/post/webgl/fxaa.ts"],"names":[],"mappings":"AAOA,OAAO,KAAK,EAAE,IAAI,EAAE,MAAM,qCAAqC,CAAA;AAI/D,MAAM,MAAM,WAAW,GAAG,MAAM,CAAC,MAAM,EAAE,KAAK,CAAC,CAAA;AAE/C,wBAAgB,UAAU,CAAE,QAAQ,GAAE,WAAgB,GAAG,IAAI,CAE5D"}

@@ -1,8 +1,14 @@
 // lib/post/webgpu/pipeline.ts
 // Entry points for the WebGPU/TSL post-processing pipeline. Build a scene pass,
 // optionally expose normal + viewZ via MRT for geometry-aware effects, then wrap
-// it all in a PostProcessing instance whose outputNode is the composed chain.
-import { PostProcessing } from 'three/webgpu';
+// it all in a RenderPipeline instance whose outputNode is the composed chain.
+//
+// RenderPipeline replaces the deprecated PostProcessing class (PostProcessing was
+// renamed to RenderPipeline in r183 and is now only a back-compat wrapper that
+// will be removed). The surface is identical: `new RenderPipeline(renderer)`,
+// assign `.outputNode`, call `.render()` each frame, set `.needsUpdate = true`
+// after swapping the output node. See https://threejs.org/docs/#RenderPipeline.
+import { RenderPipeline } from 'three/webgpu';
 import { pass, mrt, output, normalView, velocity, emissive, metalness, roughness, directionToColor, vec2, vec4, } from 'three/tsl';
 // Basic colour-only scene pass — enough for bloom, dof, ca, fxaa, etc.
 export function createScenePass(scene, camera) {
@@ -56,11 +62,19 @@ export function createScenePassSSR(scene, camera) {
     }));
     return scenePass;
 }
-// Wrap a composed output node in a PostProcessing instance ready to render.
-// perf: one PostProcessing per scene; call dispose on teardown.
-export function createPostProcessing(renderer, outputNode) {
-    const pp = new PostProcessing(renderer);
-    pp.outputNode = outputNode;
-    return pp;
+// Wrap a composed output node in a RenderPipeline instance ready to render.
+// Drive it from the animation loop with `pipeline.render()` (replaces
+// `renderer.render(scene, camera)`); after reassigning `.outputNode` at runtime,
+// set `.needsUpdate = true`. perf: one RenderPipeline per scene; dispose on teardown.
+export function createRenderPipeline(renderer, outputNode) {
+    const pipeline = new RenderPipeline(renderer);
+    pipeline.outputNode = outputNode;
+    return pipeline;
 }
+/**
+ * @deprecated Renamed to {@link createRenderPipeline}. PostProcessing was renamed
+ * to RenderPipeline in three.js r183; this alias is kept for back-compat and will
+ * be removed alongside three's PostProcessing wrapper.
+ */
+export const createPostProcessing = createRenderPipeline;
 //# sourceMappingURL=pipeline.js.map

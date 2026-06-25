@@ -1,0 +1,1 @@
+{"version":3,"file":"ao.d.ts","sourceRoot":"","sources":["../../../lib/post/webgl/ao.ts"],"names":[],"mappings":"AAKA,OAAO,KAAK,EAAE,IAAI,EAAE,MAAM,qCAAqC,CAAA;AAC/D,OAAO,KAAK,EAAE,gBAAgB,EAAE,MAAM,YAAY,CAAA;AAGlD,MAAM,WAAW,SAAS;IAExB,MAAM,CAAC,EAAE,MAAM,CAAA;CAChB;AAED,wBAAgB,QAAQ,CAAE,GAAG,EAAE,gBAAgB,EAAE,OAAO,GAAE,SAAc,GAAG,IAAI,CAM9E"}

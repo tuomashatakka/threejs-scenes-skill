@@ -8,7 +8,7 @@
     • WebGL  — EffectComposer + ShaderPass factories from `@scenes` (lib/post).
                Reorder = rebuild the linear `composer.passes` array.
     • WebGPU — TSL node effects from `@scenes/post/webgpu`. Reorder = recompose
-               the `PostProcessing.outputNode` expression tree.
+               the `RenderPipeline.outputNode` expression tree.
 
   Every effect has an enable checkbox, a drag handle (native HTML DnD reorders an
   in-memory order[] array) and per-effect sliders. Depth-sampling WebGL passes
@@ -318,7 +318,7 @@
     //  WebGPU engine — declarative TSL node graph
     // ════════════════════════════════════════════════════════════════════════
     async function createWebGPUEngine (canvas) {
-      const { WebGPURenderer, PostProcessing } = await import('three/webgpu')
+      const { WebGPURenderer, RenderPipeline } = await import("three/webgpu")
       const { pass, mrt, output, normalView, velocity } = await import('three/tsl')
       const fx = await import('@scenes/post/webgpu')
 
@@ -329,7 +329,7 @@
       const subject = buildSubject()
       const { scene, camera, light } = subject
       const detachOrbit = attachOrbit(canvas, camera)
-      const pp = new PostProcessing(renderer)
+      const pp = new RenderPipeline(renderer)
 
       // Effect registry. `apply(node, ctx)` returns the new colour node. Each is
       // wrapped in try/catch at rebuild time so a mis-wired effect self-disables.

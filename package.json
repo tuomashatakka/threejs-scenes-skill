@@ -62,6 +62,10 @@
       "types": "./dist/post/webgpu/index.d.ts",
       "import": "./dist/post/webgpu/index.js"
     },
+    "./post/webgl": {
+      "types": "./dist/post/webgl/index.d.ts",
+      "import": "./dist/post/webgl/index.js"
+    },
     "./procedural": {
       "types": "./dist/procedural/index.d.ts",
       "import": "./dist/procedural/index.js"
