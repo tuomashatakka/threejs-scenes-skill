@@ -1,0 +1,1 @@
+[     193ms] [WARNING] THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead. @ https://esm.sh/three@0.184.0/es2022/build/three.core.mjs:1

@@ -8,6 +8,7 @@
 // IS the scheduler.
 import { Fragment } from './jsx-runtime.js';
 import { createHost, RAW_FUNCTION_PROPS } from './components.js';
+import { setCurrentRuntime } from './hooks.js';
 function isReactive(name, value) {
     return typeof value === 'function' && !name.startsWith('on') && !RAW_FUNCTION_PROPS.has(name);
 }
@@ -31,7 +32,16 @@ function mountElement(el, container, rt) {
         return;
     }
     if (typeof type === 'function') {
-        const out = type({ ...props, children });
+        // Expose the runtime to hooks (useScene/useFrame/…) for the duration of
+        // the component call — save/restore so nested mounts stay correct.
+        const prev = setCurrentRuntime(rt);
+        let out;
+        try {
+            out = type({ ...props, children });
+        }
+        finally {
+            setCurrentRuntime(prev);
+        }
         if (Array.isArray(out))
             for (const c of out)
                 mountChild(c, container, rt);

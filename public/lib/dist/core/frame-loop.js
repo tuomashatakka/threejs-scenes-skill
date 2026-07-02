@@ -1,34 +1,37 @@
 // lib/core/frame-loop.ts
-// Self-contained Clock-driven frame loop. Single source of truth: every
-// animated subsystem registers through onFrame() and receives a shared
-// { delta, elapsed, frame }. Ported from scripts/frame-loop.js but with the
-// external @tuomashatakka/canvas-loop-framecapper dependency removed — the loop
-// is inlined the same way the templates inline it, so the package has no exotic
-// deps. registerUpdate/unregisterUpdate mirror the SceneModule lifecycle API.
-import * as THREE from 'three';
-export function createFrameLoop({ clock: simClock } = {}) {
+// Frame loop backed by @tuomashatakka/canvas-loop-framecapper. Every animated
+// subsystem registers through onFrame() and receives a shared
+// { delta, elapsed, frame }. The framecapper's shared FrameLoopManager owns the
+// single requestAnimationFrame and (optionally) caps it to a fixed frame rate
+// with a fixed-timestep accumulator; each createFrameLoop() keeps its own
+// subscriber set, frame counter and elapsed time, so independent loops can
+// start/stop without affecting one another. registerUpdate/unregisterUpdate
+// mirror the SceneModule lifecycle API.
+import { frameLoopManager } from '@tuomashatakka/canvas-loop-framecapper';
+export function createFrameLoop({ clock: simClock, fps } = {}) {
     const subscribers = new Set();
-    const clock = new THREE.Clock(false);
     let frame = 0;
-    let rafId = 0;
+    let elapsed = 0;
     let running = false;
-    function tick() {
-        if (!running)
-            return;
-        rafId = requestAnimationFrame(tick);
-        const real = clock.getDelta();
-        // perf: one rAF, one Set iteration per sim step. zero allocations.
+    if (fps !== undefined)
+        frameLoopManager.setFixedFrameRate(fps);
+    // One sync callback on the shared manager per loop. The manager hands us the
+    // real (or fixed-step, when capped) delta in seconds; sub-stepping through an
+    // injected sim clock happens here, exactly as before.
+    function pump() {
+        const real = frameLoopManager.deltaTime;
+        // perf: one shared rAF, one Set iteration per sim step. zero allocations.
         if (simClock) {
             for (const delta of simClock.advance(real)) {
                 frame += 1;
-                const elapsed = simClock.elapsed();
+                const simElapsed = simClock.elapsed();
                 for (const cb of subscribers)
-                    cb({ delta, elapsed, frame });
+                    cb({ delta, elapsed: simElapsed, frame });
             }
             return;
         }
         frame += 1;
-        const elapsed = clock.getElapsedTime();
+        elapsed += real;
         for (const cb of subscribers)
             cb({ delta: real, elapsed, frame });
     }
@@ -36,15 +39,15 @@ export function createFrameLoop({ clock: simClock } = {}) {
         if (running)
             return;
         running = true;
-        clock.start();
-        rafId = requestAnimationFrame(tick);
+        frameLoopManager.registerSyncCallback(pump);
+        frameLoopManager.resume();
     }
     function stop() {
         if (!running)
             return;
         running = false;
-        clock.stop();
-        cancelAnimationFrame(rafId);
+        // Unregister only — pausing the shared manager would freeze sibling loops.
+        frameLoopManager.unregisterSyncCallback(pump);
     }
     function onFrame(cb) {
         subscribers.add(cb);
@@ -64,6 +67,7 @@ export function createFrameLoop({ clock: simClock } = {}) {
         stop();
         subscribers.clear();
         frame = 0;
+        elapsed = 0;
     }
     return { onFrame, registerUpdate, unregisterUpdate, start, stop, dispose };
 }

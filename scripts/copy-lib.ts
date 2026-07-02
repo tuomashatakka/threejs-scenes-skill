@@ -21,4 +21,19 @@ for (const dest of targets) {
   await cp(distSrc, dest, { recursive: true })
 }
 
-console.log('copy-lib: dist/ -> skill/lib/dist/ + public/lib/dist/')
+// Vendor the frame-loop dependency next to dist so importmaps can resolve the
+// bare '@tuomashatakka/canvas-loop-framecapper' specifier without a registry.
+const vendorSrc = new URL('../node_modules/@tuomashatakka/canvas-loop-framecapper/dist/', import.meta.url)
+
+const vendorTargets = [
+  new URL('../skill/lib/vendor/canvas-loop-framecapper/', import.meta.url),
+  new URL('../public/lib/vendor/canvas-loop-framecapper/', import.meta.url),
+]
+
+for (const dest of vendorTargets) {
+  await rm(dest, { recursive: true, force: true })
+  await mkdir(dest, { recursive: true })
+  await cp(vendorSrc, dest, { recursive: true })
+}
+
+console.log('copy-lib: dist/ -> skill/lib/dist/ + public/lib/dist/ (+ vendor/canvas-loop-framecapper)')

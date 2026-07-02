@@ -1,12 +1,14 @@
 // lib/core/frame-loop.ts
-// Self-contained Clock-driven frame loop. Single source of truth: every
-// animated subsystem registers through onFrame() and receives a shared
-// { delta, elapsed, frame }. Ported from scripts/frame-loop.js but with the
-// external @tuomashatakka/canvas-loop-framecapper dependency removed — the loop
-// is inlined the same way the templates inline it, so the package has no exotic
-// deps. registerUpdate/unregisterUpdate mirror the SceneModule lifecycle API.
+// Frame loop backed by @tuomashatakka/canvas-loop-framecapper. Every animated
+// subsystem registers through onFrame() and receives a shared
+// { delta, elapsed, frame }. The framecapper's shared FrameLoopManager owns the
+// single requestAnimationFrame and (optionally) caps it to a fixed frame rate
+// with a fixed-timestep accumulator; each createFrameLoop() keeps its own
+// subscriber set, frame counter and elapsed time, so independent loops can
+// start/stop without affecting one another. registerUpdate/unregisterUpdate
+// mirror the SceneModule lifecycle API.
 
-import * as THREE from 'three'
+import { frameLoopManager } from '@tuomashatakka/canvas-loop-framecapper'
 
 import type { Clock } from './clock.js'
 import type { FrameCallback, FrameLoop } from '../types.js'
@@ -16,35 +18,43 @@ export interface FrameLoopOptions {
 
   /** Injectable sim-time source (createClock). Default: raw wall-clock deltas. */
   clock?: Clock
+
+  /**
+   * Cap the loop at a fixed frame rate (fps > 0). Applies a fixed-timestep
+   * accumulator: capped frames always receive delta = 1/fps. NOTE: the cap is
+   * set on the shared FrameLoopManager, so it applies to every loop on the page.
+   */
+  fps?: number
 }
 
-export function createFrameLoop ({ clock: simClock }: FrameLoopOptions = {}): FrameLoop {
+export function createFrameLoop ({ clock: simClock, fps }: FrameLoopOptions = {}): FrameLoop {
   const subscribers = new Set<FrameCallback>()
-  const clock       = new THREE.Clock(false)
   let frame   = 0
-  let rafId   = 0
+  let elapsed = 0
   let running = false
 
-  function tick (): void {
-    if (!running)
-      return
-    rafId = requestAnimationFrame(tick)
+  if (fps !== undefined)
+    frameLoopManager.setFixedFrameRate(fps)
 
-    const real = clock.getDelta()
-    // perf: one rAF, one Set iteration per sim step. zero allocations.
+  // One sync callback on the shared manager per loop. The manager hands us the
+  // real (or fixed-step, when capped) delta in seconds; sub-stepping through an
+  // injected sim clock happens here, exactly as before.
+  function pump (): void {
+    const real = frameLoopManager.deltaTime
+    // perf: one shared rAF, one Set iteration per sim step. zero allocations.
     if (simClock) {
       for (const delta of simClock.advance(real)) {
         frame += 1
 
-        const elapsed = simClock.elapsed()
+        const simElapsed = simClock.elapsed()
         for (const cb of subscribers)
-          cb({ delta, elapsed, frame })
+          cb({ delta, elapsed: simElapsed, frame })
       }
       return
     }
-    frame += 1
+    frame   += 1
+    elapsed += real
 
-    const elapsed = clock.getElapsedTime()
     for (const cb of subscribers)
       cb({ delta: real, elapsed, frame })
   }
@@ -53,16 +63,16 @@ export function createFrameLoop ({ clock: simClock }: FrameLoopOptions = {}): Fr
     if (running)
       return
     running = true
-    clock.start()
-    rafId = requestAnimationFrame(tick)
+    frameLoopManager.registerSyncCallback(pump)
+    frameLoopManager.resume()
   }
 
   function stop (): void {
     if (!running)
       return
     running = false
-    clock.stop()
-    cancelAnimationFrame(rafId)
+    // Unregister only — pausing the shared manager would freeze sibling loops.
+    frameLoopManager.unregisterSyncCallback(pump)
   }
 
   function onFrame (cb: FrameCallback): () => void {
@@ -85,7 +95,8 @@ export function createFrameLoop ({ clock: simClock }: FrameLoopOptions = {}): Fr
   function dispose (): void {
     stop()
     subscribers.clear()
-    frame = 0
+    frame   = 0
+    elapsed = 0
   }
 
   return { onFrame, registerUpdate, unregisterUpdate, start, stop, dispose }
