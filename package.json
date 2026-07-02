@@ -136,7 +136,7 @@
     "three": ">=0.160.0"
   },
   "devDependencies": {
-    "@tuomashatakka/eslint-config": "^3.2.2",
+    "@tuomashatakka/eslint-config": "^4",
     "@types/three": "^0.184.1",
     "three": "^0.184.0",
     "typescript": "^6.0.3"
