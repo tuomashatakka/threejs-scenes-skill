@@ -10,4 +10,5 @@ export * from './dof-chromatic-pass.js';
 export * from './film-grain-pass.js';
 export * from './hud-beam-transition.js';
 export * from './stereoscopy.js';
+export * from './cinematic-lut.js';
 //# sourceMappingURL=index.js.map

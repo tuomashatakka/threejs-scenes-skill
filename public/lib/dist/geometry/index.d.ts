@@ -6,4 +6,5 @@ export * from './merge.js';
 export * from './group.js';
 export * from './connection-graph.js';
 export * from './infinite-ground.js';
+export * from './path-tube.js';
 //# sourceMappingURL=index.d.ts.map

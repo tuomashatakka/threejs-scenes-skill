@@ -271,6 +271,11 @@ Live demo: [`follow-camera.html`](https://tuomashatakka.github.io/threejs-scenes
   ```ts
   function createCameraController(camera: THREE.PerspectiveCamera, { stiffness, lookStiffness, fovStiffness, arriveEpsilon, bounds, }?: CameraControllerOptions): CameraController;
   ```
+- **`createPathCamera`** *(function)*
+
+  ```ts
+  function createPathCamera(camera: THREE.PerspectiveCamera, path: PathCameraSource, element: HTMLElement, { yawRange, pitchRange, smoothing, speed }?: PathCameraOptions): PathCamera;
+  ```
 - **`IsoFlavor`** *(type)*
 - **`IsoCameraOptions`** *(interface)*
 - **`FollowCameraOptions`** *(interface)*
@@ -281,6 +286,9 @@ Live demo: [`follow-camera.html`](https://tuomashatakka.github.io/threejs-scenes
 - **`CameraControllerOptions`** *(interface)*
 - **`FlyToOptions`** *(interface)*
 - **`CameraController`** *(interface)*
+- **`PathCameraOptions`** *(interface)*
+- **`PathCameraSource`** *(interface)*
+- **`PathCamera`** *(interface)*
 
   <details><summary>Example</summary>
 
@@ -351,11 +359,24 @@ Live demo: [`materials.html`](https://tuomashatakka.github.io/threejs-scenes-ski
   ```ts
   function createHolographicMaterial({ baseColor, fresnelStrength, scanlineDensity, opacity, }?: HolographicMaterialOptions): TickableMaterial;
   ```
+- **`createTriplanarMaterial`** *(function)*
+
+  ```ts
+  function createTriplanarMaterial({ palette, tileScale, fogDistance, side, }?: TriplanarMaterialOptions): THREE.ShaderMaterial;
+  ```
+- **`createShaderQuad`** *(function)*
+
+  ```ts
+  function createShaderQuad({ fragmentShader, uniforms, pointerElement }: ShaderQuadOptions): ShaderQuad;
+  ```
 - **`MATERIAL_PRESETS`** *(const)*
 - **`StandardPresetName`** *(type)*
 - **`ToonOptions`** *(interface)*
 - **`HolographicMaterialOptions`** *(interface)*
 - **`TickableMaterial`** *(interface)*
+- **`TriplanarMaterialOptions`** *(interface)*
+- **`ShaderQuadOptions`** *(interface)*
+- **`ShaderQuad`** *(interface)*
 
   <details><summary>Example</summary>
 
@@ -500,6 +521,16 @@ Live demo: [`geometry.html`](https://tuomashatakka.github.io/threejs-scenes-skil
   ```ts
   function createInfiniteGround({ tileSize, gridRadius, segments, displace, material, }?: InfiniteGroundOptions): InfiniteGround;
   ```
+- **`parallelTransportFrames`** *(function)* — Twist-free coordinate frames along a polyline (parallel transport).
+
+  ```ts
+  function parallelTransportFrames(points: THREE.Vector3[]): TransportFrames;
+  ```
+- **`createPathTube`** *(function)* — Sweep a circle through parallel-transport frames along `points`.
+
+  ```ts
+  function createPathTube(points: THREE.Vector3[], { radius, radialSegments, inward, vRepeat }?: PathTubeOptions): THREE.BufferGeometry;
+  ```
 - **`ExtrudeOptions`** *(interface)*
 - **`ExtrudeAlongPathOptions`** *(interface)*
 - **`LatheOptions`** *(interface)*
@@ -512,6 +543,8 @@ Live demo: [`geometry.html`](https://tuomashatakka.github.io/threejs-scenes-skil
 - **`ConnectionGraph`** *(interface)*
 - **`InfiniteGroundOptions`** *(interface)*
 - **`InfiniteGround`** *(interface)*
+- **`TransportFrames`** *(interface)*
+- **`PathTubeOptions`** *(interface)*
 
   <details><summary>Example</summary>
 
@@ -689,11 +722,27 @@ Live demo: [`lighting.html`](https://tuomashatakka.github.io/threejs-scenes-skil
   ```ts
   function setupStandardLighting(scene: THREE.Scene, renderer: THREE.WebGLRenderer, options?: StandardLightingOptions): StandardLighting;
   ```
+- **`createLightCone`** *(function)*
+
+  ```ts
+  function createLightCone(from: THREE.Vector3, to: THREE.Vector3, { color, spread }?: LightConeOptions): THREE.Mesh;
+  ```
+- **`createLightingRig`** *(function)*
+
+  ```ts
+  function createLightingRig(scene: THREE.Scene, renderer: THREE.WebGLRenderer, { preset, shadows, presets }?: LightingRigOptions): LightingRig;
+  ```
+- **`LIGHTING_PRESETS`** *(const)*
 - **`EnvironmentOptions`** *(interface)*
 - **`SunOptions`** *(interface)*
 - **`HemisphereFillOptions`** *(interface)*
 - **`StandardLightingOptions`** *(interface)*
 - **`StandardLighting`** *(interface)*
+- **`LightConeOptions`** *(interface)*
+- **`LightingPresetName`** *(type)*
+- **`LightingConfig`** *(interface)*
+- **`LightingRigOptions`** *(interface)*
+- **`LightingRig`** *(interface)*
 
   <details><summary>Example</summary>
 
@@ -826,6 +875,11 @@ Live demo: [`post-processing.html`](https://tuomashatakka.github.io/threejs-scen
   ```ts
   function createStereoRenderer(renderer: THREE.WebGLRenderer, mode: StereoMode, { width, height }?: StereoSizeOptions): StereoRenderer;
   ```
+- **`createCinematicLUT`** *(function)* — Build a cinematic colour-grading 3D LUT as a `Data3DTexture`: a gentle.
+
+  ```ts
+  function createCinematicLUT(size?: number, { contrast, splitTone, saturation }?: CinematicLutOptions): THREE.Data3DTexture;
+  ```
 - **`GradeShader`** *(const)*
 - **`ComposerOptions`** *(interface)*
 - **`ComposerHandle`** *(interface)*
@@ -842,6 +896,7 @@ Live demo: [`post-processing.html`](https://tuomashatakka.github.io/threejs-scen
 - **`StereoMode`** *(type)*
 - **`StereoRenderer`** *(interface)*
 - **`StereoSizeOptions`** *(interface)*
+- **`CinematicLutOptions`** *(interface)*
 
   <details><summary>Example</summary>
 
@@ -1331,12 +1386,21 @@ Live demo: [`procedural.html`](https://tuomashatakka.github.io/threejs-scenes-sk
   ```ts
   function createProceduralBody({ radius, detail, seed, type, displacement, frequency, octaves, ridged, palette, water, clouds, rings, }?: ProceduralBodySpec): ProceduralBody;
   ```
+- **`createSegmentStream`** *(function)*
+
+  ```ts
+  function createSegmentStream(scene: THREE.Scene, { maxActive, lift, tension }?: SegmentStreamOptions): SegmentStream;
+  ```
 - **`Point2`** *(type)*
 - **`PoissonDiskOptions`** *(interface)*
 - **`NoiseTextureOptions`** *(interface)*
 - **`Noise3D`** *(interface)*
 - **`ProceduralBodySpec`** *(interface)*
 - **`ProceduralBody`** *(interface)*
+- **`StreamSegmentInput`** *(interface)*
+- **`StreamSegment`** *(interface)*
+- **`SegmentStreamOptions`** *(interface)*
+- **`SegmentStream`** *(interface)*
 
   <details><summary>Example</summary>
 

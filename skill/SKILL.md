@@ -40,6 +40,7 @@ Load only what the current task needs. Don't read every file by default.
 | `references/performance.md` | optimization, profiling, draw-call reduction, memory/GC discipline |
 | `references/programmatic-generation.md` | runtime geometry/texture/instance generation; seeded factories |
 | `references/isometric-and-infinite-scenes.md` | iso cameras, chunk managers, infinite worlds, origin rebasing |
+| `references/cinematic-and-streaming.md` | named lighting presets, volumetric beams, cinematic LUT, endless segment streams + on-rails camera, path tubes, triplanar + fullscreen-shader materials |
 | `references/voxel-geometry.md` | voxel chunks, greedy meshing, smooth voxels |
 | `references/billboards.md` | sprites, GLSL-billboarded `InstancedMesh`, cylindrical vs spherical |
 | `references/camera-handling.md` | camera setup, touch-first controls, pointer gestures, resize |

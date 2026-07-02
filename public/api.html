@@ -384,6 +384,11 @@ loop.onFrame(ctx =&gt; cam.update(ctx))</code></pre>
         
         <pre><code>function createCameraController(camera: THREE.PerspectiveCamera, { stiffness, lookStiffness, fovStiffness, arriveEpsilon, bounds, }?: CameraControllerOptions): CameraController;</code></pre>
       </article>
+      <article class="api-card" id="api-camera-createpathcamera">
+        <h4><code>createPathCamera</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createPathCamera(camera: THREE.PerspectiveCamera, path: PathCameraSource, element: HTMLElement, { yawRange, pitchRange, smoothing, speed }?: PathCameraOptions): PathCamera;</code></pre>
+      </article>
       <article class="api-card" id="api-camera-isoflavor">
         <h4><code>IsoFlavor</code> <span class="badge">type</span></h4>
         
@@ -475,6 +480,42 @@ loop.onFrame(ctx =&gt; cam.update(ctx))</code></pre>
     snapTo(position: Vec3Tuple, lookAt: Vec3Tuple): void;
     isMoving(): boolean;
     update(ctx: FrameContext): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-pathcameraoptions">
+        <h4><code>PathCameraOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PathCameraOptions {
+    /** Max look-around yaw in radians. Default 0.25 (~14°). */
+    yawRange?: number;
+    /** Max look-around pitch in radians. Default 0.18. */
+    pitchRange?: number;
+    /** Look smoothing rate (higher = snappier). Default 6. */
+    smoothing?: number;
+    /** Units per second along the curve. Default 2. */
+    speed?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-pathcamerasource">
+        <h4><code>PathCameraSource</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PathCameraSource {
+    /** Current path curve. May be swapped/rebuilt between frames. */
+    curve: THREE.Curve&lt;THREE.Vector3&gt; &amp; {
+        points?: THREE.Vector3[];
+    };
+    /** Total path length in world units. */
+    total: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-pathcamera">
+        <h4><code>PathCamera</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PathCamera extends Disposable {
+    /** Distance travelled along the curve (writable for seeking). */
+    distance: number;
+    /** Advance and orient the camera. Call once per frame. */
+    update(ctx: FrameContext, speedOverride?: number): void;
 }</code></pre>
       </article>
     </section>
@@ -575,6 +616,16 @@ TextureLoader — browser only; headless the matcap is simply left unset).</p>
         
         <pre><code>function createHolographicMaterial({ baseColor, fresnelStrength, scanlineDensity, opacity, }?: HolographicMaterialOptions): TickableMaterial;</code></pre>
       </article>
+      <article class="api-card" id="api-materials-createtriplanarmaterial">
+        <h4><code>createTriplanarMaterial</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createTriplanarMaterial({ palette, tileScale, fogDistance, side, }?: TriplanarMaterialOptions): THREE.ShaderMaterial;</code></pre>
+      </article>
+      <article class="api-card" id="api-materials-createshaderquad">
+        <h4><code>createShaderQuad</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createShaderQuad({ fragmentShader, uniforms, pointerElement }: ShaderQuadOptions): ShaderQuad;</code></pre>
+      </article>
       <article class="api-card" id="api-materials-material_presets">
         <h4><code>MATERIAL_PRESETS</code> <span class="badge">const</span></h4>
         
@@ -610,6 +661,44 @@ TextureLoader — browser only; headless the matcap is simply left unset).</p>
     userData: {
         tick: (ctx: FrameContext) =&gt; void;
     };
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-materials-triplanarmaterialoptions">
+        <h4><code>TriplanarMaterialOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface TriplanarMaterialOptions {
+    /** [base A, base B, grid/accent]. */
+    palette?: [THREE.ColorRepresentation, THREE.ColorRepresentation, THREE.ColorRepresentation];
+    /** World units per grid cell (smaller = denser grid). Default 0.4. */
+    tileScale?: number;
+    /** Distance where the fog tint saturates. Default 40. */
+    fogDistance?: number;
+    side?: THREE.Side;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-materials-shaderquadoptions">
+        <h4><code>ShaderQuadOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ShaderQuadOptions {
+    /** Fragment shader. Receives iResolution, iTime, uPointer + your uniforms. */
+    fragmentShader: string;
+    /** Extra uniforms merged into the standard set. */
+    uniforms?: Record&lt;string, THREE.IUniform&gt;;
+    /** Track pointer position on this element into uPointer. */
+    pointerElement?: HTMLElement;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-materials-shaderquad">
+        <h4><code>ShaderQuad</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ShaderQuad extends Disposable {
+    scene: THREE.Scene;
+    camera: THREE.OrthographicCamera;
+    material: THREE.ShaderMaterial;
+    /** Advance iTime and (if sizeable) iResolution. Call once per frame. */
+    update(ctx: FrameContext, renderer: THREE.WebGLRenderer): void;
+    /** update + renderer.render in one call, for shader-only scenes. */
+    render(ctx: FrameContext, renderer: THREE.WebGLRenderer): void;
 }</code></pre>
       </article>
     </section>
@@ -753,6 +842,16 @@ is baked into the merged geometry. The source meshes are left untouched.</p>
         
         <pre><code>function createInfiniteGround({ tileSize, gridRadius, segments, displace, material, }?: InfiniteGroundOptions): InfiniteGround;</code></pre>
       </article>
+      <article class="api-card" id="api-geometry-paralleltransportframes">
+        <h4><code>parallelTransportFrames</code> <span class="badge">function</span></h4>
+        <p>Twist-free coordinate frames along a polyline (parallel transport).</p>
+        <pre><code>function parallelTransportFrames(points: THREE.Vector3[]): TransportFrames;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-createpathtube">
+        <h4><code>createPathTube</code> <span class="badge">function</span></h4>
+        <p>Sweep a circle through parallel-transport frames along `points`.</p>
+        <pre><code>function createPathTube(points: THREE.Vector3[], { radius, radialSegments, inward, vRepeat }?: PathTubeOptions): THREE.BufferGeometry;</code></pre>
+      </article>
       <article class="api-card" id="api-geometry-extrudeoptions">
         <h4><code>ExtrudeOptions</code> <span class="badge">interface</span></h4>
         
@@ -879,6 +978,29 @@ is baked into the merged geometry. The source meshes are left untouched.</p>
     update(center: THREE.Vector3): void;
     /** Sample the ground height at a world position. */
     heightAt(x: number, z: number): number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-transportframes">
+        <h4><code>TransportFrames</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface TransportFrames {
+    tangents: THREE.Vector3[];
+    normals: THREE.Vector3[];
+    binormals: THREE.Vector3[];
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-pathtubeoptions">
+        <h4><code>PathTubeOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PathTubeOptions {
+    /** Constant radius, or a per-point function of (t in [0,1], index). Default 1. */
+    radius?: number | ((t: number, index: number) =&gt; number);
+    /** Cross-section resolution. Default 12. */
+    radialSegments?: number;
+    /** Flip normals/winding to view the tube from inside (tunnels). Default false. */
+    inward?: boolean;
+    /** V coordinate repeat along the length. Default 1. */
+    vRepeat?: number;
 }</code></pre>
       </article>
     </section>
@@ -1142,6 +1264,21 @@ is baked into the merged geometry. The source meshes are left untouched.</p>
         
         <pre><code>function setupStandardLighting(scene: THREE.Scene, renderer: THREE.WebGLRenderer, options?: StandardLightingOptions): StandardLighting;</code></pre>
       </article>
+      <article class="api-card" id="api-lighting-createlightcone">
+        <h4><code>createLightCone</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createLightCone(from: THREE.Vector3, to: THREE.Vector3, { color, spread }?: LightConeOptions): THREE.Mesh;</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-createlightingrig">
+        <h4><code>createLightingRig</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createLightingRig(scene: THREE.Scene, renderer: THREE.WebGLRenderer, { preset, shadows, presets }?: LightingRigOptions): LightingRig;</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-lighting_presets">
+        <h4><code>LIGHTING_PRESETS</code> <span class="badge">const</span></h4>
+        
+        <pre><code>const LIGHTING_PRESETS: Record&lt;LightingPresetName, LightingConfig&gt;;</code></pre>
+      </article>
       <article class="api-card" id="api-lighting-environmentoptions">
         <h4><code>EnvironmentOptions</code> <span class="badge">interface</span></h4>
         
@@ -1187,6 +1324,63 @@ is baked into the merged geometry. The source meshes are left untouched.</p>
     env: THREE.Texture;
     sun: THREE.DirectionalLight;
     hemi: THREE.HemisphereLight;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-lightconeoptions">
+        <h4><code>LightConeOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface LightConeOptions {
+    color?: THREE.ColorRepresentation;
+    /** Cone base radius as a fraction of its length. Default 0.16. */
+    spread?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-lightingpresetname">
+        <h4><code>LightingPresetName</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type LightingPresetName = 'dramatic' | 'studio' | 'soft' | 'neon' | 'sunset';</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-lightingconfig">
+        <h4><code>LightingConfig</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface LightingConfig {
+    background: number;
+    exposure: number;
+    fog: [number, number];
+    hemi: [number, number, number];
+    key: [number, number, [number, number, number]];
+    rim: [number, number, [number, number, number]];
+    accent: [number, number, [number, number, number]];
+    /** Optional narrow theatrical spotlight: colour, intensity, position, cone angle (rad). */
+    spot?: [number, number, [number, number, number], number];
+    /** Optional pair of visible cone-shaped beams converging on the origin: colour, intensity. */
+    beams?: [number, number];
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-lightingrigoptions">
+        <h4><code>LightingRigOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface LightingRigOptions {
+    /** Initial preset. Default: 'studio'. */
+    preset?: LightingPresetName;
+    /** Cast shadows from the key light. Default: true. */
+    shadows?: boolean;
+    /** Extra presets merged over the built-ins. */
+    presets?: Record&lt;string, LightingConfig&gt;;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-lightingrig">
+        <h4><code>LightingRig</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface LightingRig extends Disposable {
+    hemi: THREE.HemisphereLight;
+    key: THREE.DirectionalLight;
+    rim: THREE.DirectionalLight;
+    accent: THREE.PointLight;
+    spot: THREE.SpotLight;
+    cones: THREE.Mesh[];
+    /** Retune every light (and scene bg/fog/exposure) to a named preset. */
+    setPreset(name: LightingPresetName | string): void;
 }</code></pre>
       </article>
     </section>
@@ -1422,6 +1616,13 @@ loop.onFrame(({ delta }) =&gt; post.render(delta))</code></pre>
         
         <pre><code>function createStereoRenderer(renderer: THREE.WebGLRenderer, mode: StereoMode, { width, height }?: StereoSizeOptions): StereoRenderer;</code></pre>
       </article>
+      <article class="api-card" id="api-post-createcinematiclut">
+        <h4><code>createCinematicLUT</code> <span class="badge">function</span></h4>
+        <p>Build a cinematic colour-grading 3D LUT as a `Data3DTexture`: a gentle
+S-curve for contrast, teal lifted into the shadows and warmth pushed into
+the highlights (the classic "teal &amp; orange" look), plus a saturation lift.</p>
+        <pre><code>function createCinematicLUT(size?: number, { contrast, splitTone, saturation }?: CinematicLutOptions): THREE.Data3DTexture;</code></pre>
+      </article>
       <article class="api-card" id="api-post-gradeshader">
         <h4><code>GradeShader</code> <span class="badge">const</span></h4>
         
@@ -1607,6 +1808,18 @@ loop.onFrame(({ delta }) =&gt; post.render(delta))</code></pre>
         <pre><code>interface StereoSizeOptions {
     width?: number;
     height?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-cinematiclutoptions">
+        <h4><code>CinematicLutOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface CinematicLutOptions {
+    /** Contrast S-curve strength about mid-grey. Default 1.12. */
+    contrast?: number;
+    /** Split-tone strength: teal into shadows, amber into highlights. Default 1. */
+    splitTone?: number;
+    /** Saturation multiplier. Default 1.08. */
+    saturation?: number;
 }</code></pre>
       </article>
     </section>
@@ -2685,6 +2898,11 @@ scene.add(planet.object)</code></pre>
         
         <pre><code>function createProceduralBody({ radius, detail, seed, type, displacement, frequency, octaves, ridged, palette, water, clouds, rings, }?: ProceduralBodySpec): ProceduralBody;</code></pre>
       </article>
+      <article class="api-card" id="api-procedural-createsegmentstream">
+        <h4><code>createSegmentStream</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSegmentStream(scene: THREE.Scene, { maxActive, lift, tension }?: SegmentStreamOptions): SegmentStream;</code></pre>
+      </article>
       <article class="api-card" id="api-procedural-point2">
         <h4><code>Point2</code> <span class="badge">type</span></h4>
         
@@ -2766,6 +2984,63 @@ scene.add(planet.object)</code></pre>
     object: THREE.Group;
     /** Slow cloud drift + body spin. */
     tick(ctx: FrameContext): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-streamsegmentinput">
+        <h4><code>StreamSegmentInput</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface StreamSegmentInput {
+    /** Segment content, authored in local space with the entrance at the origin facing +z. */
+    object: THREE.Object3D;
+    /** Local-space path control points the camera should travel through. */
+    pathPoints: Vec3Tuple[];
+    /** Local-space exit: where the NEXT segment's entrance lands, and its direction. */
+    exit: {
+        position: Vec3Tuple;
+        tangent: Vec3Tuple;
+    };
+    /** Free GPU resources owned by the segment. Called on eviction. */
+    dispose?: () =&gt; void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-streamsegment">
+        <h4><code>StreamSegment</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface StreamSegment {
+    input: StreamSegmentInput;
+    startT: number;
+    endT: number;
+    length: number;
+    worldExit: THREE.Vector3;
+    worldExitTangent: THREE.Vector3;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-segmentstreamoptions">
+        <h4><code>SegmentStreamOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SegmentStreamOptions {
+    /** Segments kept alive; older ones are evicted + disposed. Default 4. */
+    maxActive?: number;
+    /** World-Y added to path points (camera head height). Default 1.6. */
+    lift?: number;
+    /** CatmullRom tension. Default 0.5. */
+    tension?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-segmentstream">
+        <h4><code>SegmentStream</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SegmentStream extends Disposable {
+    curve: THREE.CatmullRomCurve3;
+    /** Total stitched path length (chord-sum estimate) in world units. */
+    total: number;
+    segments: StreamSegment[];
+    /** Count of segments ever appended (for prefetch math). */
+    appended: number;
+    /** World-align a segment onto the path end, add it to the scene, evict old ones. */
+    append(input: StreamSegmentInput): StreamSegment;
+    /** Index (into segments) of the segment containing path distance d. */
+    indexAt(distance: number): number;
 }</code></pre>
       </article>
     </section>
