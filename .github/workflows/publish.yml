@@ -57,7 +57,20 @@ jobs:
           GH_PAT: ${{ secrets.PACKAGES_TOKEN || github.token }}
         run: |
           set -euo pipefail
-          bun publish --registry https://npm.pkg.github.com
+          PKG_VER=$(node -p "require('./package.json').version")
+
+          # Check if this version already exists on the registry to avoid
+          # "Cannot publish over existing version" errors for unchanged versions.
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: token $GH_PAT" \
+            "https://npm.pkg.github.com/@tuomashatakka%2fthreejs-scenes/$PKG_VER" \
+            2>/dev/null || echo "000")
+
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "Version $PKG_VER already published — skipping"
+          else
+            bun publish --registry https://npm.pkg.github.com
+          fi
 
       - name: Assemble site
         run: |
