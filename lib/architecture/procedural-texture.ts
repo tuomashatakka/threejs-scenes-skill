@@ -14,42 +14,61 @@ export type PaintFn = (
   size: number,
 ) => void
 
-const cache = new Map<string, THREE.CanvasTexture>()
+// An explicit, owned texture cache — prefer this over the module-global one
+// so texture lifetime follows your scene (unidirectional-API form).
+export interface TextureCache extends Disposable {
+  get (key: string, paint: PaintFn, size?: number): THREE.CanvasTexture | null
+}
+
+export function createTextureCache (): TextureCache {
+  const cache = new Map<string, THREE.CanvasTexture>()
+  return {
+    get (key, paint, size = 256) {
+      // DOM-guard: degrade to null (flat colour) headless.
+      if (typeof document === 'undefined')
+        return null
+
+      const existing = cache.get(key)
+      if (existing)
+        return existing
+
+      const canvas  = document.createElement('canvas')
+      canvas.width  = size
+      canvas.height = size
+
+      const ctx     = canvas.getContext('2d')
+      if (!ctx)
+        return null
+      paint(ctx, size)
+
+      const texture       = new THREE.CanvasTexture(canvas)
+      texture.wrapS       = texture.wrapT = THREE.RepeatWrapping
+      texture.needsUpdate = true
+      cache.set(key, texture)
+      return texture
+    },
+    dispose () {
+      for (const tex of cache.values())
+        tex.dispose()
+      cache.clear()
+    },
+  }
+}
+
+// module-global convenience instance, kept for back-compat.
+const shared = createTextureCache()
 
 export function createProceduralTexture (
   key: string,
   paint: PaintFn,
   size = 256,
 ): THREE.CanvasTexture | null {
-  // DOM-guard: degrade to null (flat colour) headless.
-  if (typeof document === 'undefined')
-    return null
-
-  const existing = cache.get(key)
-  if (existing)
-    return existing
-
-  const canvas  = document.createElement('canvas')
-  canvas.width  = size
-  canvas.height = size
-
-  const ctx     = canvas.getContext('2d')
-  if (!ctx)
-    return null
-  paint(ctx, size)
-
-  const texture       = new THREE.CanvasTexture(canvas)
-  texture.wrapS       = texture.wrapT = THREE.RepeatWrapping
-  texture.needsUpdate = true
-  cache.set(key, texture)
-  return texture
+  return shared.get(key, paint, size)
 }
 
 export const proceduralTextureCache: Disposable = {
   dispose () {
-    for (const tex of cache.values())
-      tex.dispose()
-    cache.clear()
+    shared.dispose()
   },
 }
 

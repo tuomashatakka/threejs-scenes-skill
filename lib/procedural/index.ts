@@ -2,3 +2,5 @@
 export * from './rng.js'
 export * from './poisson-disk.js'
 export * from './noise-texture.js'
+export * from './noise.js'
+export * from './body.js'

@@ -7,6 +7,7 @@
 
 import { cp, rm, mkdir } from 'node:fs/promises'
 
+
 const distSrc = new URL('../dist/', import.meta.url)
 
 const targets = [

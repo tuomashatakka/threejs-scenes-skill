@@ -1,0 +1,2 @@
+[     384ms] [WARNING] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead. @ https://esm.sh/three@0.184.0/es2022/build/three.core.mjs:1
+[     400ms] [WARNING] THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead. @ https://esm.sh/three@0.184.0/es2022/build/three.core.mjs:1

@@ -11,6 +11,19 @@ import { createProp } from './prop.js';
 import { loadModel } from '../loaders/model-registry.js';
 import { createAnimationController } from '../animation/mixer.js';
 import { disposeScene } from '../core/dispose.js';
+export function createPropRegistry() {
+    const names = new Map();
+    return {
+        register(name, factory) {
+            names.set(name, factory);
+        },
+        get: name => names.get(name),
+        resolve(src, ctx = {}) {
+            return resolveWith(names, src, ctx);
+        },
+    };
+}
+// module-global convenience instance, kept for back-compat.
 const registry = new Map();
 export function registerProp(name, factory) {
     registry.set(name, factory);
@@ -41,10 +54,13 @@ function wrapModel(object, clips, ctx) {
         },
     };
 }
-export async function resolveProp(src, ctx = {}) {
+export function resolveProp(src, ctx = {}) {
+    return resolveWith(registry, src, ctx);
+}
+async function resolveWith(names, src, ctx) {
     if (isFactory(src))
         return createProp(src, ctx);
-    const registered = registry.get(src);
+    const registered = names.get(src);
     if (registered)
         return createProp(registered, ctx);
     if (isModelFile(src)) {

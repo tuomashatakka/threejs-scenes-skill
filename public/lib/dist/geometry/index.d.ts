@@ -4,4 +4,6 @@ export * from './lathe.js';
 export * from './modifiers.js';
 export * from './merge.js';
 export * from './group.js';
+export * from './connection-graph.js';
+export * from './infinite-ground.js';
 //# sourceMappingURL=index.d.ts.map

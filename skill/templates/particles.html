@@ -1,143 +1,153 @@
 <!DOCTYPE html>
 <!--
-  particles.html — GC-proof instanced particle emitter
-  ────────────────────────────────────────────────────
-  Self-contained. Open directly in a browser (loads `three` from esm.sh).
-
-  Lessons (from the scene/core particle emitter):
-    - one InstancedMesh = one draw call for the whole system
-    - DETERMINISTIC phase math instead of birth/death lists: each particle's
-      age is (elapsed * speed + seedPhase) mod 1, so there is NO per-frame
-      allocation and no garbage to collect — runs flat forever
-    - module-scope scratch Object3D / Color; nothing `new`-ed in the loop
-    - additive blending + depthWrite:false for glowing sparks
+  particles.html — particle systems v2
+  ────────────────────────────────────
+  createEmitter: emitter shapes, rate + burst emission, colour/alpha/size
+  curves over lifetime, deterministic (seed + tick sequence -> identical runs).
+  createGpuEmitter: GPGPU steady-state field for six-figure particle counts.
+  Library-backed: imports @scenes from the local lib/dist via importmap.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>three.js · particles</title>
+  <title>threejs-scenes · particles v2</title>
   <style>
     html, body { margin: 0; height: 100%; background: #050208; overflow: hidden; font-family: ui-monospace, monospace }
     main { position: fixed; inset: 0 }
     canvas { display: block; width: 100%; height: 100%; touch-action: none }
     aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #ffc0e0;
-      background: rgba(5, 2, 8, 0.6); border: 1px solid #3a2233; border-radius: 6px;
-      font-size: 12px; line-height: 1.6; pointer-events: none }
-    b { color: #ff9fd0 }
+      background: rgba(5, 2, 8, 0.7); border: 1px solid #3a2233; border-radius: 6px;
+      font-size: 12px; line-height: 1.8 }
+    aside b { color: #ff9fd0 }
+    button { font: 12px ui-monospace, monospace; margin: 2px 4px 2px 0; padding: 4px 8px;
+      background: #1a0f18; color: #ffc0e0; border: 1px solid #3a2233; border-radius: 4px; cursor: pointer }
+    button[aria-pressed="true"] { background: #ff9fd0; color: #1a0f18; font-weight: 700 }
   </style>
 </head>
 <body>
   <main>
     <canvas id="scene"></canvas>
     <aside>
-      <div>three.js · instanced particles</div>
-      <div><b id="count">–</b> particles · <b id="calls">–</b> draw calls · <b id="fps">–</b> fps</div>
-      <div>drag to orbit</div>
+      <div>particles v2 · <b id="count">–</b> particles · <b id="fps">–</b> fps</div>
+      <div id="shapes"></div>
+      <div>
+        <button id="burst">burst 500</button>
+        <button id="gpu" aria-pressed="false">GPU field (65k)</button>
+      </div>
     </aside>
   </main>
 
   <script type="importmap">
-  { "imports": { "three": "https://esm.sh/three@0.184.0" } }
+  {
+    "imports": {
+      "three":          "https://esm.sh/three@0.184.0",
+      "three/addons/":  "https://esm.sh/three@0.184.0/addons/",
+      "@scenes":        "../lib/dist/index.js"
+    }
+  }
   </script>
 
   <script type="module">
     import * as THREE from 'three'
+    import { bootstrapScene, createEmitter, createGpuEmitter } from '@scenes'
 
-    function mulberry32 (seed) {
-      let s = seed >>> 0
-      return () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 }
+    const SHAPES = {
+      fountain: { shape: { kind: 'cone', angle: 0.35, radius: 0.3 }, speed: [4, 7], gravity: [0, -6, 0], color: [[0, '#fff3b0'], [0.4, '#ff9fd0'], [1, '#7733ff']] },
+      sphere:   { shape: { kind: 'sphere', radius: 0.2 }, speed: [1.5, 3], gravity: [0, 0, 0], color: [[0, '#9fe8ff'], [1, '#2244ff']] },
+      disc:     { shape: { kind: 'disc', radius: 3 }, speed: [0.5, 1.2], gravity: [0, 0.8, 0], color: [[0, '#b0ffc8'], [1, '#118855']] },
+      box:      { shape: { kind: 'box', size: [6, 0.5, 6] }, speed: [0.05, 0.2], gravity: [0, -0.15, 0], color: [[0, '#ffffff'], [1, '#8899bb']] },
     }
 
-    // ── scaffold ────────────────────────────────────────────────────
-    const canvas = document.querySelector('#scene')
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    renderer.outputColorSpace = THREE.SRGBColorSpace
-    const scene = new THREE.Scene()
-    scene.background = new THREE.Color('#050208')
-    const camera = new THREE.PerspectiveCamera(55, canvas.clientWidth / canvas.clientHeight, 0.1, 200)
-    const orbit = { theta: 0.4, phi: 0.2, radius: 16 }
-    const updateCamera = () => {
-      const r = orbit.radius * Math.cos(orbit.phi)
-      camera.position.set(Math.sin(orbit.theta) * r, 3 + Math.sin(orbit.phi) * orbit.radius, Math.cos(orbit.theta) * r)
-      camera.lookAt(0, 3, 0)
-    }
-    updateCamera()
-    new ResizeObserver((e) => {
-      const { width, height } = e[0].contentRect
-      renderer.setSize(width, height, false)
-      camera.aspect = width / height; camera.updateProjectionMatrix()
-    }).observe(canvas.parentElement)
-    const pts = new Map()
-    canvas.style.touchAction = 'none'
-    canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }) })
-    canvas.addEventListener('pointermove', (e) => {
-      const p = pts.get(e.pointerId); if (!p) return
-      orbit.theta -= (e.clientX - p.x) * 0.005
-      orbit.phi = Math.max(-1.0, Math.min(1.3, orbit.phi + (e.clientY - p.y) * 0.005))
-      p.x = e.clientX; p.y = e.clientY; updateCamera()
-    })
-    const up = (e) => pts.delete(e.pointerId)
-    canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up)
-    canvas.addEventListener('wheel', (e) => { e.preventDefault(); orbit.radius = Math.max(6, Math.min(60, orbit.radius * (1 + e.deltaY * 0.001))); updateCamera() }, { passive: false })
+    let emitter = null
+    let gpuMode = false
+    let sceneRef = null
+    let rendererRef = null
 
-    // ── the emitter ─────────────────────────────────────────────────
-    const COUNT = 20000
-    const rand = mulberry32(7)
-    const geometry = new THREE.PlaneGeometry(0.12, 0.12)
-    const material = new THREE.MeshBasicMaterial({ color: '#ff77cc', transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })
-    const particles = new THREE.InstancedMesh(geometry, material, COUNT)
-    particles.frustumCulled = false
-    scene.add(particles)
-
-    // precompute per-particle constants — read-only in the loop
-    const seed = new Float32Array(COUNT)        // phase offset 0..1
-    const angle = new Float32Array(COUNT)        // emission azimuth
-    const spread = new Float32Array(COUNT)       // radial drift
-    const speed = new Float32Array(COUNT)        // lifetime rate
-    for (let i = 0; i < COUNT; i++) {
-      seed[i] = rand()
-      angle[i] = rand() * Math.PI * 2
-      spread[i] = 0.4 + rand() * 2.4
-      speed[i] = 0.25 + rand() * 0.35
-    }
-
-    const dummy = new THREE.Object3D() // scratch — never re-allocated
-    function update (elapsed) {
-      for (let i = 0; i < COUNT; i++) {
-        const age = (elapsed * speed[i] + seed[i]) % 1     // deterministic 0..1 loop
-        const rise = age * 9                                // rises as it ages
-        const radial = spread[i] * age
-        dummy.position.set(Math.cos(angle[i]) * radial, rise, Math.sin(angle[i]) * radial)
-        const s = (1 - age) * 0.9 + 0.1                     // shrink toward end of life
-        dummy.scale.setScalar(s)
-        dummy.rotation.z = elapsed + i
-        dummy.updateMatrix()
-        particles.setMatrixAt(i, dummy.matrix)
+    function mount (name) {
+      if (emitter) {
+        sceneRef.remove(emitter.object)
+        emitter.dispose()
       }
-      particles.instanceMatrix.needsUpdate = true
+      if (gpuMode) {
+        emitter = createGpuEmitter(rendererRef, {
+          capacity: 65536,
+          shape:    { kind: 'sphere', radius: 6, shell: true },
+          speed:    [0.05, 0.3],
+          gravity:  [0, 0, 0],
+          lifetime: [3, 8],
+          size:     0.35,
+          color:    [[0, '#9fe8ff'], [0.5, '#ff9fd0'], [1, '#7733ff']],
+          seed:     7,
+        })
+        document.querySelector('#count').textContent = (65536).toLocaleString()
+      }
+      else {
+        const spec = SHAPES[name]
+        emitter = createEmitter({
+          capacity:   20000,
+          rate:       6000,
+          lifetime:   [1, 3],
+          size:       0.12,
+          sizeCurve:  [[0, 0.2], [0.15, 1], [1, 0.4]],
+          alphaCurve: [[0, 0], [0.08, 1], [0.7, 1], [1, 0]],
+          rotation:   [-3, 3],
+          seed:       7,
+          ...spec,
+        })
+        document.querySelector('#count').textContent = (20000).toLocaleString()
+      }
+      emitter.object.position.y = gpuMode ? 4 : 0.5
+      sceneRef.add(emitter.object)
     }
 
-    renderer.compile(scene, camera)
-    document.querySelector('#count').textContent = COUNT.toLocaleString()
-    const fpsEl = document.querySelector('#fps'), callsEl = document.querySelector('#calls')
-    const clock = new THREE.Clock(); let acc = 0, frames = 0
-    function tick () {
-      const dt = clock.getDelta()
-      update(clock.getElapsedTime())
-      renderer.render(scene, camera)
-      acc += dt; frames += 1
-      if (acc >= 0.5) { fpsEl.textContent = Math.round(frames / acc); callsEl.textContent = renderer.info.render.calls; acc = 0; frames = 0 }
-      requestAnimationFrame(tick)
-    }
-    requestAnimationFrame(tick)
+    const shapeBar = document.querySelector('#shapes')
+    const shapeButtons = Object.keys(SHAPES).map(name => {
+      const b = document.createElement('button')
+      b.textContent = name
+      b.setAttribute('aria-pressed', String(name === 'fountain'))
+      b.addEventListener('click', () => {
+        shapeButtons.forEach(x => x.setAttribute('aria-pressed', String(x === b)))
+        if (!gpuMode)
+          mount(name)
+      })
+      shapeBar.appendChild(b)
+      return b
+    })
+
+    const gpuButton = document.querySelector('#gpu')
+    gpuButton.addEventListener('click', () => {
+      gpuMode = !gpuMode
+      gpuButton.setAttribute('aria-pressed', String(gpuMode))
+      mount(currentShape())
+    })
+    document.querySelector('#burst').addEventListener('click', () => emitter?.burst(500))
+
+    const currentShape = () =>
+      shapeButtons.find(b => b.getAttribute('aria-pressed') === 'true')?.textContent ?? 'fountain'
+
+    const fpsEl = document.querySelector('#fps')
+    let acc = 0, frames = 0
+
+    bootstrapScene({
+      canvas: document.querySelector('#scene'),
+      onSetup ({ scene, renderer, camera }) {
+        sceneRef = scene
+        rendererRef = renderer
+        camera.position.set(6, 5, 9)
+        camera.lookAt(0, 2, 0)
+        mount('fountain')
+        return (ctx) => {
+          emitter.tick(ctx)
+          acc += ctx.delta; frames += 1
+          if (acc >= 0.5) { fpsEl.textContent = Math.round(frames / acc); acc = 0; frames = 0 }
+        }
+      },
+    })
     window.__SCENE_READY__ = true
 
-    // perf: 20k particles in ONE InstancedMesh — O(1) draw calls (the HUD shows
-    // a constant ~1-2, vs 20,000 for naive per-particle meshes) and ZERO
-    // per-frame allocation. The matrix rewrite is the cost; for >100k particles
-    // move the phase math into a vertex shader and stop touching the CPU.
+    // perf: CPU emitter = one InstancedBufferGeometry draw + O(capacity) JS per
+    // tick. GPU field = two compute passes + one Points draw; CPU cost ~zero.
   </script>
 </body>
 </html>

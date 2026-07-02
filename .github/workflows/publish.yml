@@ -24,16 +24,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Assemble site and package skill
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Build library and package skill
+        run: |
+          set -euo pipefail
+          bun install --frozen-lockfile
+          # tsc build + copy-lib refreshes skill/lib/dist and public/lib/dist,
+          # then package-skill.ts validates SKILL.md and zips skill/ into
+          # threejs-scenes.skill (extracts to threejs-scenes/).
+          bun run build
+          bun run scripts/package-skill.ts
+
+      - name: Assemble site
         run: |
           set -euo pipefail
           mkdir -p _site
           cp -r public/. _site/
-          # Package skill/ as threejs-scenes.skill (a zip that extracts to
-          # threejs-scenes/), matching the installable skill bundle layout.
-          cp -r skill threejs-scenes
-          find threejs-scenes -name '.DS_Store' -delete
-          zip -r -X _site/threejs-scenes.skill threejs-scenes
+          cp threejs-scenes.skill _site/
           ls -la _site
 
       - uses: actions/configure-pages@v5

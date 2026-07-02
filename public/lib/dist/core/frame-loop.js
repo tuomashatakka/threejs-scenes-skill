@@ -6,7 +6,7 @@
 // is inlined the same way the templates inline it, so the package has no exotic
 // deps. registerUpdate/unregisterUpdate mirror the SceneModule lifecycle API.
 import * as THREE from 'three';
-export function createFrameLoop() {
+export function createFrameLoop({ clock: simClock } = {}) {
     const subscribers = new Set();
     const clock = new THREE.Clock(false);
     let frame = 0;
@@ -16,12 +16,21 @@ export function createFrameLoop() {
         if (!running)
             return;
         rafId = requestAnimationFrame(tick);
+        const real = clock.getDelta();
+        // perf: one rAF, one Set iteration per sim step. zero allocations.
+        if (simClock) {
+            for (const delta of simClock.advance(real)) {
+                frame += 1;
+                const elapsed = simClock.elapsed();
+                for (const cb of subscribers)
+                    cb({ delta, elapsed, frame });
+            }
+            return;
+        }
         frame += 1;
-        const delta = clock.getDelta();
         const elapsed = clock.getElapsedTime();
-        // perf: one rAF, one Set iteration per frame. zero allocations.
         for (const cb of subscribers)
-            cb({ delta, elapsed, frame });
+            cb({ delta: real, elapsed, frame });
     }
     function start() {
         if (running)

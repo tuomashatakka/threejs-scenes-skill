@@ -2,13 +2,14 @@
 // WebGLRenderer factory. Caps pixel ratio at 2, sets sane defaults for color
 // space, tone mapping, and shadows. Ported from scripts/renderer-setup.js.
 import * as THREE from 'three';
-export function createRenderer({ canvas, antialias = true, pixelRatioMax = 2, shadows = true, toneMapping = THREE.ACESFilmicToneMapping, toneMappingExposure = 1, }) {
+export function createRenderer({ canvas, antialias = true, pixelRatioMax = 2, shadows = true, toneMapping = THREE.ACESFilmicToneMapping, toneMappingExposure = 1, logarithmicDepthBuffer = false, }) {
     const renderer = new THREE.WebGLRenderer({
         canvas,
         antialias,
         alpha: false,
         powerPreference: 'high-performance',
         stencil: false,
+        logarithmicDepthBuffer,
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatioMax));
     const parent = canvas.parentElement ?? document.body;

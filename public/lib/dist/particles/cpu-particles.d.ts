@@ -13,5 +13,11 @@ export interface ParticleEmitter {
     tick(ctx: FrameContext): void;
     dispose(): void;
 }
+/**
+ * @deprecated Use {@link createEmitter} from './emitter.js' — it adds shapes,
+ * rate/burst emission, over-lifetime curves, and cadence-independent
+ * determinism (this emitter's respawn consumes its RNG in tick order, so the
+ * same seed can produce different runs).
+ */
 export declare function createParticleEmitter({ count, texture, bounds, seed, gravity, damping, }: ParticleEmitterOptions): ParticleEmitter;
 //# sourceMappingURL=cpu-particles.d.ts.map

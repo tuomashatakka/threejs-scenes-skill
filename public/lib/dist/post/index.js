@@ -2,6 +2,7 @@
 // EffectComposer factory and the pass library: bloom (built into the composer),
 // grade, glitch, god-rays, dof+chromatic, film-grain, hud-beam, stereoscopy.
 export * from './composer.js';
+export * from './pipeline.js';
 export * from './grade-pass.js';
 export * from './glitch-passes.js';
 export * from './god-rays-pass.js';

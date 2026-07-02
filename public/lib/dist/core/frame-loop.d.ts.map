@@ -1,1 +1,1 @@
-{"version":3,"file":"frame-loop.d.ts","sourceRoot":"","sources":["../../lib/core/frame-loop.ts"],"names":[],"mappings":"AAUA,OAAO,KAAK,EAAiB,SAAS,EAAE,MAAM,aAAa,CAAA;AAG3D,wBAAgB,eAAe,IAAK,SAAS,CA4D5C"}
+{"version":3,"file":"frame-loop.d.ts","sourceRoot":"","sources":["../../lib/core/frame-loop.ts"],"names":[],"mappings":"AAUA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,YAAY,CAAA;AACvC,OAAO,KAAK,EAAiB,SAAS,EAAE,MAAM,aAAa,CAAA;AAG3D,MAAM,WAAW,gBAAgB;IAE/B,gFAAgF;IAChF,KAAK,CAAC,EAAE,KAAK,CAAA;CACd;AAED,wBAAgB,eAAe,CAAE,EAAE,KAAK,EAAE,QAAQ,EAAE,GAAE,gBAAqB,GAAG,SAAS,CAuEtF"}

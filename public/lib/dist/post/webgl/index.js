@@ -37,6 +37,9 @@ export * from './sobel.js';
 export * from './ssaa.js';
 export * from './traa.js';
 // Stylised / structural
+export * from './crt.js';
+export * from './lensing.js';
+export * from './burn-in.js';
 export * from './pixel.js';
 export * from './transition.js';
 export * from './masking.js';

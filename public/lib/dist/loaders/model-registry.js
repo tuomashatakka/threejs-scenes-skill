@@ -11,21 +11,33 @@ function extOf(url) {
     const clean = url.split(/[?#]/)[0] ?? url;
     return clean.slice(clean.lastIndexOf('.') + 1).toLowerCase();
 }
-const cache = new Map();
+export function createModelCache() {
+    const cache = new Map();
+    return {
+        load(src, options) {
+            const ext = extOf(src);
+            const loader = FORMAT_LOADERS[ext];
+            if (!loader)
+                return Promise.reject(new Error(`loadModel: no loader for ".${ext}" (${src})`));
+            const cached = cache.get(src);
+            if (cached)
+                return cached;
+            const promise = loader(src, options);
+            cache.set(src, promise);
+            return promise;
+        },
+        clear() {
+            cache.clear();
+        },
+    };
+}
+// module-global convenience instance, kept for back-compat.
+const shared = createModelCache();
 export function loadModel(src, options) {
-    const ext = extOf(src);
-    const loader = FORMAT_LOADERS[ext];
-    if (!loader)
-        return Promise.reject(new Error(`loadModel: no loader for ".${ext}" (${src})`));
-    const cached = cache.get(src);
-    if (cached)
-        return cached;
-    const promise = loader(src, options);
-    cache.set(src, promise);
-    return promise;
+    return shared.load(src, options);
 }
 export function clearModelCache() {
-    cache.clear();
+    shared.clear();
 }
 // perf: cache dedupes concurrent + repeat loads of the same URL. Clone the
 // returned scene per instance if you need independent transforms.

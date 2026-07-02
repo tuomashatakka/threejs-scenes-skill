@@ -35,6 +35,7 @@
     <nav aria-label="Module table of contents">
       <ul>
         <li><a href="#demos">Live demos</a></li>
+        <li><a href="#quickstart">Quick start</a></li>
         <li><a href="#core">core</a></li>
         <li><a href="#procedural">procedural</a></li>
         <li><a href="#geometry">geometry</a></li>
@@ -56,7 +57,7 @@
 
     <section id="demos" aria-labelledby="demos-h">
       <h2 id="demos-h">Live demos</h2>
-      <p>Twenty self-contained scenes — pick one from the tab bar to load it full-width below. Feature demos import the library from a local, version-pinned copy (<code>lib/dist/</code>) via importmap; three.js loads from the esm.sh CDN. No build step.</p>
+      <p>Pick a scene from the tab bar to load it full-width below. Feature demos import the library from a local, version-pinned copy (<code>lib/dist/</code>) via importmap; three.js loads from the esm.sh CDN. No build step.</p>
       <div class="preview-wrap">
         <div class="tabs" role="tablist" aria-label="Demo selector"></div>
         <div class="preview">
@@ -66,18 +67,45 @@
       </div>
     </section>
 
+    <section id="quickstart" aria-labelledby="quickstart-h">
+      <h2 id="quickstart-h">Quick start <span class="badge">New in 1.3</span></h2>
+      <p><code>createApp</code> is the unidirectional bootstrap: one call wires renderer, scene, camera, lighting, orbit and the loop. Input writes state via <code>setState</code>; modules read state in <code>update()</code> and write the scene — never the reverse. Pass a fixed clock and a seed and the whole sim is deterministic. Copy <a href="demos/bootstrap.html">bootstrap.html</a> as your starting file.</p>
+      <pre><code>import { createApp, createClock, createEmitter } from '@tuomashatakka/threejs-scenes'
+
+const app = createApp({
+  canvas,
+  seed:  7,
+  clock: createClock({ mode: 'fixed' }),        // deterministic sim steps
+  state: { hue: 0.52 },                         // serializable app state
+  modules: [{
+    name: 'crystal',
+    build (ctx)  { /* create objects once; ctx = scene, camera, rng, loop */ },
+    update (state, frame) { /* project state onto the scene each tick */ },
+    dispose ()   { /* free what build created */ },
+  }],
+})
+canvas.addEventListener('pointerup', () => app.setState({ hue: Math.random() }))
+app.start()</code></pre>
+      <p class="demo-link"><a href="demos/bootstrap.html">Live demo — bootstrap.html</a></p>
+    </section>
+
     <section id="core" aria-labelledby="core-h">
-      <h2 id="core-h">core</h2>
-      <p>Core scene scaffolding: renderer, frame loop, bootstrap, pointer gestures, disposal, and quality-tier detection. Copy <code>bootstrapScene</code> as the starting point for any new scene.</p>
-      <p class="demo-link"><a href="demos/minimal-scene.html">Live demo — minimal-scene.html</a></p>
+      <h2 id="core-h">core <span class="badge">Expanded in 1.3</span></h2>
+      <p>Core scene scaffolding: the unidirectional <code>createApp</code> shell, injectable clock, serializable store, renderer, frame loop, bootstrap, pointer gestures, overlay compositing, screen projection, disposal, and quality-tier detection.</p>
+      <p class="demo-link"><a href="demos/bootstrap.html">Live demo — bootstrap.html</a> · <a href="demos/minimal-scene.html">minimal-scene.html</a></p>
       <details open>
         <summary>Exports</summary>
         <table>
           <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
           <tbody>
-            <tr><th scope="row">createRenderer</th><td>WebGLRenderer factory: pixel ratio capped at 2, ACES tone mapping, sRGB output, sane shadow defaults.</td></tr>
-            <tr><th scope="row">createFrameLoop</th><td>Self-contained Clock-driven loop; subsystems register via <code>onFrame</code> / <code>registerUpdate</code> and share one <code>FrameContext</code>.</td></tr>
+            <tr><th scope="row">createApp</th><td>Unidirectional app shell: one store, one clock, one loop; modules project state onto the scene each tick; <code>tick()</code> pumps manually for replays/tests.</td></tr>
+            <tr><th scope="row">createClock</th><td>Injectable time source: <code>wall</code> passes real deltas; <code>fixed</code> runs a fixed-timestep accumulator (spiral-of-death guarded) for deterministic sims.</td></tr>
+            <tr><th scope="row">createStore</th><td>Minimal serializable store: shallow-merge <code>set()</code>, optional reducer <code>dispatch()</code>, synchronous subscribers.</td></tr>
+            <tr><th scope="row">createRenderer</th><td>WebGLRenderer factory: pixel ratio capped at 2, ACES tone mapping, sRGB output, shadow defaults, optional <code>logarithmicDepthBuffer</code>.</td></tr>
+            <tr><th scope="row">createFrameLoop</th><td>Clock-driven loop; subsystems register via <code>onFrame</code> and share one <code>FrameContext</code>; accepts an injected <code>Clock</code>.</td></tr>
             <tr><th scope="row">bootstrapScene</th><td>Wires renderer + scene + camera + frame loop + pointer gesture + resize observer + dispose into one call.</td></tr>
+            <tr><th scope="row">createOverlayScene / renderOverlay</th><td>Second scene composited on top with cleared depth — HUD/gizmos never occluded by world geometry.</td></tr>
+            <tr><th scope="row">projectToScreenUv</th><td>World object → screen UV + on-screen flag, for driving lens-flare / lensing / vortex effect uniforms.</td></tr>
             <tr><th scope="row">attachPointerGesture</th><td>Unified drag / pinch / wheel / tap layer; identical for mouse, touch and pen.</td></tr>
             <tr><th scope="row">disposeScene</th><td>Recursive teardown that frees GPU memory three.js never auto-disposes.</td></tr>
             <tr><th scope="row">detectTier / getQualitySettings / QUALITY_PRESETS</th><td>Detect device tier (mobile / desktop / highEnd) to gate shadows, post-fx, particle budgets and view radius.</td></tr>
@@ -87,15 +115,23 @@
     </section>
 
     <section id="procedural" aria-labelledby="procedural-h">
-      <h2 id="procedural-h">procedural</h2>
-      <p>Deterministic procedural generation: seeded RNG with per-consumer forking, Poisson-disk scatter, and seamless noise textures.</p>
+      <h2 id="procedural-h">procedural <span class="badge">Expanded in 1.3</span></h2>
+      <p>Deterministic procedural generation: seeded RNG with per-consumer forking, Poisson-disk scatter, seamless noise textures, 3D simplex noise, and whole procedural planets.</p>
       <p class="demo-link"><a href="demos/procedural.html">Live demo — procedural.html</a></p>
+      <pre><code>const planet = createProceduralBody({
+  seed: 42, radius: 2, type: 'terrestrial', ridged: true,
+  water: { level: 0, color: '#1d4e89' },
+  rings: { inner: 1.6, outer: 2.4 },
+})
+scene.add(planet.object)   // same spec -&gt; same planet, no textures shipped</code></pre>
       <details>
         <summary>Exports</summary>
         <table>
           <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
           <tbody>
             <tr><th scope="row">createSeededRng</th><td>Seeded stream with <code>range</code> / <code>int</code> / <code>pick</code> and <code>fork(label)</code> for deterministic per-consumer sub-streams.</td></tr>
+            <tr><th scope="row">createNoise3D</th><td>Seeded 3D simplex noise with <code>fbm</code> and <code>ridged</code> fractal sums — CPU terrain and displacement.</td></tr>
+            <tr><th scope="row">createProceduralBody</th><td>Noise-displaced icosphere planets (terrestrial or banded gas giant) with water/cloud shells and rings; fully seeded, texture-free.</td></tr>
             <tr><th scope="row">poissonDisk</th><td>2D Poisson-disk sampling: points with guaranteed minimum spacing for forests, asteroid fields and star scatter.</td></tr>
             <tr><th scope="row">createNoiseTexture</th><td>Seamless tileable value-noise <code>DataTexture</code>; DOM-guarded (returns null headless).</td></tr>
           </tbody>
@@ -118,20 +154,27 @@
             <tr><th scope="row">applyTwist / applyTaper / applyBend / displaceByNoise</th><td>In-place vertex deformers; <code>displaceByNoise</code> reuses the seeded RNG.</td></tr>
             <tr><th scope="row">simplifyGeometry / tessellateGeometry / edgeSplit / mergeVertices</th><td>Thin wrappers over the <code>three/addons</code> modifiers + BufferGeometryUtils.</td></tr>
             <tr><th scope="row">mergeMeshes / createGroup / layoutGrid / layoutRadial / layoutStack</th><td>Static-batch merge to cut draw calls, plus grouping and arrangement helpers.</td></tr>
+            <tr><th scope="row">createConnectionGraph <span class="badge">1.3</span></th><td>k-nearest-neighbour graph as one <code>LineSegments</code> draw with in-shader draw-on progress and per-node highlight.</td></tr>
+            <tr><th scope="row">createInfiniteGround <span class="badge">1.3</span></th><td>Recentering tiled terrain: constant memory, endless world; displacement samples world coords so seams line up.</td></tr>
           </tbody>
         </table>
       </details>
     </section>
 
     <section id="camera" aria-labelledby="camera-h">
-      <h2 id="camera-h">camera</h2>
-      <p>Camera factories: an orthographic isometric rig and a framerate-independent third-person follow camera.</p>
+      <h2 id="camera-h">camera <span class="badge">Expanded in 1.3</span></h2>
+      <p>Camera factories: a multi-mode camera controller with serializable targets, an orthographic isometric rig, and a framerate-independent third-person follow camera.</p>
       <p class="demo-link"><a href="demos/isometric.html">Live demo — isometric.html</a> · <a href="demos/follow-camera.html">follow-camera.html</a></p>
+      <pre><code>const cam = createCameraController(camera, { bounds: null })
+cam.flyTo([0, 8, 24], [0, 0, 0], { fov: 40, onArrive: () => cam.follow(ship) })
+loop.onFrame(ctx => cam.update(ctx))   // targets are [x,y,z] tuples — keep them in app state</code></pre>
       <details>
         <summary>Exports</summary>
         <table>
           <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
           <tbody>
+            <tr><th scope="row">createCameraController</th><td>State machine <code>free / flyTo / follow / cockpit</code> with exp-eased motion, FOV tween, bounds clamp, arrival callback.</td></tr>
+            <tr><th scope="row">tupleToVector3 / vector3ToTuple / targetFromObject</th><td>Serializable <code>[x,y,z]</code> camera-intent helpers — camera targets live in JSON state, the controller does the motion.</td></tr>
             <tr><th scope="row">createIsoCamera / resizeIsoCamera</th><td>Orthographic iso camera: <code>true-iso</code> (35.264°) or readable <code>dimetric</code> (30°).</td></tr>
             <tr><th scope="row">createFollowCamera</th><td>Third-person follow with <code>1 − exp(−k·delta)</code> damping — consistent at any FPS.</td></tr>
           </tbody>
@@ -183,6 +226,7 @@
           <tbody>
             <tr><th scope="row">createGLTFLoader / loadGLTF</th><td>Configure decoders and resolve to a <code>LoadedModel</code> (<code>scene</code>, <code>animations</code>, <code>cameras</code>, <code>asset</code>).</td></tr>
             <tr><th scope="row">loadModel / FORMAT_LOADERS</th><td>Dispatch by extension (.glb/.gltf) with a per-URL cache; used by <code>&lt;Prop src&gt;</code>.</td></tr>
+            <tr><th scope="row">createModelCache <span class="badge">1.3</span></th><td>Explicit, owned model cache — scope loading/invalidation to your app instead of the module-global cache.</td></tr>
           </tbody>
         </table>
       </details>
@@ -216,6 +260,7 @@
           <tbody>
             <tr><th scope="row">defineProp / createProp</th><td>Author a reusable prop; mount it into a live <code>PropInstance</code> with controller, lights, and one <code>dispose</code>.</td></tr>
             <tr><th scope="row">registerProp / resolveProp</th><td>Resolve a prop from a factory, a registered name, a <code>.ts</code> module, or a model file — one async code path.</td></tr>
+            <tr><th scope="row">createPropRegistry <span class="badge">1.3</span></th><td>Explicit, owned prop registry — name resolution scoped to your app instead of the module-global registry.</td></tr>
             <tr><th scope="row">createInstancedProp</th><td>Instance a prop N times — single-mesh props collapse to one draw call.</td></tr>
             <tr><th scope="row">createPropComposite</th><td>Assemble several props into one group with relative transforms and aggregate disposal.</td></tr>
           </tbody>
@@ -240,33 +285,58 @@
     </section>
 
     <section id="particles" aria-labelledby="particles-h">
-      <h2 id="particles-h">particles</h2>
-      <p>A CPU-driven particle system using <code>InstancedBufferGeometry</code> and GLSL billboarding — deterministic phase math, zero per-frame allocation.</p>
+      <h2 id="particles-h">particles <span class="badge">v2 in 1.3</span></h2>
+      <p>Particle systems v2: emitter shapes, rate + burst emission, colour/alpha/size curves over lifetime, and a GPGPU path for six-figure counts. Deterministic by construction — every spawn derives from a hash of (seed, slot, cycle), so the same seed and tick sequence reproduce identical particles.</p>
       <p class="demo-link"><a href="demos/particles.html">Live demo — particles.html</a></p>
+      <pre><code>const fx = createEmitter({
+  capacity: 20000, rate: 6000,
+  shape:    { kind: 'cone', angle: 0.35, radius: 0.3 },
+  speed:    [4, 7], gravity: [0, -6, 0], lifetime: [1, 3],
+  color:      [[0, '#fff3b0'], [0.4, '#ff9fd0'], [1, '#7733ff']],
+  alphaCurve: [[0, 0], [0.08, 1], [0.7, 1], [1, 0]],
+  sizeCurve:  [[0, 0.2], [0.15, 1], [1, 0.4]],
+  seed: 7,
+})
+scene.add(fx.object)
+loop.onFrame(ctx => fx.tick(ctx))
+button.onclick = () => fx.burst(500)</code></pre>
       <details>
         <summary>Exports</summary>
         <table>
           <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
           <tbody>
-            <tr><th scope="row">createParticleEmitter</th><td>Billboarded emitter for 10k–50k particles with custom physics.</td></tr>
+            <tr><th scope="row">createEmitter</th><td>CPU-simmed, GPU-billboarded emitter: point/sphere/box/cone/disc shapes, <code>rate</code> + <code>burst()</code>, curves over lifetime, sprite spin, additive/normal blending.</td></tr>
+            <tr><th scope="row">createGpuEmitter</th><td>GPGPU steady-state field (position/velocity in float render targets) for &gt;50k particles; falls back to the CPU emitter without float-texture support.</td></tr>
+            <tr><th scope="row">sampleCurve / bakeCurve / bakeCurveTexture</th><td>Over-lifetime curve authoring: <code>[t, value]</code> stops baked to LUTs sampled in-shader.</td></tr>
+            <tr><th scope="row">createParticleEmitter</th><td><em>Deprecated</em> v1 emitter — kept for back-compat; prefer <code>createEmitter</code>.</td></tr>
           </tbody>
         </table>
       </details>
     </section>
 
     <section id="post" aria-labelledby="post-h">
-      <h2 id="post-h">post (WebGL)</h2>
-      <p>An <code>EffectComposer</code> factory plus a pass library. The canonical chain is RenderPass → UnrealBloomPass → grade → OutputPass; tone-map exactly once, at the OutputPass.</p>
-      <p class="demo-link"><a href="demos/post-processing.html">Live demo — post-processing.html</a> · <a href="demos/glitch.html">glitch.html</a> · <a href="demos/god-rays.html">god-rays.html</a> · <a href="demos/dof.html">dof.html</a></p>
+      <h2 id="post-h">post (WebGL) <span class="badge">Expanded in 1.3</span></h2>
+      <p>An <code>EffectComposer</code> factory, a reorderable named-pass pipeline, and a pass library. The canonical chain is RenderPass → UnrealBloomPass → grade → OutputPass; tone-map exactly once, at the OutputPass.</p>
+      <p class="demo-link"><a href="demos/effects.html">Live demo — effects.html</a> · <a href="demos/post-processing.html">post-processing.html</a> · <a href="demos/glitch.html">glitch.html</a> · <a href="demos/god-rays.html">god-rays.html</a> · <a href="demos/dof.html">dof.html</a></p>
+      <pre><code>const pipeline = createPostPipeline({ renderer, scene, camera, width, height })
+pipeline.register('bloom', new UnrealBloomPass(res, 0.7, 0.4, 0.85))
+pipeline.register('crt', createCrtPass({ curvature: 0.12 }))
+pipeline.setOrder(settings.pipelineOrder)     // a plain string[] — serialize it
+pipeline.setEnabled(settings.enabledPasses)   // { bloom: true, crt: false }
+loop.onFrame(ctx => pipeline.render(ctx.delta))</code></pre>
       <details>
         <summary>Exports</summary>
         <table>
           <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
           <tbody>
+            <tr><th scope="row">createPostPipeline <span class="badge">1.3</span></th><td>Named-pass registry over EffectComposer: <code>setOrder(string[])</code> + <code>setEnabled(flags)</code> driven by serializable config; RenderPass first, OutputPass last, resize forwarded.</td></tr>
             <tr><th scope="row">createComposer</th><td>EffectComposer wired with a DepthTexture so DOF / god-rays / soft particles can sample scene depth.</td></tr>
             <tr><th scope="row">createGradePass</th><td>Linear-HDR colour grade: tint, contrast, saturation, vignette, grain, corner chromatic aberration.</td></tr>
             <tr><th scope="row">createGodRaysPass / createDofPass / createFilmGrainPass</th><td>Screen-space light shafts; CoC depth-of-field + CA; procedural grain.</td></tr>
             <tr><th scope="row">glitch passes / createHudBeamTransition / createStereoRenderer</th><td>Stackable datamosh, a beam reveal, and anaglyph / side-by-side stereo.</td></tr>
+            <tr><th scope="row">createCrtPass / crtCorrectPointer <span class="badge">1.3</span></th><td>CRT curvature + vignette + glitch tears, with the inverse pointer warp for distortion-correct picking.</td></tr>
+            <tr><th scope="row">createLensingPass <span class="badge">1.3</span></th><td>Screen-space gravitational lens with an event-horizon core; aim it with <code>projectToScreenUv</code>.</td></tr>
+            <tr><th scope="row">createBurnInPass <span class="badge">1.3</span></th><td>Phosphor persistence: max-blended decaying history so bright pixels leave saturated trails.</td></tr>
           </tbody>
         </table>
       </details>
@@ -308,7 +378,9 @@
           <thead><tr><th scope="col">Export</th><th scope="col">Summary</th></tr></thead>
           <tbody>
             <tr><th scope="row">createSceneModule</th><td>Wraps a feature as <code>{ name, build(ctx), dispose() }</code>; modules receive a <code>SceneContext</code>, never globals.</td></tr>
+            <tr><th scope="row">createViewRegistry <span class="badge">1.3</span></th><td>Pluggable per-view renderers with an LRU persistent-mount cache — instant view switches, bounded GPU memory.</td></tr>
             <tr><th scope="row">MaterialPool / EditStack</th><td>Key-cached material ownership and snapshot undo/redo.</td></tr>
+            <tr><th scope="row">pick / createClickGuard <span class="badge">1.3</span></th><td>Raycast with a screen-distortion inverse hook (CRT-correct picking) and click-vs-drag discrimination.</td></tr>
             <tr><th scope="row">resolveParam / resolveParams / pickTopLevel</th><td>Never-throw config coercion and raycast-to-owning-module introspection.</td></tr>
           </tbody>
         </table>
@@ -345,6 +417,7 @@
   <script>
     // Single-preview tab bar: one full-width iframe, scene chosen by the tabs.
     const DEMOS = [
+      [ 'bootstrap', 'Bootstrap', 'quick start — createApp: unidirectional state flow, fixed-step clock, seeded emitter; click to re-seed.' ],
       [ 'minimal-scene', 'Minimal', 'core — renderer, frame loop, pointer-orbit, ResizeObserver and an explicit dispose path.' ],
       [ 'geometry', 'Geometry', 'geometry — extruded shapes (star, gear, rounded panel) with twist/taper deformers and noise-displaced solids, laid out in a grid.' ],
       [ 'materials', 'Materials', 'materials — a sphere per preset: metal, gold, chrome, glass, plastic, rubber, matte, emissive, plus toon and matcap.' ],
@@ -356,7 +429,7 @@
       [ 'procedural', 'Procedural', 'procedural — a forest that is a pure function of one seed: Poisson-disk scatter + seamless noise ground.' ],
       [ 'shader-material', 'Shader', 'materials — createHolographicMaterial with fresnel rim, animated scanlines and noise opacity.' ],
       [ 'lighting', 'Lighting', 'lighting — setupStandardLighting: toggle the IBL environment, shadow sun and hemisphere fill.' ],
-      [ 'particles', 'Particles', 'particles — createParticleEmitter, a CPU-driven billboarded particle system.' ],
+      [ 'particles', 'Particles', 'particles v2 — createEmitter shapes, curves over lifetime, bursts, and a 65k GPGPU field toggle.' ],
       [ 'isometric', 'Isometric', 'camera — createIsoCamera framing an instanced field of props.' ],
       [ 'follow-camera', 'Follow cam', 'camera — createFollowCamera chasing a self-driving target with framerate-independent damping.' ],
       [ 'post-processing', 'Post FX', 'post — the createComposer chain with bloom, colour grade and depth-sampling passes.' ],
@@ -366,6 +439,7 @@
       [ 'effects', 'Effects FX', 'post — interactive playground: toggle, drag-reorder and tune every WebGL composer pass and WebGPU/TSL node effect.' ],
       [ 'voxels', 'Voxels', 'voxels — VoxelChunk + greedyMesh turning noise terrain into merged quads.' ],
       [ 'architecture', 'Architecture', 'architecture — createSceneModule + MaterialPool + pickTopLevel; click to find a hit’s owning module.' ],
+      [ 'icaras-foundry', 'Icaras Foundry', 'showcase — a self-contained WipEout-style ship forge: beam shaders, particle FX, bloom, RPG loot rolls and a schematic blueprint mode.' ],
     ]
 
     const tabs = document.querySelector('.tabs')

@@ -93,12 +93,13 @@ For multi-module projects, graduate to the `scripts/` modules + an importmap.
 
 | Template | Demonstrates |
 |----------|--------------|
+| `templates/bootstrap.html` | Library starter — `createApp`: unidirectional store→module→scene flow, fixed-step deterministic clock, seeded particles. Copy this first for library-backed apps. |
 | `templates/minimal-scene.html` | Starter scaffold — renderer + orbit camera + lit flat-shaded mesh + `ResizeObserver` + dispose + `__SCENE_READY__`. Copy and replace `buildContent()`. |
 | `templates/instanced-field.html` | `InstancedMesh` — ~5000 objects, 1 draw call, seeded `mulberry32` placement, draw-call HUD. |
 | `templates/shader-material.html` | Custom GLSL `ShaderMaterial` — fresnel rim + scanlines + noise; uniforms mutated allocation-free. |
 | `templates/post-processing.html` | `EffectComposer`: `RenderPass → UnrealBloom → grade(ShaderPass) → OutputPass`; grade in linear HDR, tone-map once. |
 | `templates/isometric.html` | Orthographic true-iso camera + instanced height-grid terrain (value-noise) + pan/zoom. |
-| `templates/particles.html` | GC-proof instanced emitter — 20k particles, deterministic phase math, zero per-frame allocation. |
+| `templates/particles.html` | Particles v2 — `createEmitter` shapes/curves/bursts + 65k GPGPU field toggle (`createGpuEmitter`); cadence-independent determinism. |
 | `templates/geometry.html` | Library demo — extrusion + vertex modifiers + grid layout via the local lib (`@scenes`). |
 | `templates/materials.html` | Library demo — PBR / toon / matcap presets. |
 | `templates/props.html` | Library demo — `defineProp` crystal (mesh + light + clips) + instanced forest + composite. |

@@ -12,6 +12,9 @@ export interface RendererOptions {
   shadows?:             boolean
   toneMapping?:         THREE.ToneMapping
   toneMappingExposure?: number
+
+  /** For scenes spanning huge depth ranges (space scale -> surface scale). */
+  logarithmicDepthBuffer?: boolean
 }
 
 export function createRenderer ({
@@ -21,6 +24,7 @@ export function createRenderer ({
   shadows = true,
   toneMapping = THREE.ACESFilmicToneMapping,
   toneMappingExposure = 1,
+  logarithmicDepthBuffer = false,
 }: RendererOptions): THREE.WebGLRenderer {
   const renderer = new THREE.WebGLRenderer({
     canvas,
@@ -28,6 +32,7 @@ export function createRenderer ({
     alpha:           false,
     powerPreference: 'high-performance',
     stencil:         false,
+    logarithmicDepthBuffer,
   })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatioMax))
 

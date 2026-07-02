@@ -4,6 +4,12 @@
 // scripts/cpu-particles.js. Deterministic phase math, zero per-frame alloc.
 import * as THREE from 'three';
 import { mulberry32 } from '../procedural/rng.js';
+/**
+ * @deprecated Use {@link createEmitter} from './emitter.js' — it adds shapes,
+ * rate/burst emission, over-lifetime curves, and cadence-independent
+ * determinism (this emitter's respawn consumes its RNG in tick order, so the
+ * same seed can produce different runs).
+ */
 export function createParticleEmitter({ count, texture, bounds = 10, seed = 1, gravity = -1.5, damping = 0.96, }) {
     const geometry = new THREE.PlaneGeometry(0.1, 0.1);
     const instanced = new THREE.InstancedBufferGeometry();

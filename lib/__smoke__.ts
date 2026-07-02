@@ -34,7 +34,25 @@ import {
   // props
   defineProp,
   createProp,
+  // 1.3 core
+  createClock,
+  createStore,
+  // 1.3 particles
+  createEmitter,
+  sampleCurve,
+  bakeCurve,
+  // 1.3 procedural
+  createNoise3D,
+  // 1.3 camera + geometry + architecture
+  tupleToVector3,
+  vector3ToTuple,
+  createCameraController,
+  createConnectionGraph,
+  createViewRegistry,
+  createModelCache,
+  createPropRegistry,
 } from './index.js'
+import type { SceneContext } from './index.js'
 import { h, signal, Fragment } from './jsx/index.js'
 import type { ParamSpec, ParamSpecMap } from './index.js'
 
@@ -169,5 +187,111 @@ assert(count() === 2, 'signal get/set')
 const el = h('group', { position: [ 0, 1, 0 ]}, h('mesh', null), h('mesh', null))
 assert(el.type === 'group' && el.children.length === 2, 'h() builds a group with two children')
 assert(h(Fragment, null, h('mesh', null)).type === Fragment, 'fragment element')
+
+// 13. clock — fixed-step determinism + spiral-of-death guard
+const clock = createClock({ mode: 'fixed', step: 0.02, maxSubSteps: 3 })
+assert(clock.advance(0.05).length === 2, 'fixed clock emits whole steps')
+assert(Math.abs(clock.elapsed() - 0.04) < 1e-9, 'elapsed counts consumed sim time')
+assert(clock.advance(10).length === 3, 'overflow clamped to maxSubSteps')
+
+const wall = createClock()
+assert(wall.advance(0.123)[0] === 0.123, 'wall clock passes deltas through')
+
+// 14. store — set / dispatch / subscribe
+interface S { n: number }
+
+const store = createStore<S, { type: 'inc' }>({ n: 1 }, (s, a) => a.type === 'inc' ? { n: s.n + 1 } : s)
+let seen = 0
+const unsub = store.subscribe(s => {
+  seen = s.n
+})
+store.set({ n: 5 })
+assert(store.get().n === 5 && seen === 5, 'set merges + notifies')
+store.dispatch({ type: 'inc' })
+assert(store.get().n === 6, 'dispatch runs the reducer')
+unsub()
+
+// 15. curves — sampling + baking
+assert(sampleCurve([[ 0, 0 ], [ 1, 10 ]], 0.5) === 5, 'curve lerps between stops')
+assert(sampleCurve([[ 0.2, 3 ], [ 0.8, 3 ]], 0) === 3, 'clamps before first stop')
+assert(bakeCurve([[ 0, 0 ], [ 1, 1 ]], 8).length === 8, 'bake emits resolution samples')
+
+// 16. emitter v2 — same seed + same tick sequence -> identical buffers
+function runEmitter (): Float32Array {
+  const e = createEmitter({ capacity: 64, rate: 200, seed: 99, shape: { kind: 'sphere', radius: 1 }})
+  for (let i = 1; i <= 30; i++)
+    e.tick({ delta: 1 / 60, elapsed: i / 60, frame: i })
+
+  const mesh = e.object as THREE.Mesh
+  const pos  = (mesh.geometry.getAttribute('aPos') as THREE.BufferAttribute).array as Float32Array
+  const copy = pos.slice()
+  e.dispose()
+  return copy
+}
+
+const runA = runEmitter()
+const runB = runEmitter()
+assert(runA.length === runB.length && runA.every((v, i) => v === runB[i]), 'emitter is deterministic per seed + ticks')
+
+const burster = createEmitter({ capacity: 32, rate: 0, seed: 1 })
+burster.burst(10)
+burster.tick({ delta: 0.016, elapsed: 0.016, frame: 1 })
+
+const life = ((burster.object as THREE.Mesh).geometry.getAttribute('aLife') as THREE.BufferAttribute).array as Float32Array
+assert([ ...life ].filter(v => v > 0).length === 10, 'burst spawned exactly 10')
+burster.dispose()
+
+// 17. noise — seeded 3D simplex + fbm bounds
+const n1 = createNoise3D(5)
+const n2 = createNoise3D(5)
+assert(n1.sample(1.3, 2.7, 0.5) === n2.sample(1.3, 2.7, 0.5), 'noise deterministic per seed')
+assert(Math.abs(n1.fbm(0.4, 0.8, 1.6)) <= 1.01, 'fbm stays bounded')
+
+// 18. camera targets + controller (GL-free)
+const v = tupleToVector3([ 1, 2, 3 ])
+assert(vector3ToTuple(v).join() === '1,2,3', 'tuple round-trip')
+
+const cam  = new THREE.PerspectiveCamera(50, 1, 0.1, 100)
+cam.position.set(0, 0, 10)
+
+const ctrl2 = createCameraController(cam, { stiffness: 20 })
+ctrl2.flyTo([ 0, 0, 0 ], [ 0, 0, -1 ])
+
+const distBefore = cam.position.length()
+for (let i = 0; i < 30; i++)
+  ctrl2.update({ delta: 1 / 60, elapsed: i / 60, frame: i })
+assert(cam.position.length() < distBefore, 'controller eases toward target')
+assert(ctrl2.isMoving() || ctrl2.mode() === 'free', 'controller state machine valid')
+
+// 19. connection graph — kNN edges + one draw call geometry
+const graph = createConnectionGraph([[ 0, 0, 0 ], [ 1, 0, 0 ], [ 0, 1, 0 ], [ 5, 5, 5 ]], { neighbors: 1 })
+assert(graph.edges.length > 0, 'graph built edges')
+assert(graph.object.geometry.getAttribute('position').count === graph.edges.length * 2, 'two verts per edge')
+graph.setProgress(0.5)
+graph.setHighlight(1)
+graph.dispose()
+
+// 20. view registry — LRU eviction never evicts the active view
+let disposed = 0
+const registry2 = createViewRegistry({
+  limit:  2,
+  create: () => ({ dispose () {
+    disposed++
+  } }),
+})
+const fakeCtx = {} as SceneContext
+registry2.activate('a', fakeCtx)
+registry2.activate('b', fakeCtx)
+registry2.activate('c', fakeCtx)
+assert(disposed === 1 && registry2.activeKey() === 'c', 'LRU evicted the oldest inactive view')
+registry2.dispose()
+
+// 21. explicit-instance caches/registries exist and are isolated
+const cacheA = createModelCache()
+cacheA.clear()
+
+const propsReg = createPropRegistry()
+propsReg.register('x', { name: 'x', build: () => new THREE.Object3D() })
+assert(propsReg.get('x') !== undefined && createPropRegistry().get('x') === undefined, 'prop registries are isolated instances')
 
 console.log('smoke ok: all DOM-free factories resolve and behave')

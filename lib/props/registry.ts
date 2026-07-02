@@ -16,6 +16,28 @@ import { disposeScene } from '../core/dispose.js'
 import type { PropContext, PropFactory, PropInstance } from '../types.js'
 
 
+// An explicit, owned prop registry — prefer this over the module-global one
+// so name resolution is scoped to your app (unidirectional-API form).
+export interface PropRegistry {
+  register (name: string, factory: PropFactory): void
+  get (name: string): PropFactory | undefined
+  resolve (src: PropFactory | string, ctx?: PropContext): Promise<PropInstance>
+}
+
+export function createPropRegistry (): PropRegistry {
+  const names = new Map<string, PropFactory>()
+  return {
+    register (name, factory) {
+      names.set(name, factory)
+    },
+    get: name => names.get(name),
+    resolve (src, ctx = {}) {
+      return resolveWith(names, src, ctx)
+    },
+  }
+}
+
+// module-global convenience instance, kept for back-compat.
 const registry = new Map<string, PropFactory>()
 
 export function registerProp (name: string, factory: PropFactory): void {
@@ -52,14 +74,22 @@ function wrapModel (object: THREE.Object3D, clips: THREE.AnimationClip[], ctx: P
   }
 }
 
-export async function resolveProp (
+export function resolveProp (
   src: PropFactory | string,
   ctx: PropContext = {},
+): Promise<PropInstance> {
+  return resolveWith(registry, src, ctx)
+}
+
+async function resolveWith (
+  names: Map<string, PropFactory>,
+  src: PropFactory | string,
+  ctx: PropContext,
 ): Promise<PropInstance> {
   if (isFactory(src))
     return createProp(src, ctx)
 
-  const registered = registry.get(src)
+  const registered = names.get(src)
   if (registered)
     return createProp(registered, ctx)
 

@@ -8,10 +8,17 @@
 
 import * as THREE from 'three'
 
+import type { Clock } from './clock.js'
 import type { FrameCallback, FrameLoop } from '../types.js'
 
 
-export function createFrameLoop (): FrameLoop {
+export interface FrameLoopOptions {
+
+  /** Injectable sim-time source (createClock). Default: raw wall-clock deltas. */
+  clock?: Clock
+}
+
+export function createFrameLoop ({ clock: simClock }: FrameLoopOptions = {}): FrameLoop {
   const subscribers = new Set<FrameCallback>()
   const clock       = new THREE.Clock(false)
   let frame   = 0
@@ -22,13 +29,24 @@ export function createFrameLoop (): FrameLoop {
     if (!running)
       return
     rafId = requestAnimationFrame(tick)
+
+    const real = clock.getDelta()
+    // perf: one rAF, one Set iteration per sim step. zero allocations.
+    if (simClock) {
+      for (const delta of simClock.advance(real)) {
+        frame += 1
+
+        const elapsed = simClock.elapsed()
+        for (const cb of subscribers)
+          cb({ delta, elapsed, frame })
+      }
+      return
+    }
     frame += 1
 
-    const delta   = clock.getDelta()
     const elapsed = clock.getElapsedTime()
-    // perf: one rAF, one Set iteration per frame. zero allocations.
     for (const cb of subscribers)
-      cb({ delta, elapsed, frame })
+      cb({ delta: real, elapsed, frame })
   }
 
   function start (): void {
