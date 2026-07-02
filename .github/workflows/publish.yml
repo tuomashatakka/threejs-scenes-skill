@@ -1,7 +1,7 @@
-name: Publish showcase & skill
+name: Publish package, showcase & skill
 
-# Publishes the public/ showcase to GitHub Pages and packages skill/ into a
-# downloadable threejs-scenes.skill served alongside it. Requires Pages source
+# Publishes the npm package to GitHub Packages, then publishes the public/
+# showcase and packaged threejs-scenes.skill to GitHub Pages. Requires Pages source
 # set to "GitHub Actions" once in repo Settings → Pages.
 
 on:
@@ -11,7 +11,7 @@ on:
 
 permissions:
   contents: read
-  packages: read
+  packages: write
   pages: write
   id-token: write
 
@@ -32,15 +32,32 @@ jobs:
 
       - name: Build library and package skill
         env:
-          GH_PAT: ${{ secrets.GITHUB_TOKEN }}
+          # Private GitHub Packages dependencies can only be read by the
+          # workflow GITHUB_TOKEN when those packages have granted this repo
+          # access. Use PACKAGES_TOKEN (classic PAT with read:packages/write:packages) when
+          # they live in a different/private package repo, and fall back to the
+          # workflow token for linked packages.
+          GH_PAT: ${{ secrets.PACKAGES_TOKEN || github.token }}
         run: |
           set -euo pipefail
+          if [ -z "${GH_PAT:-}" ]; then
+            echo "GH_PAT is required to install @tuomashatakka packages from GitHub Packages" >&2
+            exit 1
+          fi
           bun install --frozen-lockfile
           # tsc build + copy-lib refreshes skill/lib/dist and public/lib/dist,
           # then package-skill.ts validates SKILL.md and zips skill/ into
           # threejs-scenes.skill (extracts to threejs-scenes/).
           bun run build
           bun run scripts/package-skill.ts
+
+      - name: Publish package to GitHub Packages
+        if: github.event_name == 'push'
+        env:
+          GH_PAT: ${{ secrets.PACKAGES_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          bun publish --registry https://npm.pkg.github.com
 
       - name: Assemble site
         run: |

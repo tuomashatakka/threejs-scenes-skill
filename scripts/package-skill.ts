@@ -12,13 +12,17 @@ import { $ } from 'bun'
 const root = new URL('../', import.meta.url).pathname
 
 // 1. SKILL.md must exist with name + description frontmatter
+const packageJson = JSON.parse(await readFile(`${root}package.json`, 'utf8')) as { version?: string }
 const skillMd     = await readFile(`${root}skill/SKILL.md`, 'utf8')
 const frontmatter = skillMd.match(/^---\n([\s\S]*?)\n---/)
 if (!frontmatter)
   throw new Error('package-skill: skill/SKILL.md has no frontmatter block')
-for (const field of [ 'name:', 'description:' ])
+for (const field of [ 'name:', 'version:', 'description:' ])
   if (!frontmatter[1]!.includes(field))
     throw new Error(`package-skill: SKILL.md frontmatter missing "${field}"`)
+const skillVersion = frontmatter[1]!.match(/^version:\s*([^\n]+)$/m)?.[1]?.trim()
+if (skillVersion !== packageJson.version)
+  throw new Error(`package-skill: SKILL.md version (${skillVersion ?? 'missing'}) must match package.json version (${packageJson.version ?? 'missing'})`)
 
 // 2. the local lib copy the templates import must be built
 if (!existsSync(`${root}skill/lib/dist/index.js`))
