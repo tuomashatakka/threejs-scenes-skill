@@ -8,3 +8,4 @@ node_modules
 /skill/lib
 /threejs-scenes.skill
 /threejs-scenes/
+.playwright-mcp/
