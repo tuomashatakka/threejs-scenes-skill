@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<!--
+  isometric-infinite.html — endless procedural heightmap terrain, iso camera
+  ───────────────────────────────────────────────────────────────────────────
+  Library demo: an infinitely scrollable, triangulated, flat-shaded plane
+  displaced by a seeded fbm heightmap, framed by an orthographic iso camera.
+
+  Lessons:
+    - createInfiniteGround keeps a FIXED pool of (2r+1)² triangulated tiles;
+      tiles that scroll out of range recenter to the far side and re-displace,
+      so memory stays constant while the world never ends
+    - the displace fn samples WORLD coordinates -> tile seams always line up
+    - flatShading + computeVertexNormals gives the faceted low-poly look
+      (every triangle of the heightmap reads as a facet)
+    - drag pans the WORLD TARGET, not the camera: the iso camera keeps a fixed
+      offset from the target and ground.update(target) recenters the tiles
+    - heights come from seeded simplex fbm, so the terrain is deterministic
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>threejs-scenes · infinite isometric heightmap</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; font-family: ui-monospace, monospace }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #c0d0ff;
+      background: rgba(11, 16, 32, 0.6); border: 1px solid #2a3a5a; border-radius: 6px;
+      font-size: 12px; line-height: 1.6; pointer-events: none }
+    b { color: #9fffd0 }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>threejs-scenes · infinite isometric heightmap</div>
+      <div>drag to scroll forever · wheel / pinch to zoom · <b id="pos">–</b></div>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://esm.sh/three@0.184.0",
+      "three/addons/": "https://esm.sh/three@0.184.0/addons/",
+      "@tuomashatakka/canvas-loop-framecapper": "../lib/vendor/canvas-loop-framecapper/index.js",
+      "react": "https://esm.sh/react@19",
+      "@scenes": "../lib/dist/index.js"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import {
+      createRenderer, createFrameLoop, attachResizeObserver, attachPointerGesture,
+      createIsoCamera, resizeIsoCamera,
+      createInfiniteGround, createNoise3D,
+      setupStandardLighting, disposeScene,
+    } from '@scenes'
+
+    const canvas = document.getElementById('scene')
+    const posEl  = document.getElementById('pos')
+
+    const renderer = createRenderer({ canvas })
+    const scene    = new THREE.Scene()
+    scene.background = new THREE.Color('#0b1020')
+    scene.fog        = new THREE.Fog('#0b1020', 60, 140)
+
+    // ── heightmap: seeded simplex fbm sampled in WORLD space ────────────────
+    const noise = createNoise3D(7)
+    const AMP   = 6
+    const heightAt = (x, z) =>
+      noise.fbm(x * 0.035, 0, z * 0.035, 4) * AMP
+      + noise.ridged(x * 0.008, 0, z * 0.008, 2) * AMP * 1.5
+
+    // ── triangulated, flat-shaded infinite ground ───────────────────────────
+    const ground = createInfiniteGround({
+      tileSize:   24,
+      gridRadius: 3,
+      segments:   24,                      // 24×24×2 triangles per tile
+      displace:   heightAt,
+      material:   new THREE.MeshStandardMaterial({
+        color: '#3d7a52', roughness: 0.95, flatShading: true,
+      }),
+    })
+    scene.add(ground.object)
+
+    setupStandardLighting(scene, renderer)
+
+    // ── iso camera locked to a movable world target ─────────────────────────
+    const camera = createIsoCamera(canvas.clientWidth / Math.max(1, canvas.clientHeight), { viewSize: 34, far: 500 })
+    const offset = camera.position.clone()          // fixed iso offset
+    const target = new THREE.Vector3()              // where we are in the world
+
+    function updateCamera () {
+      camera.position.copy(target).add(offset)
+      camera.lookAt(target)
+    }
+    updateCamera()
+
+    // drag scrolls the world in camera-aligned ground axes; zoom scales the frustum
+    let zoom = 1
+    const panSpeed = () => 0.05 * zoom
+    const yaw      = Math.atan2(offset.x, offset.z)  // 45° — align pan to view
+    const fwd      = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw))
+    const right    = new THREE.Vector3(fwd.z, 0, -fwd.x)
+
+    attachPointerGesture(canvas, {
+      onDrag (dx, dy) {
+        target.addScaledVector(right, -dx * panSpeed())
+        target.addScaledVector(fwd, dy * panSpeed())
+      },
+      onPinch (deltaScale) { setZoom(zoom / deltaScale) },
+      onWheel (delta)      { setZoom(zoom * (1 + delta * 0.001)) },
+    })
+
+    function setZoom (z) {
+      zoom = Math.max(0.35, Math.min(3, z))
+      camera.zoom = 1 / zoom
+      camera.updateProjectionMatrix()
+    }
+
+    attachResizeObserver(renderer, camera, canvas, (w, h) => resizeIsoCamera(camera, w / (h || 1)))
+
+    const loop = createFrameLoop()
+    loop.onFrame(() => {
+      target.y = 0
+      updateCamera()
+      ground.update(target)               // recenter the tile pool around us
+      posEl.textContent = `x ${target.x.toFixed(0)} · z ${target.z.toFixed(0)} · h ${ground.heightAt(target.x, target.z).toFixed(1)}`
+      renderer.render(scene, camera)
+    })
+
+    window.__SCENE_READY__ = true
+
+    window.addEventListener('pagehide', () => {
+      loop.dispose()
+      ground.dispose()
+      disposeScene(scene)
+      renderer.dispose()
+    }, { once: true })
+  </script>
+</body>
+</html>
