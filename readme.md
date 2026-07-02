@@ -8,6 +8,7 @@ HTML artifact that runs in a sandboxed iframe with no build step.
 ## download
 
 - **Skill package:** [`threejs-scenes.skill`](https://tuomashatakka.github.io/threejs-scenes-skill/threejs-scenes.skill)
+  — build one locally with `bun run package:skill` (validates `SKILL.md`, refreshes the bundled lib, zips `skill/`)
   — the packaged `skill/` directory. Drop it into `~/.claude/skills/` (or
   `~/.config/opencode/skills/`) and unzip, or install it via Claude Code.
 - **Live showcase:** [tuomashatakka.github.io/threejs-scenes-skill](https://tuomashatakka.github.io/threejs-scenes-skill/)
@@ -90,16 +91,17 @@ Tree-shakeable subpaths are exported too: `threejs-scenes/core`,
 
 | Area | Exports |
 |------|---------|
-| **core** | `createRenderer`, `attachResizeObserver`, `createFrameLoop`, `bootstrapScene`, `attachPointerGesture`, `disposeScene`, `disposeMaterial`, `detectTier`, `getQualitySettings`, `QUALITY_PRESETS` |
-| **procedural** | `createSeededRng` (with `fork(label)`), `mulberry32`, `poissonDisk`, `createNoiseTexture` |
-| **camera** | `createIsoCamera`, `resizeIsoCamera`, `createFollowCamera` |
+| **core** | `createApp` (unidirectional store→module→scene shell), `createClock` (wall / fixed-timestep), `createStore`, `createRenderer`, `attachResizeObserver`, `createFrameLoop`, `bootstrapScene`, `createOverlayScene` / `renderOverlay`, `projectToScreenUv`, `attachPointerGesture`, `disposeScene`, `disposeMaterial`, `detectTier`, `getQualitySettings`, `QUALITY_PRESETS` |
+| **procedural** | `createSeededRng` (with `fork(label)`), `mulberry32`, `poissonDisk`, `createNoiseTexture`, `createNoise3D` (simplex + fbm/ridged), `createProceduralBody` (seeded planets) |
+| **camera** | `createCameraController` (free/flyTo/follow/cockpit), `tupleToVector3` / `vector3ToTuple` / `targetFromObject`, `createIsoCamera`, `resizeIsoCamera`, `createFollowCamera` |
 | **instancing** | `createInstancedField`, `createBatchedBuildings` |
+| **geometry extras** | `createConnectionGraph` (kNN LineSegments), `createInfiniteGround` (recentering tiles) |
 | **materials** | `createHolographicMaterial` |
 | **lighting** | `setupStandardLighting`, `createSun`, `createHemisphereFill`, `applyEnvironment` |
-| **particles** | `createParticleEmitter` |
-| **post** | `createComposer`, `createGradePass` (`GradeShader`), `createGodRaysPass`, `createDofPass`, `createFilmGrainPass`, `createRgbShiftPass`, `createBlockDisplacementPass`, `createScanCorruptionPass`, `createHudBeamTransition`, `createStereoRenderer` |
+| **particles** | `createEmitter` (shapes, rate/burst, curves over lifetime, deterministic), `createGpuEmitter` (GPGPU >50k), `sampleCurve` / `bakeCurve` / `bakeCurveTexture`, `createParticleEmitter` (deprecated v1) |
+| **post** | `createPostPipeline` (reorderable named passes), `createComposer`, `createGradePass` (`GradeShader`), `createGodRaysPass`, `createDofPass`, `createFilmGrainPass`, `createCrtPass` / `crtCorrectPointer`, `createLensingPass`, `createBurnInPass`, `createRgbShiftPass`, `createBlockDisplacementPass`, `createScanCorruptionPass`, `createHudBeamTransition`, `createStereoRenderer` |
 | **voxels / infinite** | `VoxelChunk`, `greedyMesh`, `createChunkManager` |
-| **architecture** | `createSceneModule`, `MaterialPool`, `createProceduralTexture`, `EditStack`, `resolveParam` / `resolveParams`, `pickTopLevel` |
+| **architecture** | `createSceneModule`, `createViewRegistry` (LRU view cache), `MaterialPool`, `createProceduralTexture` / `createTextureCache`, `EditStack`, `resolveParam` / `resolveParams`, `pickTopLevel`, `pick` (distortion-aware) / `createClickGuard` |
 
 The frame loop is **self-contained** (a `THREE.Clock`-driven `requestAnimationFrame`
 with `registerUpdate` / `unregisterUpdate`) so the package has no exotic
@@ -156,7 +158,8 @@ browser** (needs internet for the CDN). No bundler, no dev server, no install.
 | `shader-material.html` | Custom GLSL `ShaderMaterial` — holographic fresnel + scanlines + noise. |
 | `post-processing.html` | `EffectComposer` chain — bloom + linear-HDR colour grade + `OutputPass`. |
 | `isometric.html` | Orthographic true-iso camera + instanced height-grid terrain + pan/zoom. |
-| `particles.html` | GC-proof instanced particle emitter — 20k particles, deterministic phase math, zero per-frame allocation. |
+| `bootstrap.html` | Library starter — `createApp` unidirectional flow, fixed-step clock, seeded particles. |
+| `particles.html` | Particles v2 — `createEmitter` shapes/curves/bursts + 65k GPGPU field toggle. |
 
 > The templates intentionally inline their helpers (frame loop, pointer gesture,
 > disposal) so there are no local module imports to break under `file://`. For

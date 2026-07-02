@@ -1,4 +1,0 @@
-- main [ref=e2]:
-  - complementary:
-    - generic: threejs-scenes · createApp bootstrap
-    - generic: drag to orbit · click/tap to re-seed the crystal
