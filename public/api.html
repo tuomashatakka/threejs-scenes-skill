@@ -1,0 +1,3580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API reference — threejs-scenes</title>
+  <meta name="description" content="Complete generated API reference for @tuomashatakka/threejs-scenes v1.3.1: every export, its exact declaration and doc comment, with runnable examples and live previews.">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .api-card { border: 1px solid #2a3346; border-radius: 12px; padding: .2rem 1rem .6rem; margin: .8rem 0; background: #10141f; }
+    .api-card h4 { margin: .6rem 0 .2rem; }
+    .api-card pre { margin: .4rem 0 .2rem; max-height: 26em; overflow: auto; }
+    .api-preview { width: 100%; aspect-ratio: 16 / 9; border: 1px solid #2a3346; border-radius: 12px; background: #0a0a14; overflow: hidden; margin: .8rem 0 .4rem; }
+    .api-preview iframe { width: 100%; height: 100%; border: 0; display: block; }
+    .api-example { border-left: 3px solid #79f7ff; }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header>
+    <h1>API reference</h1>
+    <p><code>@tuomashatakka/threejs-scenes</code> v1.3.1 — every export with its exact declaration, generated from the package's <code>.d.ts</code> files. See the <a href="index.html">showcase</a> for the guided tour.</p>
+  </header>
+  <main id="main">
+    <nav aria-label="Module table of contents">
+      <ul>
+        <li><a href="#api-core">core</a></li>
+        <li><a href="#api-camera">camera</a></li>
+        <li><a href="#api-instancing">instancing</a></li>
+        <li><a href="#api-materials">materials</a></li>
+        <li><a href="#api-geometry">geometry</a></li>
+        <li><a href="#api-loaders">loaders</a></li>
+        <li><a href="#api-animation">animation</a></li>
+        <li><a href="#api-props">props</a></li>
+        <li><a href="#api-lighting">lighting</a></li>
+        <li><a href="#api-particles">particles</a></li>
+        <li><a href="#api-post">post</a></li>
+        <li><a href="#api-post-webgpu">post/webgpu</a></li>
+        <li><a href="#api-post-webgl">post/webgl</a></li>
+        <li><a href="#api-procedural">procedural</a></li>
+        <li><a href="#api-voxels">voxels</a></li>
+        <li><a href="#api-architecture">architecture</a></li>
+        <li><a href="#api-jsx">jsx</a></li>
+        <li><a href="#api-types">types</a></li>
+      </ul>
+    </nav>
+    <section id="api-core" aria-labelledby="api-core-h">
+      <h2 id="api-core-h"><code>@tuomashatakka/threejs-scenes/core</code></h2>
+      <p>Scene scaffolding: renderer factory, the canvas-loop-framecapper-backed frame loop, unidirectional app shell, injectable clocks, stores, overlays, pointer gestures, disposal and device-tier quality presets.</p>
+      <pre class="api-example"><code>import { createApp, createClock } from '@tuomashatakka/threejs-scenes'
+
+const app = createApp({
+  canvas,
+  seed:  7,
+  clock: createClock({ mode: 'fixed' }),   // deterministic sim steps
+  state: { hue: 0.52 },
+  modules: [{ id: 'spin', update: ({ scene }, { delta }) =&gt; { /* project state -&gt; scene */ } }],
+})
+app.start()</code></pre>
+      <div class="api-preview"><iframe loading="lazy" title="core live demo" src="demos/bootstrap.html"></iframe></div>
+      <p class="demo-link"><a href="demos/bootstrap.html">Open demo — bootstrap.html</a></p>
+      <article class="api-card" id="api-core-createrenderer">
+        <h4><code>createRenderer</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createRenderer({ canvas, antialias, pixelRatioMax, shadows, toneMapping, toneMappingExposure, logarithmicDepthBuffer, }: RendererOptions): THREE.WebGLRenderer;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-attachresizeobserver">
+        <h4><code>attachResizeObserver</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function attachResizeObserver(renderer: THREE.WebGLRenderer, camera: THREE.Camera, canvas: HTMLCanvasElement, onResize?: ResizeHandler): () =&gt; void;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-createframeloop">
+        <h4><code>createFrameLoop</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createFrameLoop({ clock: simClock, fps }?: FrameLoopOptions): FrameLoop;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-createclock">
+        <h4><code>createClock</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createClock({ mode, step, maxSubSteps }?: ClockOptions): Clock;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-createstore">
+        <h4><code>createStore</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createStore&lt;S extends object, A = Partial&lt;S&gt;&gt;(initial: S, reducer?: Reducer&lt;S, A&gt;): Store&lt;S, A&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-createapp">
+        <h4><code>createApp</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createApp&lt;S extends object = Record&lt;string, unknown&gt;, A = Partial&lt;S&gt;&gt;({ canvas, state, reducer, seed, clock, renderer: rendererOptions, camera: cameraOptions, background, lighting, orbit, modules, onFrame, }: AppOptions&lt;S, A&gt;): App&lt;S, A&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-createoverlayscene">
+        <h4><code>createOverlayScene</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createOverlayScene(camera: THREE.Camera): OverlayHandle;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-renderoverlay">
+        <h4><code>renderOverlay</code> <span class="badge">function</span></h4>
+        <p>Composer-free path: call after renderer.render(mainScene, camera).</p>
+        <pre><code>function renderOverlay(renderer: THREE.WebGLRenderer, overlayScene: THREE.Scene, camera: THREE.Camera): void;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-projecttoscreenuv">
+        <h4><code>projectToScreenUv</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function projectToScreenUv(object: THREE.Object3D, camera: THREE.Camera, out?: ScreenProjection): ScreenProjection;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-bootstrapscene">
+        <h4><code>bootstrapScene</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function bootstrapScene({ canvas, onSetup }: BootstrapOptions): BootstrappedScene;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-attachpointergesture">
+        <h4><code>attachPointerGesture</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function attachPointerGesture(el: HTMLElement, callbacks: PointerGestureCallbacks, { tapThresholdMs, tapMovePx }?: PointerGestureOptions): () =&gt; void;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-disposematerial">
+        <h4><code>disposeMaterial</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function disposeMaterial(mat: THREE.Material): void;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-disposescene">
+        <h4><code>disposeScene</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function disposeScene(root: THREE.Object3D): void;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-detecttier">
+        <h4><code>detectTier</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function detectTier(): QualityTier;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-getqualitysettings">
+        <h4><code>getQualitySettings</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function getQualitySettings(tier?: QualityTier): QualitySettings;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-quality_presets">
+        <h4><code>QUALITY_PRESETS</code> <span class="badge">const</span></h4>
+        
+        <pre><code>const QUALITY_PRESETS: Record&lt;QualityTier, QualityPreset&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-rendereroptions">
+        <h4><code>RendererOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface RendererOptions {
+    canvas: HTMLCanvasElement;
+    antialias?: boolean;
+    pixelRatioMax?: number;
+    shadows?: boolean;
+    toneMapping?: THREE.ToneMapping;
+    toneMappingExposure?: number;
+    /** For scenes spanning huge depth ranges (space scale -&gt; surface scale). */
+    logarithmicDepthBuffer?: boolean;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-core-resizehandler">
+        <h4><code>ResizeHandler</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type ResizeHandler = (width: number, height: number) =&gt; void;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-frameloopoptions">
+        <h4><code>FrameLoopOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface FrameLoopOptions {
+    /** Injectable sim-time source (createClock). Default: raw wall-clock deltas. */
+    clock?: Clock;
+    /**
+     * Cap the loop at a fixed frame rate (fps &gt; 0). Applies a fixed-timestep
+     * accumulator: capped frames always receive delta = 1/fps. NOTE: the cap is
+     * set on the shared FrameLoopManager, so it applies to every loop on the page.
+     */
+    fps?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-core-clockmode">
+        <h4><code>ClockMode</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type ClockMode = 'wall' | 'fixed';</code></pre>
+      </article>
+      <article class="api-card" id="api-core-clockoptions">
+        <h4><code>ClockOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ClockOptions {
+    mode?: ClockMode;
+    /** Fixed step size in seconds. Only used in 'fixed' mode. */
+    step?: number;
+    /** Max fixed steps consumed per advance() call. Overflow time is dropped. */
+    maxSubSteps?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-core-clock">
+        <h4><code>Clock</code> <span class="badge">interface</span></h4>
+        <p>A simulation time source. Feed it real elapsed seconds via `advance` and run
+one simulation tick per returned delta. In 'fixed' mode the returned deltas
+are always exactly `step`, so tick count — not wall time — drives the sim.</p>
+        <pre><code>interface Clock {
+    readonly mode: ClockMode;
+    advance(realDelta: number): readonly number[];
+    /** Total simulated seconds consumed so far. */
+    elapsed(): number;
+    reset(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-core-reducer">
+        <h4><code>Reducer</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type Reducer&lt;S, A&gt; = (state: S, action: A) =&gt; S;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-storelistener">
+        <h4><code>StoreListener</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type StoreListener&lt;S&gt; = (state: S, prev: S) =&gt; void;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-store">
+        <h4><code>Store</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface Store&lt;S, A = Partial&lt;S&gt;&gt; {
+    get(): S;
+    /** Shallow-merge a patch into the state and notify subscribers. */
+    set(patch: Partial&lt;S&gt;): void;
+    /** Run the reducer. Throws when the store was created without one. */
+    dispatch(action: A): void;
+    subscribe(listener: StoreListener&lt;S&gt;): () =&gt; void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-core-appmodule">
+        <h4><code>AppModule</code> <span class="badge">interface</span></h4>
+        <p>A scene feature in the unidirectional flow. `build` creates objects once;
+`update` projects the current state onto them every simulation tick. Modules
+read state — they never write it back.</p>
+        <pre><code>interface AppModule&lt;S extends object = Record&lt;string, unknown&gt;&gt; {
+    name: string;
+    build(ctx: SceneContext): void;
+    update?(state: S, frame: FrameContext, ctx: SceneContext): void;
+    dispose(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-core-appcameraoptions">
+        <h4><code>AppCameraOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface AppCameraOptions {
+    fov?: number;
+    near?: number;
+    far?: number;
+    position?: readonly [number, number, number];
+    lookAt?: readonly [number, number, number];
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-core-appoptions">
+        <h4><code>AppOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface AppOptions&lt;S extends object, A = Partial&lt;S&gt;&gt; {
+    canvas: HTMLCanvasElement;
+    /** Initial serializable app state. Defaults to an empty object. */
+    state?: S;
+    reducer?: Reducer&lt;S, A&gt;;
+    seed?: number;
+    /** Injectable time source. Pass createClock({ mode: 'fixed' }) for determinism. */
+    clock?: Clock;
+    renderer?: Omit&lt;RendererOptions, 'canvas'&gt;;
+    camera?: AppCameraOptions;
+    background?: THREE.ColorRepresentation;
+    /** Standard three-light rig. Default true. */
+    lighting?: boolean;
+    /** Built-in pointer orbit. Default true; disable when using a camera controller. */
+    orbit?: boolean;
+    modules?: AppModule&lt;S&gt;[];
+    /** Runs after module updates, before render — the place for app-level per-frame glue. */
+    onFrame?: (state: S, frame: FrameContext, ctx: SceneContext) =&gt; void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-core-app">
+        <h4><code>App</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface App&lt;S extends object, A = Partial&lt;S&gt;&gt; extends Disposable {
+    ctx: SceneContext;
+    store: Store&lt;S, A&gt;;
+    getState(): S;
+    setState(patch: Partial&lt;S&gt;): void;
+    dispatch(action: A): void;
+    /** Advance the simulation by `realDelta` seconds (default: one clock step) and render. */
+    tick(realDelta?: number): void;
+    start(): void;
+    stop(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-core-overlayhandle">
+        <h4><code>OverlayHandle</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface OverlayHandle extends Disposable {
+    scene: THREE.Scene;
+    /** Add after the main render pass: pipeline.register('overlay', overlay.pass). */
+    pass: RenderPass;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-core-screenprojection">
+        <h4><code>ScreenProjection</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ScreenProjection {
+    /** Screen position in 0..1 UV space (0,0 = bottom-left, matches shader vUv). */
+    u: number;
+    v: number;
+    /** NDC depth; &gt; 1 means beyond far plane, &lt; -1 in front of near. */
+    ndcZ: number;
+    onScreen: boolean;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-core-bootstrapsetupcontext">
+        <h4><code>BootstrapSetupContext</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface BootstrapSetupContext {
+    scene: THREE.Scene;
+    camera: THREE.PerspectiveCamera;
+    renderer: THREE.WebGLRenderer;
+    loop: FrameLoop;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-core-bootstrapsetup">
+        <h4><code>BootstrapSetup</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type BootstrapSetup = (ctx: BootstrapSetupContext) =&gt; FrameCallback | void;</code></pre>
+      </article>
+      <article class="api-card" id="api-core-bootstrapoptions">
+        <h4><code>BootstrapOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface BootstrapOptions {
+    canvas: HTMLCanvasElement;
+    onSetup?: BootstrapSetup;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-core-bootstrappedscene">
+        <h4><code>BootstrappedScene</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface BootstrappedScene {
+    renderer: THREE.WebGLRenderer;
+    scene: THREE.Scene;
+    camera: THREE.PerspectiveCamera;
+    loop: FrameLoop;
+    dispose(): void;
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-camera" aria-labelledby="api-camera-h">
+      <h2 id="api-camera-h"><code>@tuomashatakka/threejs-scenes/camera</code></h2>
+      <p>Camera factories: multi-mode controller (free / flyTo / follow / cockpit) with serializable tuple targets, orthographic isometric rig, framerate-independent third-person follow camera.</p>
+      <pre class="api-example"><code>const cam = createCameraController(camera, { bounds: null })
+cam.flyTo([0, 8, 24], [0, 0, 0], { fov: 40, onArrive: () =&gt; cam.follow(ship) })
+loop.onFrame(ctx =&gt; cam.update(ctx))</code></pre>
+      <div class="api-preview"><iframe loading="lazy" title="camera live demo" src="demos/follow-camera.html"></iframe></div>
+      <p class="demo-link"><a href="demos/follow-camera.html">Open demo — follow-camera.html</a></p>
+      <article class="api-card" id="api-camera-createisocamera">
+        <h4><code>createIsoCamera</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createIsoCamera(aspect: number, { viewSize, flavor, near, far, }?: IsoCameraOptions): THREE.OrthographicCamera;</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-resizeisocamera">
+        <h4><code>resizeIsoCamera</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function resizeIsoCamera(camera: THREE.OrthographicCamera, aspect: number): void;</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-createfollowcamera">
+        <h4><code>createFollowCamera</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createFollowCamera(camera: THREE.Camera, target: THREE.Object3D, { offset, lookAhead, stiffness, rotationStiffness, }: FollowCameraOptions): (ctx: FrameContext) =&gt; void;</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-tupletovector3">
+        <h4><code>tupleToVector3</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function tupleToVector3(tuple: Vec3Tuple, out?: THREE.Vector3): THREE.Vector3;</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-vector3totuple">
+        <h4><code>vector3ToTuple</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function vector3ToTuple(v: THREE.Vector3): Vec3Tuple;</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-targetfromobject">
+        <h4><code>targetFromObject</code> <span class="badge">function</span></h4>
+        <p>Frame an object: stand `distance` away along `direction`, look at its center.</p>
+        <pre><code>function targetFromObject(object: THREE.Object3D, distance: number, direction?: Vec3Tuple): CameraTarget;</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-createcameracontroller">
+        <h4><code>createCameraController</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createCameraController(camera: THREE.PerspectiveCamera, { stiffness, lookStiffness, fovStiffness, arriveEpsilon, bounds, }?: CameraControllerOptions): CameraController;</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-isoflavor">
+        <h4><code>IsoFlavor</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type IsoFlavor = 'true-iso' | 'dimetric';</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-isocameraoptions">
+        <h4><code>IsoCameraOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface IsoCameraOptions {
+    viewSize?: number;
+    flavor?: IsoFlavor;
+    near?: number;
+    far?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-followcameraoptions">
+        <h4><code>FollowCameraOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface FollowCameraOptions {
+    offset: THREE.Vector3;
+    lookAhead?: THREE.Vector3;
+    stiffness?: number;
+    rotationStiffness?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-vec3tuple">
+        <h4><code>Vec3Tuple</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type Vec3Tuple = readonly [number, number, number];</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-cameratarget">
+        <h4><code>CameraTarget</code> <span class="badge">interface</span></h4>
+        <p>A serializable camera intent: where to stand and what to look at.</p>
+        <pre><code>interface CameraTarget {
+    position: Vec3Tuple;
+    lookAt: Vec3Tuple;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-cameramode">
+        <h4><code>CameraMode</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type CameraMode = 'free' | 'flyTo' | 'follow' | 'cockpit';</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-camerabounds">
+        <h4><code>CameraBounds</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface CameraBounds {
+    min: Vec3Tuple;
+    max: Vec3Tuple;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-cameracontrolleroptions">
+        <h4><code>CameraControllerOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface CameraControllerOptions {
+    /** Position easing rate (higher = snappier). */
+    stiffness?: number;
+    lookStiffness?: number;
+    fovStiffness?: number;
+    /** Distance at which a fly-to counts as arrived. */
+    arriveEpsilon?: number;
+    bounds?: CameraBounds | null;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-flytooptions">
+        <h4><code>FlyToOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface FlyToOptions {
+    speed?: number;
+    fov?: number;
+    onArrive?: () =&gt; void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-camera-cameracontroller">
+        <h4><code>CameraController</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface CameraController {
+    readonly camera: THREE.PerspectiveCamera;
+    mode(): CameraMode;
+    /** Ease toward a position + look-at; fires onArrive once, then goes free. */
+    flyTo(position: Vec3Tuple, lookAt: Vec3Tuple, options?: FlyToOptions): void;
+    /** Track an object, keeping `offset` in its local frame. */
+    follow(object: THREE.Object3D, offset?: Vec3Tuple): void;
+    /** Anchor to a rig Object3D (first-person): copies its world transform. */
+    cockpit(rig: THREE.Object3D): void;
+    free(): void;
+    setFov(fov: number): void;
+    setBounds(bounds: CameraBounds | null): void;
+    snapTo(position: Vec3Tuple, lookAt: Vec3Tuple): void;
+    isMoving(): boolean;
+    update(ctx: FrameContext): void;
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-instancing" aria-labelledby="api-instancing-h">
+      <h2 id="api-instancing-h"><code>@tuomashatakka/threejs-scenes/instancing</code></h2>
+      <p>Draw-call reduction: seeded InstancedMesh scatter fields and BatchedMesh building batches.</p>
+      <pre class="api-example"><code>const field = createInstancedField(geometry, material, {
+  count: 5000, radius: 40, seed: 7, hueRange: [0.5, 0.65],
+})
+scene.add(field.mesh)</code></pre>
+      <div class="api-preview"><iframe loading="lazy" title="instancing live demo" src="demos/instanced-field.html"></iframe></div>
+      <p class="demo-link"><a href="demos/instanced-field.html">Open demo — instanced-field.html</a></p>
+      <article class="api-card" id="api-instancing-createinstancedfield">
+        <h4><code>createInstancedField</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createInstancedField({ geometry, material, count, radius, seed, hueBase, hueSpread, scaleMin, scaleMax, place, }: InstancedFieldOptions): THREE.InstancedMesh;</code></pre>
+      </article>
+      <article class="api-card" id="api-instancing-createbatchedbuildings">
+        <h4><code>createBatchedBuildings</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createBatchedBuildings({ geometries, material, transforms, sortObjects, perObjectFrustumCulled, }: BatchedBuildingsOptions): THREE.BatchedMesh;</code></pre>
+      </article>
+      <article class="api-card" id="api-instancing-instanceplacement">
+        <h4><code>InstancePlacement</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface InstancePlacement {
+    object: THREE.Object3D;
+    color: THREE.Color;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-instancing-placefn">
+        <h4><code>PlaceFn</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type PlaceFn = (index: number, rng: () =&gt; number, object: THREE.Object3D, color: THREE.Color) =&gt; void;</code></pre>
+      </article>
+      <article class="api-card" id="api-instancing-instancedfieldoptions">
+        <h4><code>InstancedFieldOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface InstancedFieldOptions {
+    geometry: THREE.BufferGeometry;
+    material: THREE.Material;
+    count: number;
+    radius?: number;
+    seed?: number;
+    hueBase?: number;
+    hueSpread?: number;
+    scaleMin?: number;
+    scaleMax?: number;
+    place?: PlaceFn;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-instancing-batchedbuildingsoptions">
+        <h4><code>BatchedBuildingsOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface BatchedBuildingsOptions {
+    geometries: THREE.BufferGeometry[];
+    material: THREE.Material;
+    transforms: THREE.Matrix4[];
+    sortObjects?: boolean;
+    perObjectFrustumCulled?: boolean;
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-materials" aria-labelledby="api-materials-h">
+      <h2 id="api-materials-h"><code>@tuomashatakka/threejs-scenes/materials</code></h2>
+      <p>Material factories and presets: standard PBR, toon and holographic (fresnel + scanlines) materials with a userData.tick(elapsed) animation convention.</p>
+      <pre class="api-example"><code>const holo = createHolographicMaterial({ color: '#79f7ff', fresnelStrength: 2 })
+loop.onFrame(({ elapsed }) =&gt; holo.userData.tick?.(elapsed))</code></pre>
+      <div class="api-preview"><iframe loading="lazy" title="materials live demo" src="demos/materials.html"></iframe></div>
+      <p class="demo-link"><a href="demos/materials.html">Open demo — materials.html</a></p>
+      <article class="api-card" id="api-materials-createstandardmaterial">
+        <h4><code>createStandardMaterial</code> <span class="badge">function</span></h4>
+        <p>Build a PBR material from a preset name (or raw params), merged with optional
+overrides. The `glass` preset returns a MeshPhysicalMaterial with transmission
+so it actually refracts; everything else is a MeshStandardMaterial.</p>
+        <pre><code>function createStandardMaterial(presetOrParams?: StandardPresetName | THREE.MeshStandardMaterialParameters, overrides?: THREE.MeshStandardMaterialParameters): THREE.MeshStandardMaterial;</code></pre>
+      </article>
+      <article class="api-card" id="api-materials-creategradienttoonmap">
+        <h4><code>createGradientToonMap</code> <span class="badge">function</span></h4>
+        <p>Quantized gradient ramp for cel shading — NearestFilter keeps the bands hard.</p>
+        <pre><code>function createGradientToonMap(steps?: number): THREE.DataTexture;</code></pre>
+      </article>
+      <article class="api-card" id="api-materials-createtoonmaterial">
+        <h4><code>createToonMaterial</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createToonMaterial(options?: ToonOptions): THREE.MeshToonMaterial;</code></pre>
+      </article>
+      <article class="api-card" id="api-materials-creatematcapmaterial">
+        <h4><code>createMatcapMaterial</code> <span class="badge">function</span></h4>
+        <p>Matcap material. Pass a loaded THREE.Texture, or a URL string (loaded via
+TextureLoader — browser only; headless the matcap is simply left unset).</p>
+        <pre><code>function createMatcapMaterial(matcap?: THREE.Texture | string): THREE.MeshMatcapMaterial;</code></pre>
+      </article>
+      <article class="api-card" id="api-materials-createholographicmaterial">
+        <h4><code>createHolographicMaterial</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createHolographicMaterial({ baseColor, fresnelStrength, scanlineDensity, opacity, }?: HolographicMaterialOptions): TickableMaterial;</code></pre>
+      </article>
+      <article class="api-card" id="api-materials-material_presets">
+        <h4><code>MATERIAL_PRESETS</code> <span class="badge">const</span></h4>
+        
+        <pre><code>const MATERIAL_PRESETS: Record&lt;StandardPresetName, THREE.MeshStandardMaterialParameters&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-materials-standardpresetname">
+        <h4><code>StandardPresetName</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type StandardPresetName = 'metal' | 'chrome' | 'gold' | 'plastic' | 'rubber' | 'glass' | 'matte' | 'emissive';</code></pre>
+      </article>
+      <article class="api-card" id="api-materials-toonoptions">
+        <h4><code>ToonOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ToonOptions {
+    color?: THREE.ColorRepresentation;
+    steps?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-materials-holographicmaterialoptions">
+        <h4><code>HolographicMaterialOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface HolographicMaterialOptions {
+    baseColor?: THREE.ColorRepresentation;
+    fresnelStrength?: number;
+    scanlineDensity?: number;
+    opacity?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-materials-tickablematerial">
+        <h4><code>TickableMaterial</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface TickableMaterial extends THREE.ShaderMaterial {
+    userData: {
+        tick: (ctx: FrameContext) =&gt; void;
+    };
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-geometry" aria-labelledby="api-geometry-h">
+      <h2 id="api-geometry-h"><code>@tuomashatakka/threejs-scenes/geometry</code></h2>
+      <p>Programmatic mesh generation: 2D shape builders, extrusion/lathe, in-place vertex deformers, mesh merging, layout helpers, kNN connection graphs and recentering infinite ground tiles.</p>
+      <pre class="api-example"><code>const gear = createExtrudedMesh(gearShape({ teeth: 12, radius: 1 }), material, { depth: 0.3 })
+applyTwist(gear.geometry, { angle: Math.PI / 6 })</code></pre>
+      <div class="api-preview"><iframe loading="lazy" title="geometry live demo" src="demos/geometry.html"></iframe></div>
+      <p class="demo-link"><a href="demos/geometry.html">Open demo — geometry.html</a></p>
+      <article class="api-card" id="api-geometry-roundedrectshape">
+        <h4><code>roundedRectShape</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function roundedRectShape(width: number, height: number, radius: number): THREE.Shape;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-polygonshape">
+        <h4><code>polygonShape</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function polygonShape(sides: number, radius: number): THREE.Shape;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-starshape">
+        <h4><code>starShape</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function starShape(points: number, outerRadius: number, innerRadius: number): THREE.Shape;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-gearshape">
+        <h4><code>gearShape</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function gearShape(teeth: number, outerRadius: number, innerRadius: number, toothDepth?: number): THREE.Shape;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-ringshape">
+        <h4><code>ringShape</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function ringShape(outerRadius: number, innerRadius: number): THREE.Shape;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-createextrudedmesh">
+        <h4><code>createExtrudedMesh</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createExtrudedMesh(options: ExtrudeOptions): THREE.Mesh;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-extrudealongpath">
+        <h4><code>extrudeAlongPath</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function extrudeAlongPath(shape: THREE.Shape, path: THREE.Curve&lt;THREE.Vector3&gt;, options?: ExtrudeAlongPathOptions): THREE.Mesh;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-createlathemesh">
+        <h4><code>createLatheMesh</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createLatheMesh(profile: ReadonlyArray&lt;readonly [number, number] | THREE.Vector2&gt;, options?: LatheOptions): THREE.Mesh;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-applytwist">
+        <h4><code>applyTwist</code> <span class="badge">function</span></h4>
+        <p>Twist around `axis`: rotation grows linearly from 0 to `angle` along the axis.</p>
+        <pre><code>function applyTwist(geo: THREE.BufferGeometry, angle: number, axis?: Axis): THREE.BufferGeometry;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-applytaper">
+        <h4><code>applyTaper</code> <span class="badge">function</span></h4>
+        <p>Taper: the two axes perpendicular to `axis` scale from 1 to `factor` along it.</p>
+        <pre><code>function applyTaper(geo: THREE.BufferGeometry, factor: number, axis?: Axis): THREE.BufferGeometry;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-applybend">
+        <h4><code>applyBend</code> <span class="badge">function</span></h4>
+        <p>Bend the geometry into an arc of `angle` radians around its `axis` extent.</p>
+        <pre><code>function applyBend(geo: THREE.BufferGeometry, angle: number, axis?: Axis): THREE.BufferGeometry;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-displacebynoise">
+        <h4><code>displaceByNoise</code> <span class="badge">function</span></h4>
+        <p>Push each vertex along its normal by seeded value noise. Great for rocks/terrain.</p>
+        <pre><code>function displaceByNoise(geo: THREE.BufferGeometry, options?: NoiseDisplaceOptions): THREE.BufferGeometry;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-simplifygeometry">
+        <h4><code>simplifyGeometry</code> <span class="badge">function</span></h4>
+        <p>Collapse to roughly `targetCount` vertices via SimplifyModifier.</p>
+        <pre><code>function simplifyGeometry(geo: THREE.BufferGeometry, targetCount: number): THREE.BufferGeometry;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-tessellategeometry">
+        <h4><code>tessellateGeometry</code> <span class="badge">function</span></h4>
+        <p>Subdivide long edges. `maxEdgeLength` in world units, `iterations` passes.</p>
+        <pre><code>function tessellateGeometry(geo: THREE.BufferGeometry, maxEdgeLength?: number, iterations?: number): THREE.BufferGeometry;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-edgesplit">
+        <h4><code>edgeSplit</code> <span class="badge">function</span></h4>
+        <p>Split shared vertices across hard edges so flat-shaded creases stay sharp.</p>
+        <pre><code>function edgeSplit(geo: THREE.BufferGeometry, cutOffAngleRad?: number, keepNormals?: boolean): THREE.BufferGeometry;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-mergevertices">
+        <h4><code>mergeVertices</code> <span class="badge">function</span></h4>
+        <p>Weld duplicate vertices within `tolerance` (indexes the geometry).</p>
+        <pre><code>function mergeVertices(geo: THREE.BufferGeometry, tolerance?: number): THREE.BufferGeometry;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-recomputenormals">
+        <h4><code>recomputeNormals</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function recomputeNormals(geo: THREE.BufferGeometry): THREE.BufferGeometry;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-mergemeshes">
+        <h4><code>mergeMeshes</code> <span class="badge">function</span></h4>
+        <p>Merge `meshes` into a single Mesh when they share one material, or a Group of
+merged meshes (one per distinct material) otherwise. Each mesh's local matrix
+is baked into the merged geometry. The source meshes are left untouched.</p>
+        <pre><code>function mergeMeshes(meshes: THREE.Mesh[]): THREE.Object3D;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-mergegeometrylist">
+        <h4><code>mergeGeometryList</code> <span class="badge">function</span></h4>
+        <p>Merge a raw list of geometries (assumed already in a common space).</p>
+        <pre><code>function mergeGeometryList(geometries: THREE.BufferGeometry[], useGroups?: boolean): THREE.BufferGeometry;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-creategroup">
+        <h4><code>createGroup</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createGroup(children?: THREE.Object3D[], transform?: Transform): THREE.Group;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-layoutgrid">
+        <h4><code>layoutGrid</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function layoutGrid(objects: THREE.Object3D[], options?: GridLayout): THREE.Object3D[];</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-layoutradial">
+        <h4><code>layoutRadial</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function layoutRadial(objects: THREE.Object3D[], options?: RadialLayout): THREE.Object3D[];</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-layoutstack">
+        <h4><code>layoutStack</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function layoutStack(objects: THREE.Object3D[], axis?: Axis, spacing?: number): THREE.Object3D[];</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-groupbounds">
+        <h4><code>groupBounds</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function groupBounds(obj: THREE.Object3D): THREE.Box3;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-createconnectiongraph">
+        <h4><code>createConnectionGraph</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createConnectionGraph(nodes: ReadonlyArray&lt;readonly [number, number, number]&gt;, { neighbors, maxDistance, color, highlightColor, opacity, }?: ConnectionGraphOptions): ConnectionGraph;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-createinfiniteground">
+        <h4><code>createInfiniteGround</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createInfiniteGround({ tileSize, gridRadius, segments, displace, material, }?: InfiniteGroundOptions): InfiniteGround;</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-extrudeoptions">
+        <h4><code>ExtrudeOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ExtrudeOptions {
+    shape?: THREE.Shape | THREE.Shape[];
+    points?: ReadonlyArray&lt;readonly [number, number]&gt;;
+    depth?: number;
+    bevel?: boolean;
+    bevelThickness?: number;
+    bevelSize?: number;
+    bevelSegments?: number;
+    steps?: number;
+    curveSegments?: number;
+    material?: THREE.Material;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-extrudealongpathoptions">
+        <h4><code>ExtrudeAlongPathOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ExtrudeAlongPathOptions {
+    steps?: number;
+    bevel?: boolean;
+    curveSegments?: number;
+    material?: THREE.Material;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-latheoptions">
+        <h4><code>LatheOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface LatheOptions {
+    segments?: number;
+    phiStart?: number;
+    phiLength?: number;
+    material?: THREE.Material;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-axis">
+        <h4><code>Axis</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type Axis = 'x' | 'y' | 'z';</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-noisedisplaceoptions">
+        <h4><code>NoiseDisplaceOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface NoiseDisplaceOptions {
+    amp?: number;
+    freq?: number;
+    seed?: number;
+    rng?: SeededRng;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-transform">
+        <h4><code>Transform</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface Transform {
+    position?: [number, number, number];
+    rotation?: [number, number, number];
+    scale?: number | [number, number, number];
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-gridlayout">
+        <h4><code>GridLayout</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface GridLayout {
+    cols?: number;
+    spacing?: number;
+    plane?: 'xz' | 'xy';
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-radiallayout">
+        <h4><code>RadialLayout</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface RadialLayout {
+    radius?: number;
+    startAngle?: number;
+    faceCenter?: boolean;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-connectiongraphoptions">
+        <h4><code>ConnectionGraphOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ConnectionGraphOptions {
+    /** Edges per node. Default 3. */
+    neighbors?: number;
+    /** Skip edges longer than this. Default Infinity. */
+    maxDistance?: number;
+    color?: THREE.ColorRepresentation;
+    highlightColor?: THREE.ColorRepresentation;
+    opacity?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-connectiongraph">
+        <h4><code>ConnectionGraph</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ConnectionGraph extends Disposable {
+    object: THREE.LineSegments;
+    /** [nodeIndexA, nodeIndexB] per edge, in attribute order. */
+    edges: ReadonlyArray&lt;readonly [number, number]&gt;;
+    /** Draw-on animation: 0 = no edges, 1 = all edges visible. */
+    setProgress(t: number): void;
+    /** Brighten every edge touching this node; null clears. */
+    setHighlight(nodeIndex: number | null): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-infinitegroundoptions">
+        <h4><code>InfiniteGroundOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface InfiniteGroundOptions {
+    tileSize?: number;
+    /** Tiles extend gridRadius cells in every direction: (2r+1)² tiles total. */
+    gridRadius?: number;
+    segments?: number;
+    /** World-space height function. Keep it pure — it re-runs on recenter. */
+    displace?: (x: number, z: number) =&gt; number;
+    material?: THREE.Material;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-geometry-infiniteground">
+        <h4><code>InfiniteGround</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface InfiniteGround extends Disposable {
+    object: THREE.Group;
+    /** Recenter tiles around a world position; call with the camera/player pos. */
+    update(center: THREE.Vector3): void;
+    /** Sample the ground height at a world position. */
+    heightAt(x: number, z: number): number;
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-loaders" aria-labelledby="api-loaders-h">
+      <h2 id="api-loaders-h"><code>@tuomashatakka/threejs-scenes/loaders</code></h2>
+      <p>Asset loading with progress aggregation, draco/ktx2 wiring and dispose-safe caches.</p>
+
+
+      <article class="api-card" id="api-loaders-creategltfloader">
+        <h4><code>createGLTFLoader</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createGLTFLoader(options?: GLTFLoaderOptions): GLTFLoader;</code></pre>
+      </article>
+      <article class="api-card" id="api-loaders-loadgltf">
+        <h4><code>loadGLTF</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function loadGLTF(url: string, options?: GLTFLoaderOptions): Promise&lt;LoadedModel&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-loaders-createmodelcache">
+        <h4><code>createModelCache</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createModelCache(): ModelCache;</code></pre>
+      </article>
+      <article class="api-card" id="api-loaders-loadmodel">
+        <h4><code>loadModel</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function loadModel(src: string, options?: GLTFLoaderOptions): Promise&lt;LoadedModel&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-loaders-clearmodelcache">
+        <h4><code>clearModelCache</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function clearModelCache(): void;</code></pre>
+      </article>
+      <article class="api-card" id="api-loaders-format_loaders">
+        <h4><code>FORMAT_LOADERS</code> <span class="badge">const</span></h4>
+        
+        <pre><code>const FORMAT_LOADERS: Record&lt;string, ModelLoader&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-loaders-gltfloaderoptions">
+        <h4><code>GLTFLoaderOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface GLTFLoaderOptions {
+    /** DRACO decoder path (CDN or local). Enables compressed-mesh support. */
+    draco?: boolean | string;
+    /** KTX2 transcoder path; requires a renderer to detect GPU texture support. */
+    ktx2?: string;
+    renderer?: THREE.WebGLRenderer;
+    /** Enable EXT_meshopt_compression decoding. */
+    meshopt?: boolean;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-loaders-modelloader">
+        <h4><code>ModelLoader</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type ModelLoader = (url: string, options?: GLTFLoaderOptions) =&gt; Promise&lt;LoadedModel&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-loaders-modelcache">
+        <h4><code>ModelCache</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ModelCache {
+    load(src: string, options?: GLTFLoaderOptions): Promise&lt;LoadedModel&gt;;
+    clear(): void;
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-animation" aria-labelledby="api-animation-h">
+      <h2 id="api-animation-h"><code>@tuomashatakka/threejs-scenes/animation</code></h2>
+      <p>Animation controllers: clip playback with crossfades, tweens, easing curves and per-frame drivers registered on the frame loop.</p>
+
+      <div class="api-preview"><iframe loading="lazy" title="animation live demo" src="demos/animation.html"></iframe></div>
+      <p class="demo-link"><a href="demos/animation.html">Open demo — animation.html</a></p>
+      <article class="api-card" id="api-animation-numbertrack">
+        <h4><code>numberTrack</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function numberTrack(targetPath: string, times: number[], values: number[]): THREE.NumberKeyframeTrack;</code></pre>
+      </article>
+      <article class="api-card" id="api-animation-vectortrack">
+        <h4><code>vectorTrack</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function vectorTrack(targetPath: string, times: number[], values: number[]): THREE.VectorKeyframeTrack;</code></pre>
+      </article>
+      <article class="api-card" id="api-animation-quaterniontrack">
+        <h4><code>quaternionTrack</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function quaternionTrack(targetPath: string, times: number[], values: number[]): THREE.QuaternionKeyframeTrack;</code></pre>
+      </article>
+      <article class="api-card" id="api-animation-trackfromkeyframes">
+        <h4><code>trackFromKeyframes</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function trackFromKeyframes(spec: TrackSpec): THREE.KeyframeTrack;</code></pre>
+      </article>
+      <article class="api-card" id="api-animation-clipfromtracks">
+        <h4><code>clipFromTracks</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function clipFromTracks(name: string, duration: number, tracks: THREE.KeyframeTrack[]): THREE.AnimationClip;</code></pre>
+      </article>
+      <article class="api-card" id="api-animation-spinclip">
+        <h4><code>spinClip</code> <span class="badge">function</span></h4>
+        <p>Continuous 360° rotation around `axis`. Loops seamlessly.</p>
+        <pre><code>function spinClip(axis?: 'x' | 'y' | 'z', duration?: number, name?: string): THREE.AnimationClip;</code></pre>
+      </article>
+      <article class="api-card" id="api-animation-bobclip">
+        <h4><code>bobClip</code> <span class="badge">function</span></h4>
+        <p>Vertical bob (sine, seamless loop). `amp` in world units.</p>
+        <pre><code>function bobClip(amp?: number, duration?: number, name?: string): THREE.AnimationClip;</code></pre>
+      </article>
+      <article class="api-card" id="api-animation-pulsescaleclip">
+        <h4><code>pulseScaleClip</code> <span class="badge">function</span></h4>
+        <p>Uniform scale pulse between `min` and `max`.</p>
+        <pre><code>function pulseScaleClip(min?: number, max?: number, duration?: number, name?: string): THREE.AnimationClip;</code></pre>
+      </article>
+      <article class="api-card" id="api-animation-combineclips">
+        <h4><code>combineClips</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function combineClips(name: string, clips: THREE.AnimationClip[]): THREE.AnimationClip;</code></pre>
+      </article>
+      <article class="api-card" id="api-animation-createanimationcontroller">
+        <h4><code>createAnimationController</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createAnimationController(root: THREE.Object3D, clips?: THREE.AnimationClip[], loop?: FrameLoop): AnimationController;</code></pre>
+      </article>
+      <article class="api-card" id="api-animation-trackspec">
+        <h4><code>TrackSpec</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface TrackSpec {
+    path: string;
+    times: number[];
+    values: number[];
+    type?: 'number' | 'vector' | 'quaternion';
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-props" aria-labelledby="api-props-h">
+      <h2 id="api-props-h"><code>@tuomashatakka/threejs-scenes/props</code></h2>
+      <p>Declarative prop definitions: seed-deterministic factories that build, place and dispose themed objects.</p>
+
+      <div class="api-preview"><iframe loading="lazy" title="props live demo" src="demos/props.html"></iframe></div>
+      <p class="demo-link"><a href="demos/props.html">Open demo — props.html</a></p>
+      <article class="api-card" id="api-props-defineprop">
+        <h4><code>defineProp</code> <span class="badge">function</span></h4>
+        <p>Validate + tag a prop definition. The returned factory is what &lt;Prop src&gt; resolves to.</p>
+        <pre><code>function defineProp(def: PropDefinition): PropFactory;</code></pre>
+      </article>
+      <article class="api-card" id="api-props-createprop">
+        <h4><code>createProp</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createProp(factory: PropFactory, ctx?: PropContext, options?: CreatePropOptions): PropInstance;</code></pre>
+      </article>
+      <article class="api-card" id="api-props-createinstancedprop">
+        <h4><code>createInstancedProp</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createInstancedProp(factory: PropFactory, options: InstancedPropOptions, ctx?: PropContext): InstancedPropResult;</code></pre>
+      </article>
+      <article class="api-card" id="api-props-createpropcomposite">
+        <h4><code>createPropComposite</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createPropComposite(parts: CompositePart[]): PropComposite;</code></pre>
+      </article>
+      <article class="api-card" id="api-props-createpropregistry">
+        <h4><code>createPropRegistry</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createPropRegistry(): PropRegistry;</code></pre>
+      </article>
+      <article class="api-card" id="api-props-registerprop">
+        <h4><code>registerProp</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function registerProp(name: string, factory: PropFactory): void;</code></pre>
+      </article>
+      <article class="api-card" id="api-props-getprop">
+        <h4><code>getProp</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function getProp(name: string): PropFactory | undefined;</code></pre>
+      </article>
+      <article class="api-card" id="api-props-resolveprop">
+        <h4><code>resolveProp</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function resolveProp(src: PropFactory | string, ctx?: PropContext): Promise&lt;PropInstance&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-props-createpropoptions">
+        <h4><code>CreatePropOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface CreatePropOptions {
+    /** Auto-play every clip on mount (looping). Default true. */
+    autoplay?: boolean;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-props-instancedpropoptions">
+        <h4><code>InstancedPropOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface InstancedPropOptions {
+    count: number;
+    radius?: number;
+    seed?: number;
+    place?: InstancePlaceFn;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-props-instancedpropresult">
+        <h4><code>InstancedPropResult</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface InstancedPropResult {
+    object: THREE.Object3D;
+    dispose(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-props-compositepart">
+        <h4><code>CompositePart</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface CompositePart {
+    prop: PropInstance;
+    position?: [number, number, number];
+    rotation?: [number, number, number];
+    scale?: number | [number, number, number];
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-props-propcomposite">
+        <h4><code>PropComposite</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PropComposite {
+    object: THREE.Group;
+    parts: PropInstance[];
+    dispose(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-props-propregistry">
+        <h4><code>PropRegistry</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PropRegistry {
+    register(name: string, factory: PropFactory): void;
+    get(name: string): PropFactory | undefined;
+    resolve(src: PropFactory | string, ctx?: PropContext): Promise&lt;PropInstance&gt;;
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-lighting" aria-labelledby="api-lighting-h">
+      <h2 id="api-lighting-h"><code>@tuomashatakka/threejs-scenes/lighting</code></h2>
+      <p>Lighting rigs: IBL environment, shadow-tuned sun, hemisphere fill.</p>
+      <pre class="api-example"><code>const rig = setupStandardLighting(scene, renderer, { environment: true, sun: true })</code></pre>
+      <div class="api-preview"><iframe loading="lazy" title="lighting live demo" src="demos/lighting.html"></iframe></div>
+      <p class="demo-link"><a href="demos/lighting.html">Open demo — lighting.html</a></p>
+      <article class="api-card" id="api-lighting-applyenvironment">
+        <h4><code>applyEnvironment</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function applyEnvironment(scene: THREE.Scene, renderer: THREE.WebGLRenderer, { intensity, envScene }?: EnvironmentOptions): THREE.Texture;</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-createsun">
+        <h4><code>createSun</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSun({ color, intensity, position, shadowMapSize, shadowFrustum, shadowFar, }?: SunOptions): THREE.DirectionalLight;</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-createhemispherefill">
+        <h4><code>createHemisphereFill</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createHemisphereFill({ skyColor, groundColor, intensity, }?: HemisphereFillOptions): THREE.HemisphereLight;</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-setupstandardlighting">
+        <h4><code>setupStandardLighting</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function setupStandardLighting(scene: THREE.Scene, renderer: THREE.WebGLRenderer, options?: StandardLightingOptions): StandardLighting;</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-environmentoptions">
+        <h4><code>EnvironmentOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface EnvironmentOptions {
+    intensity?: number;
+    envScene?: THREE.Scene;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-sunoptions">
+        <h4><code>SunOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SunOptions {
+    color?: THREE.ColorRepresentation;
+    intensity?: number;
+    position?: THREE.Vector3;
+    shadowMapSize?: number;
+    shadowFrustum?: number;
+    shadowFar?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-hemispherefilloptions">
+        <h4><code>HemisphereFillOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface HemisphereFillOptions {
+    skyColor?: THREE.ColorRepresentation;
+    groundColor?: THREE.ColorRepresentation;
+    intensity?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-standardlightingoptions">
+        <h4><code>StandardLightingOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface StandardLightingOptions {
+    env?: EnvironmentOptions;
+    sun?: SunOptions;
+    hemi?: HemisphereFillOptions;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-lighting-standardlighting">
+        <h4><code>StandardLighting</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface StandardLighting extends Disposable {
+    env: THREE.Texture;
+    sun: THREE.DirectionalLight;
+    hemi: THREE.HemisphereLight;
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-particles" aria-labelledby="api-particles-h">
+      <h2 id="api-particles-h"><code>@tuomashatakka/threejs-scenes/particles</code></h2>
+      <p>Deterministic particle systems: CPU emitter with shapes, rates, bursts and curves over lifetime, plus a GPGPU emitter for 50k+ particles; curve bakers for shader-side sampling.</p>
+      <pre class="api-example"><code>const emitter = createEmitter({
+  shape: { type: 'cone', angle: 0.4 }, rate: 200,
+  velocity: [0, 3, 0], lifetime: [0.8, 1.4],
+  size: { curve: [[0, 0.1], [0.2, 0.35], [1, 0]] },
+  seed: 7,
+})
+scene.add(emitter.points)
+loop.onFrame(ctx =&gt; emitter.update(ctx))</code></pre>
+      <div class="api-preview"><iframe loading="lazy" title="particles live demo" src="demos/particles.html"></iframe></div>
+      <p class="demo-link"><a href="demos/particles.html">Open demo — particles.html</a></p>
+      <article class="api-card" id="api-particles-samplecurve">
+        <h4><code>sampleCurve</code> <span class="badge">function</span></h4>
+        <p>Sample a scalar curve at t. Linear interpolation between stops — chosen over
+smoothstep/Catmull-Rom because stops are author-controlled: add a stop where
+you want an ease, and the LUT resolution (64) hides the corners anyway.</p>
+        <pre><code>function sampleCurve(curve: ScalarCurve, t: number): number;</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-bakecurve">
+        <h4><code>bakeCurve</code> <span class="badge">function</span></h4>
+        <p>Bake a scalar curve into a Float32Array LUT of `resolution` samples.</p>
+        <pre><code>function bakeCurve(curve: ScalarCurve, resolution?: number): Float32Array;</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-bakecurvetexture">
+        <h4><code>bakeCurveTexture</code> <span class="badge">function</span></h4>
+        <p>Bake color + alpha + size curves into one 2-row RGBA DataTexture:
+row 0 = rgb: color, a: alpha; row 1 = r: size. Sampled in the particle
+shaders by normalized age.</p>
+        <pre><code>function bakeCurveTexture(color: ColorCurve, alpha: ScalarCurve, size: ScalarCurve, resolution?: number): THREE.DataTexture;</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-sampleshape">
+        <h4><code>sampleShape</code> <span class="badge">function</span></h4>
+        <p>Sample a spawn position + emission direction from an emitter shape.</p>
+        <pre><code>function sampleShape(shape: EmitterShape, r: () =&gt; number, out: SpawnSample): void;</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-createemitter">
+        <h4><code>createEmitter</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createEmitter({ capacity, rate, bursts, lifetime, shape, speed, gravity, damping, size, sizeCurve, color, alphaCurve, rotation, texture, blending, seed, }: EmitterOptions): Emitter;</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-creategpuemitter">
+        <h4><code>createGpuEmitter</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createGpuEmitter(renderer: THREE.WebGLRenderer, options: GpuEmitterOptions): Emitter;</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-createparticleemitter">
+        <h4><code>createParticleEmitter</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createParticleEmitter({ count, texture, bounds, seed, gravity, damping, }: ParticleEmitterOptions): ParticleEmitter;</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-scalarcurve">
+        <h4><code>ScalarCurve</code> <span class="badge">type</span></h4>
+        <p>[t, value] stops, t in 0..1 ascending.</p>
+        <pre><code>type ScalarCurve = ReadonlyArray&lt;readonly [number, number]&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-colorcurve">
+        <h4><code>ColorCurve</code> <span class="badge">type</span></h4>
+        <p>[t, color] stops; color as css string or [r,g,b] in 0..1.</p>
+        <pre><code>type ColorCurve = ReadonlyArray&lt;readonly [number, string | readonly [number, number, number]]&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-emittershape">
+        <h4><code>EmitterShape</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type EmitterShape = {
+    kind: 'point';
+} | {
+    kind: 'sphere';
+    radius: number;
+    shell?: boolean;
+} | {
+    kind: 'box';
+    size: readonly [number, number, number];
+} | {
+    kind: 'cone';
+    angle: number;
+    radius?: number;
+} | {
+    kind: 'disc';
+    radius: number;
+};</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-emitteroptions">
+        <h4><code>EmitterOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface EmitterOptions {
+    /** Max simultaneously-live particles. Buffers are sized once at this count. */
+    capacity: number;
+    /** Continuous emission in particles/second. Default: capacity / mean lifetime. */
+    rate?: number;
+    /** One-shot emissions at sim-time offsets (seconds since emitter creation). */
+    bursts?: ReadonlyArray&lt;{
+        time: number;
+        count: number;
+    }&gt;;
+    lifetime?: readonly [number, number];
+    shape?: EmitterShape;
+    /** Initial speed range along the shape's emission direction. */
+    speed?: readonly [number, number];
+    gravity?: readonly [number, number, number];
+    damping?: number;
+    /** World-unit base size; the size curve multiplies this. */
+    size?: number;
+    sizeCurve?: ScalarCurve;
+    color?: ColorCurve;
+    alphaCurve?: ScalarCurve;
+    /** Angular velocity range (rad/s) for sprite spin. */
+    rotation?: readonly [number, number];
+    texture?: THREE.Texture | null;
+    blending?: 'additive' | 'normal';
+    seed?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-emitter">
+        <h4><code>Emitter</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface Emitter {
+    object: THREE.Object3D;
+    tick(ctx: FrameContext): void;
+    /** Spawn `count` particles immediately (capacity permitting). */
+    burst(count: number): void;
+    setRate(rate: number): void;
+    dispose(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-spawnsample">
+        <h4><code>SpawnSample</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SpawnSample {
+    px: number;
+    py: number;
+    pz: number;
+    dx: number;
+    dy: number;
+    dz: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-gpuemitteroptions">
+        <h4><code>GpuEmitterOptions</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type GpuEmitterOptions = Omit&lt;EmitterOptions, 'rate' | 'bursts' | 'rotation'&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-particleemitteroptions">
+        <h4><code>ParticleEmitterOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ParticleEmitterOptions {
+    count: number;
+    texture: THREE.Texture;
+    bounds?: number;
+    seed?: number;
+    gravity?: number;
+    damping?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-particles-particleemitter">
+        <h4><code>ParticleEmitter</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ParticleEmitter {
+    mesh: THREE.Mesh;
+    tick(ctx: FrameContext): void;
+    dispose(): void;
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-post" aria-labelledby="api-post-h">
+      <h2 id="api-post-h"><code>@tuomashatakka/threejs-scenes/post</code></h2>
+      <p>WebGL EffectComposer post-processing: reorderable named pipeline plus individual passes — colour grade, god rays, depth-of-field with chromatic aberration, film grain, CRT, glitch stack, lensing, HUD beams, stereo.</p>
+      <pre class="api-example"><code>const post = createPostPipeline(renderer, scene, camera, [
+  ['bloom', { strength: 0.7 }],
+  ['grade', { saturation: 1.1, lift: [0, 0, 0.02] }],
+])
+loop.onFrame(({ delta }) =&gt; post.render(delta))</code></pre>
+      <div class="api-preview"><iframe loading="lazy" title="post live demo" src="demos/post-processing.html"></iframe></div>
+      <p class="demo-link"><a href="demos/post-processing.html">Open demo — post-processing.html</a></p>
+      <article class="api-card" id="api-post-createcomposer">
+        <h4><code>createComposer</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createComposer({ renderer, scene, camera, width, height, withDepth, withBloom, bloomStrength, bloomRadius, bloomThreshold, }: ComposerOptions): ComposerHandle;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-createpostpipeline">
+        <h4><code>createPostPipeline</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createPostPipeline({ renderer, scene, camera, width, height, withDepth, }: PostPipelineOptions): PostPipeline;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-creategradepass">
+        <h4><code>createGradePass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createGradePass({ tint, contrast, saturation, vignette, grain, chromatic, }?: GradePassOptions): GradePass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-creatergbshiftpass">
+        <h4><code>createRgbShiftPass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createRgbShiftPass(): ShaderPass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-createblockdisplacementpass">
+        <h4><code>createBlockDisplacementPass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createBlockDisplacementPass(): ShaderPass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-createscancorruptionpass">
+        <h4><code>createScanCorruptionPass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createScanCorruptionPass(): ShaderPass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-creategodrayspass">
+        <h4><code>createGodRaysPass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createGodRaysPass(): GodRaysPass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-createdofpass">
+        <h4><code>createDofPass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createDofPass({ focalDistance, focalRange, maxBlur, caStrength, near, far, }?: DofPassOptions): DofPass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-createfilmgrainpass">
+        <h4><code>createFilmGrainPass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createFilmGrainPass({ intensity, luma, desat, }?: FilmGrainOptions): ShaderPass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-createhudbeamtransition">
+        <h4><code>createHudBeamTransition</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createHudBeamTransition({ duration, beamWidth, beamColor, onComplete, }?: HudBeamOptions): HudBeamTransition;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-createstereorenderer">
+        <h4><code>createStereoRenderer</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createStereoRenderer(renderer: THREE.WebGLRenderer, mode: StereoMode, { width, height }?: StereoSizeOptions): StereoRenderer;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-gradeshader">
+        <h4><code>GradeShader</code> <span class="badge">const</span></h4>
+        
+        <pre><code>const GradeShader: {
+    uniforms: {
+        tDiffuse: {
+            value: null;
+        };
+        uTime: {
+            value: number;
+        };
+        uTint: {
+            value: THREE.Color;
+        };
+        uContrast: {
+            value: number;
+        };
+        uSaturation: {
+            value: number;
+        };
+        uVignette: {
+            value: number;
+        };
+        uGrain: {
+            value: number;
+        };
+        uChromatic: {
+            value: number;
+        };
+    };
+    vertexShader: string;
+    fragmentShader: string;
+};</code></pre>
+      </article>
+      <article class="api-card" id="api-post-composeroptions">
+        <h4><code>ComposerOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ComposerOptions {
+    renderer: THREE.WebGLRenderer;
+    scene: THREE.Scene;
+    camera: THREE.Camera;
+    width: number;
+    height: number;
+    withDepth?: boolean;
+    withBloom?: boolean;
+    bloomStrength?: number;
+    bloomRadius?: number;
+    bloomThreshold?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-composerhandle">
+        <h4><code>ComposerHandle</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ComposerHandle extends Disposable {
+    composer: EffectComposer;
+    bloom: UnrealBloomPass | null;
+    output: OutputPass;
+    setSize(w: number, h: number): void;
+    addPassBeforeOutput(pass: Pass): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-postpipelineoptions">
+        <h4><code>PostPipelineOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PostPipelineOptions {
+    renderer: THREE.WebGLRenderer;
+    scene: THREE.Scene;
+    camera: THREE.Camera;
+    width: number;
+    height: number;
+    /** Attach a DepthTexture for depth-sampling passes (dof, god rays). */
+    withDepth?: boolean;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-postpipeline">
+        <h4><code>PostPipeline</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PostPipeline extends Disposable {
+    composer: EffectComposer;
+    /** Register a named pass. Order of registration = default chain order. */
+    register(name: string, pass: Pass): void;
+    /** Reorder the chain. Unknown names are ignored; unlisted passes go last. */
+    setOrder(order: readonly string[]): void;
+    setEnabled(flags: Readonly&lt;Record&lt;string, boolean&gt;&gt;): void;
+    getOrder(): string[];
+    get(name: string): Pass | undefined;
+    render(delta?: number): void;
+    setSize(width: number, height: number): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-gradepassoptions">
+        <h4><code>GradePassOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface GradePassOptions {
+    tint?: THREE.ColorRepresentation;
+    contrast?: number;
+    saturation?: number;
+    vignette?: number;
+    grain?: number;
+    chromatic?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-gradepass">
+        <h4><code>GradePass</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface GradePass extends ShaderPass {
+    setTime(elapsed: number): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-godrayspass">
+        <h4><code>GodRaysPass</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface GodRaysPass extends ShaderPass {
+    updateFromLight(lightWorldPos: THREE.Vector3, camera: THREE.Camera): void;
+    setOcclusionTexture(texture: THREE.Texture | null): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-dofpassoptions">
+        <h4><code>DofPassOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface DofPassOptions {
+    focalDistance?: number;
+    focalRange?: number;
+    maxBlur?: number;
+    caStrength?: number;
+    near?: number;
+    far?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-dofpass">
+        <h4><code>DofPass</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface DofPass extends ShaderPass {
+    focusOn(worldPos: THREE.Vector3, camera: THREE.Camera): void;
+    setAspect(aspect: number): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-filmgrainoptions">
+        <h4><code>FilmGrainOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface FilmGrainOptions {
+    intensity?: number;
+    luma?: number;
+    desat?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-hudbeamoptions">
+        <h4><code>HudBeamOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface HudBeamOptions {
+    duration?: number;
+    beamWidth?: number;
+    beamColor?: THREE.ColorRepresentation;
+    onComplete?: () =&gt; void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-hudbeamtransition">
+        <h4><code>HudBeamTransition</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface HudBeamTransition {
+    pass: ShaderPass;
+    play(onMidpoint?: () =&gt; void): void;
+    tick(delta: number, time: number): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-stereomode">
+        <h4><code>StereoMode</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type StereoMode = 'anaglyph' | 'stereo' | 'off';</code></pre>
+      </article>
+      <article class="api-card" id="api-post-stereorenderer">
+        <h4><code>StereoRenderer</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface StereoRenderer extends Disposable {
+    mode: StereoMode;
+    render(scene: THREE.Scene, camera: THREE.Camera): void;
+    setSize(w: number, h: number): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-stereosizeoptions">
+        <h4><code>StereoSizeOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface StereoSizeOptions {
+    width?: number;
+    height?: number;
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-post-webgpu" aria-labelledby="api-post-webgpu-h">
+      <h2 id="api-post-webgpu-h"><code>@tuomashatakka/threejs-scenes/post/webgpu</code></h2>
+      <p>WebGPU/TSL node-based effects mirroring the three.js WebGPU postprocessing examples: AO/GTAO, bloom (incl. selective + emissive), DOF, god rays, SSR, SSGI, SSS, TRAA, motion blur, outline, LUT, SMAA/FXAA/SSAA and more. Requires WebGPURenderer.</p>
+      <pre class="api-example"><code>import * as webgpuPost from '@tuomashatakka/threejs-scenes/post/webgpu'
+
+const { color, viewZ } = webgpuPost.createScenePass(scene, camera)
+const bloom  = webgpuPost.createBloom(color, { strength: 0.8 })
+const graded = webgpuPost.createDof(color.add(bloom), viewZ, { bokehScale: 2 })
+const post   = webgpuPost.createPostProcessing(renderer, graded)</code></pre>
+      <div class="api-preview"><iframe loading="lazy" title="post/webgpu live demo" src="demos/effects.html"></iframe></div>
+      <p class="demo-link"><a href="demos/effects.html">Open demo — effects.html</a></p>
+      <article class="api-card" id="api-post-webgpu-createbloom">
+        <h4><code>createBloom</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createBloom(input: ColorNode, options?: BloomOptions): import("three/addons/tsl/display/BloomNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createbloomselective">
+        <h4><code>createBloomSelective</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createBloomSelective(scenePass: PassNode, options?: BloomSelectiveOptions): {
+    output: import("three/webgpu").TextureNode;
+    bloom: import("three/addons/tsl/display/BloomNode.js").default;
+    result: import("three/webgpu").Node&lt;"vec4"&gt;;
+};</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createbloomemissive">
+        <h4><code>createBloomEmissive</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createBloomEmissive(scenePass: PassNode, options?: BloomEmissiveOptions): {
+    output: import("three/webgpu").TextureNode;
+    bloom: import("three/addons/tsl/display/BloomNode.js").default;
+    result: import("three/webgpu").Node&lt;"vec4"&gt;;
+};</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createdof">
+        <h4><code>createDof</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createDof(input: ColorNode, viewZ: ColorNode, options?: DofOptions): import("three/addons/tsl/display/DepthOfFieldNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createdofbasic">
+        <h4><code>createDofBasic</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createDofBasic(input: Node&lt;'vec4'&gt;, viewZ: Node&lt;'float'&gt;, options?: DofBasicOptions): Node&lt;"vec4"&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createao">
+        <h4><code>createAo</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createAo(viewZ: ColorNode, normal: ColorNode, camera: THREE.Camera): import("three/addons/tsl/display/GTAONode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createoutline">
+        <h4><code>createOutline</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createOutline(scene: THREE.Scene, camera: THREE.Camera, options?: OutlineOptions): import("three/addons/tsl/display/OutlineNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createlut">
+        <h4><code>createLut</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createLut(input: ColorNode, options: LutOptions): import("three/addons/tsl/display/Lut3DNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createafterimage">
+        <h4><code>createAfterImage</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createAfterImage(input: ColorNode, options?: AfterImageOptions): import("three/addons/tsl/display/AfterImageNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createanamorphic">
+        <h4><code>createAnamorphic</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createAnamorphic(input: ColorNode, options?: AnamorphicOptions): import("three/addons/tsl/display/AnamorphicNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createchromaticaberration">
+        <h4><code>createChromaticAberration</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createChromaticAberration(input: ColorNode, options?: ChromaticAberrationOptions): import("three/addons/tsl/display/ChromaticAberrationNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createfxaa">
+        <h4><code>createFxaa</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createFxaa(input: ColorNode): import("three/addons/tsl/display/FXAANode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createsmaa">
+        <h4><code>createSmaa</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSmaa(input: ColorNode): import("three/addons/tsl/display/SMAANode.js").SMAANode;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createsobel">
+        <h4><code>createSobel</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSobel(input: ColorNode): import("three/addons/tsl/display/SobelOperatorNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createradialblur">
+        <h4><code>createRadialBlur</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createRadialBlur(input: ColorNode, options?: RadialBlurOptions): import("three/webgpu").Node;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createdifference">
+        <h4><code>createDifference</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createDifference(scenePass: PassNode, options?: DifferenceOptions): import("three/webgpu").Node&lt;"vec3"&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createmasking">
+        <h4><code>createMasking</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createMasking(base: Node&lt;'vec4'&gt;, camera: THREE.Camera, layers: MaskLayer[]): Node;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-creategodrays">
+        <h4><code>createGodrays</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createGodrays(depthNode: TextureNode, camera: Camera, light: DirectionalLight | PointLight, options?: GodraysOptions): import("three/addons/tsl/display/GodraysNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createlensflare">
+        <h4><code>createLensflare</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createLensflare(input: Node, options?: LensflareOptions): import("three/addons/tsl/display/LensflareNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createmotionblur">
+        <h4><code>createMotionBlur</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createMotionBlur(input: Node, velocityNode: Node, options?: MotionBlurOptions): Node&lt;"vec4"&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createpixelationpass">
+        <h4><code>createPixelationPass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createPixelationPass(scene: THREE.Scene, camera: THREE.Camera, options?: PixelOptions): import("three/addons/tsl/display/PixelationPassNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createretropass">
+        <h4><code>createRetroPass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createRetroPass(scene: THREE.Scene, camera: THREE.Camera, options?: RetroOptions): import("three/addons/tsl/display/RetroPassNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createssaapass">
+        <h4><code>createSsaaPass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSsaaPass(scene: THREE.Scene, camera: THREE.Camera, options?: SsaaOptions): import("three/addons/tsl/display/SSAAPassNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createtransition">
+        <h4><code>createTransition</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createTransition(passA: Node, passB: Node, mixTexture: Node, options?: TransitionOptions): import("three/addons/tsl/display/TransitionNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createssr">
+        <h4><code>createSsr</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSsr(colorNode: Node, depthNode: Node, normalNode: Node, metalness: Node, roughness: Node, camera: Camera, options?: SsrOptions): import("three/addons/tsl/display/SSRNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createssgi">
+        <h4><code>createSsgi</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSsgi(beautyNode: Node, depthNode: Node, normalNode: Node, camera: PerspectiveCamera, options?: SsgiOptions): import("three/addons/tsl/display/SSGINode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createsss">
+        <h4><code>createSss</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSss(depthNode: TextureNode, camera: Camera, mainLight: DirectionalLight, options?: SssOptions): import("three/addons/tsl/display/SSSNode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createtraa">
+        <h4><code>createTraa</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createTraa(beautyNode: Node, depthNode: TextureNode, velocityNode: TextureNode, camera: Camera, options?: TraaOptions): import("three/addons/tsl/display/TRAANode.js").default;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createscenepass">
+        <h4><code>createScenePass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createScenePass(scene: THREE.Scene, camera: THREE.Camera): ScenePassTargets;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createscenepassmrt">
+        <h4><code>createScenePassMRT</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createScenePassMRT(scene: THREE.Scene, camera: THREE.Camera): ScenePassTargets;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createscenepassvelocity">
+        <h4><code>createScenePassVelocity</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createScenePassVelocity(scene: THREE.Scene, camera: THREE.Camera): import("three/webgpu").PassNode;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createscenepassemissive">
+        <h4><code>createScenePassEmissive</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createScenePassEmissive(scene: THREE.Scene, camera: THREE.Camera): import("three/webgpu").PassNode;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createscenepassssr">
+        <h4><code>createScenePassSSR</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createScenePassSSR(scene: THREE.Scene, camera: THREE.Camera): import("three/webgpu").PassNode;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createrenderpipeline">
+        <h4><code>createRenderPipeline</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createRenderPipeline(renderer: Renderer, outputNode: Node): RenderPipeline;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-createpostprocessing">
+        <h4><code>createPostProcessing</code> <span class="badge">const</span></h4>
+        
+        <pre><code>const createPostProcessing: typeof createRenderPipeline;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-bloomoptions">
+        <h4><code>BloomOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface BloomOptions {
+    strength?: number;
+    radius?: number;
+    threshold?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-bloomselectiveoptions">
+        <h4><code>BloomSelectiveOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface BloomSelectiveOptions {
+    strength?: number;
+    radius?: number;
+    threshold?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-bloomemissiveoptions">
+        <h4><code>BloomEmissiveOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface BloomEmissiveOptions {
+    strength?: number;
+    radius?: number;
+    threshold?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-dofoptions">
+        <h4><code>DofOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface DofOptions {
+    focusDistance?: number;
+    focalLength?: number;
+    bokehScale?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-dofbasicoptions">
+        <h4><code>DofBasicOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface DofBasicOptions {
+    focusPoint?: THREE.Vector3;
+    minDistance?: number;
+    maxDistance?: number;
+    blurSize?: number;
+    blurSpread?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-outlineoptions">
+        <h4><code>OutlineOptions</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type OutlineOptions = OutlineNodeParams;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-lutoptions">
+        <h4><code>LutOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface LutOptions {
+    lut: Data3DTexture;
+    intensity?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-afterimageoptions">
+        <h4><code>AfterImageOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface AfterImageOptions {
+    damp?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-anamorphicoptions">
+        <h4><code>AnamorphicOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface AnamorphicOptions {
+    threshold?: number;
+    scale?: number;
+    samples?: number;
+    resolutionScale?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-chromaticaberrationoptions">
+        <h4><code>ChromaticAberrationOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ChromaticAberrationOptions {
+    strength?: number;
+    center?: THREE.Vector2;
+    scale?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-radialbluroptions">
+        <h4><code>RadialBlurOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface RadialBlurOptions {
+    weight?: number;
+    decay?: number;
+    exposure?: number;
+    count?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-differenceoptions">
+        <h4><code>DifferenceOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface DifferenceOptions {
+    gain?: number;
+    maxSaturation?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-masklayer">
+        <h4><code>MaskLayer</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface MaskLayer {
+    scene: THREE.Scene;
+    texture: THREE.Texture;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-godraysoptions">
+        <h4><code>GodraysOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface GodraysOptions {
+    raymarchSteps?: number;
+    density?: number;
+    maxDensity?: number;
+    distanceAttenuation?: number;
+    resolutionScale?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-lensflareoptions">
+        <h4><code>LensflareOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface LensflareOptions {
+    ghostTint?: Node;
+    threshold?: number;
+    ghostSamples?: number;
+    ghostSpacing?: number;
+    ghostAttenuationFactor?: number;
+    downSampleRatio?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-motionbluroptions">
+        <h4><code>MotionBlurOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface MotionBlurOptions {
+    numSamples?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-pixeloptions">
+        <h4><code>PixelOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PixelOptions {
+    pixelSize?: number;
+    normalEdgeStrength?: number;
+    depthEdgeStrength?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-retrooptions">
+        <h4><code>RetroOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface RetroOptions {
+    affineDistortion?: Node | null;
+    filterTextures?: boolean;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-ssaaoptions">
+        <h4><code>SsaaOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SsaaOptions {
+    sampleLevel?: number;
+    unbiased?: boolean;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-transitionoptions">
+        <h4><code>TransitionOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface TransitionOptions {
+    mixRatio?: number;
+    threshold?: number;
+    useTexture?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-ssroptions">
+        <h4><code>SsrOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SsrOptions {
+    maxDistance?: number;
+    thickness?: number;
+    opacity?: number;
+    quality?: number;
+    blurQuality?: number;
+    resolutionScale?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-ssgioptions">
+        <h4><code>SsgiOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SsgiOptions {
+    sliceCount?: number;
+    stepCount?: number;
+    aoIntensity?: number;
+    giIntensity?: number;
+    radius?: number;
+    useScreenSpaceSampling?: boolean;
+    expFactor?: number;
+    thickness?: number;
+    useLinearThickness?: boolean;
+    backfaceLighting?: number;
+    useTemporalFiltering?: boolean;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-sssoptions">
+        <h4><code>SssOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SssOptions {
+    maxDistance?: number;
+    thickness?: number;
+    shadowIntensity?: number;
+    quality?: number;
+    resolutionScale?: number;
+    useTemporalFiltering?: boolean;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-traaoptions">
+        <h4><code>TraaOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface TraaOptions {
+    depthThreshold?: number;
+    edgeDepthDiff?: number;
+    maxVelocityLength?: number;
+    useSubpixelCorrection?: boolean;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-colornode">
+        <h4><code>ColorNode</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type ColorNode = Node;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-scenepasstargets">
+        <h4><code>ScenePassTargets</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ScenePassTargets {
+    pass: PassNode;
+    color: Node;
+    viewZ: Node;
+    normal: Node;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgpu-coloreffect">
+        <h4><code>ColorEffect</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type ColorEffect&lt;Options&gt; = (input: ColorNode, options?: Options) =&gt; Node;</code></pre>
+      </article>
+    </section>
+
+    <section id="api-post-webgl" aria-labelledby="api-post-webgl-h">
+      <h2 id="api-post-webgl-h"><code>@tuomashatakka/threejs-scenes/post/webgl</code></h2>
+      <p>ShaderPass ports of the WebGPU effect set for plain WebGLRenderer + EffectComposer chains.</p>
+
+      <div class="api-preview"><iframe loading="lazy" title="post/webgl live demo" src="demos/effects.html"></iframe></div>
+      <p class="demo-link"><a href="demos/effects.html">Open demo — effects.html</a></p>
+      <article class="api-card" id="api-post-webgl-pass">
+        <h4><code>Pass</code> <span class="badge">class</span></h4>
+        
+        <pre><code>class Pass {
+    constructor();
+
+    isPass: boolean;
+    enabled: boolean;
+    needsSwap: boolean;
+    clear: boolean;
+    renderToScreen: boolean;
+
+    setSize(width: number, height: number): void;
+    render(
+        renderer: WebGLRenderer,
+        writeBuffer: WebGLRenderTarget,
+        readBuffer: WebGLRenderTarget,
+        deltaTime: number,
+        maskActive: boolean,
+    ): void;
+
+    dispose(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createbloom">
+        <h4><code>createBloom</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createBloom(options?: BloomOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createselectivebloom">
+        <h4><code>createSelectiveBloom</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSelectiveBloom(ctx: WebGlPassContext, options?: SelectiveBloomOptions): SelectiveBloomHandle;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createemissivebloom">
+        <h4><code>createEmissiveBloom</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createEmissiveBloom(ctx: WebGlPassContext, options?: EmissiveBloomOptions): SelectiveBloomHandle;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createdof">
+        <h4><code>createDof</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createDof(ctx: WebGlPassContext, options?: DofOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createao">
+        <h4><code>createAo</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createAo(ctx: WebGlPassContext, options?: AoOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createoutline">
+        <h4><code>createOutline</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createOutline(ctx: WebGlPassContext, options?: OutlineOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createssr">
+        <h4><code>createSsr</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSsr(ctx: WebGlPassContext, options?: SsrOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createlut">
+        <h4><code>createLUT</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createLUT(options?: LUTOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createafterimage">
+        <h4><code>createAfterimage</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createAfterimage(options?: AfterimageOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createanamorphic">
+        <h4><code>createAnamorphic</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createAnamorphic(options?: AnamorphicOptions): AnamorphicPass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createchromaticaberration">
+        <h4><code>createChromaticAberration</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createChromaticAberration(options?: ChromaticAberrationOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createdifference">
+        <h4><code>createDifference</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createDifference(options?: DifferenceOptions): DifferencePass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createradialblur">
+        <h4><code>createRadialBlur</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createRadialBlur(options?: RadialBlurOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-creategodrayspass">
+        <h4><code>createGodRaysPass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createGodRaysPass(): GodRaysPass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createmotionblur">
+        <h4><code>createMotionBlur</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createMotionBlur(options?: MotionBlurOptions): MotionBlurPass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createretropass">
+        <h4><code>createRetroPass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createRetroPass(options?: RetroOptions): RetroPass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createfxaa">
+        <h4><code>createFXAA</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createFXAA(_options?: FXAAOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createsmaa">
+        <h4><code>createSMAA</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSMAA(_options?: SMAAOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createsobel">
+        <h4><code>createSobel</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSobel(options?: SobelOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createssaa">
+        <h4><code>createSsaa</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSsaa(ctx: WebGlPassContext, options?: SsaaOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createtraa">
+        <h4><code>createTraa</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createTraa(ctx: WebGlPassContext, options?: TraaOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createcrtpass">
+        <h4><code>createCrtPass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createCrtPass({ curvature, vignette, glitch }?: CrtOptions): CrtPass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-crtcorrectpointer">
+        <h4><code>crtCorrectPointer</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function crtCorrectPointer(ndcX: number, ndcY: number, curvature: number): CrtCorrectPointerReturnType;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-shaderpass">
+        <h4><code>ShaderPass</code> <span class="badge">class</span></h4>
+        
+        <pre><code>class ShaderPass extends Pass {
+    constructor(shader: object, textureID?: string);
+    textureID: string;
+    uniforms: { [name: string]: { value: any } };
+    material: ShaderMaterial;
+    fsQuad: FullScreenQuad;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createlensingpass">
+        <h4><code>createLensingPass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createLensingPass({ radius, strength, coreSize }?: LensingOptions): LensingPass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createburninpass">
+        <h4><code>createBurnInPass</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createBurnInPass({ decay }?: BurnInOptions): BurnInPass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-burninpass">
+        <h4><code>BurnInPass</code> <span class="badge">class</span></h4>
+        
+        <pre><code>class BurnInPass extends Pass {
+    private historyA;
+    private historyB;
+    private blendQuad;
+    private copyQuad;
+    constructor(decay?: number);
+    setDecay(decay: number): void;
+    setSize(width: number, height: number): void;
+    render(renderer: THREE.WebGLRenderer, writeBuffer: THREE.WebGLRenderTarget, readBuffer: THREE.WebGLRenderTarget): void;
+    dispose(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createpixel">
+        <h4><code>createPixel</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createPixel(ctx: WebGlPassContext, options?: PixelOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createtransition">
+        <h4><code>createTransition</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createTransition(sceneA: THREE.Scene, cameraA: THREE.Camera, sceneB: THREE.Scene, cameraB: THREE.Camera, options?: TransitionOptions): Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createmaskpasses">
+        <h4><code>createMaskPasses</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createMaskPasses(maskScene: THREE.Scene, maskCamera: THREE.Camera, options?: {
+    inverse?: boolean;
+}): MaskLayer;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createlensflare">
+        <h4><code>createLensflare</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createLensflare(options?: LensflareOptions): Lensflare;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createssgi">
+        <h4><code>createSsgi</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSsgi(_options?: SsgiOptions): never;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-createsss">
+        <h4><code>createSss</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSss(_options?: SssOptions): never;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-bloom_layer">
+        <h4><code>BLOOM_LAYER</code> <span class="badge">const</span></h4>
+        
+        <pre><code>const BLOOM_LAYER = 1;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-webglpasscontext">
+        <h4><code>WebGlPassContext</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface WebGlPassContext {
+    renderer: THREE.WebGLRenderer;
+    scene: THREE.Scene;
+    camera: THREE.Camera;
+    width: number;
+    height: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-webgleffect">
+        <h4><code>WebGlEffect</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type WebGlEffect = Pass;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-resizable">
+        <h4><code>Resizable</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface Resizable {
+    setSize(width: number, height: number): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-bloomoptions">
+        <h4><code>BloomOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface BloomOptions {
+    strength?: number;
+    radius?: number;
+    threshold?: number;
+    width?: number;
+    height?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-selectivebloomoptions">
+        <h4><code>SelectiveBloomOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SelectiveBloomOptions {
+    strength?: number;
+    radius?: number;
+    threshold?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-selectivebloomhandle">
+        <h4><code>SelectiveBloomHandle</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SelectiveBloomHandle extends Disposable {
+    bloomComposer: EffectComposer;
+    finalComposer: EffectComposer;
+    bloom: UnrealBloomPass;
+    markBloom(object: THREE.Object3D, recursive?: boolean): void;
+    unmarkBloom(object: THREE.Object3D, recursive?: boolean): void;
+    render(): void;
+    setSize(width: number, height: number): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-emissivebloomoptions">
+        <h4><code>EmissiveBloomOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface EmissiveBloomOptions extends SelectiveBloomOptions {
+    emissiveThreshold?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-dofoptions">
+        <h4><code>DofOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface DofOptions {
+    focus?: number;
+    aperture?: number;
+    maxblur?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-aooptions">
+        <h4><code>AoOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface AoOptions {
+    output?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-outlineoptions">
+        <h4><code>OutlineOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface OutlineOptions {
+    selectedObjects?: THREE.Object3D[];
+    edgeStrength?: number;
+    edgeGlow?: number;
+    edgeThickness?: number;
+    pulsePeriod?: number;
+    visibleEdgeColor?: THREE.ColorRepresentation;
+    hiddenEdgeColor?: THREE.ColorRepresentation;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-ssroptions">
+        <h4><code>SsrOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SsrOptions {
+    selects?: THREE.Mesh[] | null;
+    groundReflector?: THREE.Mesh | null;
+    thickness?: number;
+    opacity?: number;
+    maxDistance?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-lutoptions">
+        <h4><code>LUTOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface LUTOptions {
+    lut?: THREE.Data3DTexture | THREE.DataTexture;
+    intensity?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-afterimageoptions">
+        <h4><code>AfterimageOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface AfterimageOptions {
+    damp?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-anamorphicoptions">
+        <h4><code>AnamorphicOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface AnamorphicOptions {
+    threshold?: number;
+    scale?: number;
+    samples?: number;
+    tint?: THREE.Color;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-anamorphicpass">
+        <h4><code>AnamorphicPass</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface AnamorphicPass extends ShaderPass {
+    setSize(width: number, height: number): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-chromaticaberrationoptions">
+        <h4><code>ChromaticAberrationOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ChromaticAberrationOptions {
+    strength?: number;
+    center?: THREE.Vector2;
+    scale?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-differenceoptions">
+        <h4><code>DifferenceOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface DifferenceOptions {
+    compare?: THREE.Texture | null;
+    scale?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-differencepass">
+        <h4><code>DifferencePass</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface DifferencePass extends ShaderPass {
+    setCompareTexture(texture: THREE.Texture | null): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-radialbluroptions">
+        <h4><code>RadialBlurOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface RadialBlurOptions {
+    center?: THREE.Vector2;
+    weight?: number;
+    decay?: number;
+    count?: number;
+    exposure?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-godrayspass">
+        <h4><code>GodRaysPass</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface GodRaysPass extends ShaderPass {
+    updateFromLight(lightWorldPos: THREE.Vector3, camera: THREE.Camera): void;
+    setOcclusionTexture(texture: THREE.Texture | null): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-motionbluroptions">
+        <h4><code>MotionBlurOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface MotionBlurOptions {
+    intensity?: number;
+    samples?: number;
+    depthTexture?: THREE.Texture | null;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-motionblurpass">
+        <h4><code>MotionBlurPass</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface MotionBlurPass extends ShaderPass {
+    update(camera: THREE.Camera): void;
+    setDepthTexture(texture: THREE.Texture | null): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-retrooptions">
+        <h4><code>RetroOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface RetroOptions {
+    pixelSize?: number;
+    colorLevels?: number;
+    scanlineIntensity?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-retropass">
+        <h4><code>RetroPass</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface RetroPass extends ShaderPass {
+    setSize(width: number, height: number): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-fxaaoptions">
+        <h4><code>FXAAOptions</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type FXAAOptions = Record&lt;string, never&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-smaaoptions">
+        <h4><code>SMAAOptions</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type SMAAOptions = Record&lt;string, never&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-sobeloptions">
+        <h4><code>SobelOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SobelOptions {
+    width?: number;
+    height?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-ssaaoptions">
+        <h4><code>SsaaOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SsaaOptions {
+    sampleLevel?: number;
+    clearColor?: number;
+    clearAlpha?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-traaoptions">
+        <h4><code>TraaOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface TraaOptions {
+    sampleLevel?: number;
+    accumulate?: boolean;
+    clearColor?: number;
+    clearAlpha?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-crtoptions">
+        <h4><code>CrtOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface CrtOptions {
+    /** Pincushion strength; 0 disables the warp. */
+    curvature?: number;
+    /** Edge darkening, [0,1]. */
+    vignette?: number;
+    /** Glitch tear probability scale, [0,1]. */
+    glitch?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-crtpass">
+        <h4><code>CrtPass</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface CrtPass extends ShaderPass {
+    /** Advance the glitch clock — call from your frame loop. */
+    tick(ctx: FrameContext): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-lensingoptions">
+        <h4><code>LensingOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface LensingOptions {
+    /** Influence radius in UV units. */
+    radius?: number;
+    strength?: number;
+    /** Dark-core (event horizon) radius in UV units; 0 disables. */
+    coreSize?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-lensingpass">
+        <h4><code>LensingPass</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface LensingPass extends ShaderPass {
+    /** Point the lens at a screen UV (see core/projection.ts). */
+    setCenter(u: number, v: number): void;
+    setSize(width: number, height: number): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-burninoptions">
+        <h4><code>BurnInOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface BurnInOptions {
+    /** History retention per frame, [0,1). 0.92 ≈ short ghost, 0.98 ≈ long smear. */
+    decay?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-pixeloptions">
+        <h4><code>PixelOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PixelOptions {
+    pixelSize?: number;
+    normalEdgeStrength?: number;
+    depthEdgeStrength?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-transitionoptions">
+        <h4><code>TransitionOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface TransitionOptions {
+    transition?: number;
+    texture?: THREE.Texture;
+    textureThreshold?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-masklayer">
+        <h4><code>MaskLayer</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface MaskLayer {
+    mask: Pass;
+    clear: Pass;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-lensflareelementspec">
+        <h4><code>LensflareElementSpec</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface LensflareElementSpec {
+    texture: THREE.Texture;
+    size?: number;
+    distance?: number;
+    color?: THREE.Color;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-lensflareoptions">
+        <h4><code>LensflareOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface LensflareOptions {
+    elements?: LensflareElementSpec[];
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-ssgioptions">
+        <h4><code>SsgiOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SsgiOptions {
+    intensity?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-post-webgl-sssoptions">
+        <h4><code>SssOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SssOptions {
+    intensity?: number;
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-procedural" aria-labelledby="api-procedural-h">
+      <h2 id="api-procedural-h"><code>@tuomashatakka/threejs-scenes/procedural</code></h2>
+      <p>Deterministic procedural generation: seeded mulberry32 RNG with per-consumer forking, Poisson-disk sampling, seamless noise textures, 3D simplex noise with fbm/ridged sums, procedural planets.</p>
+      <pre class="api-example"><code>const rng = createSeededRng(42)
+const planet = createProceduralBody({ seed: rng.int(1e9), radius: 2, type: 'terrestrial' })
+scene.add(planet.object)</code></pre>
+      <div class="api-preview"><iframe loading="lazy" title="procedural live demo" src="demos/procedural.html"></iframe></div>
+      <p class="demo-link"><a href="demos/procedural.html">Open demo — procedural.html</a></p>
+      <article class="api-card" id="api-procedural-mulberry32">
+        <h4><code>mulberry32</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function mulberry32(seed: number): () =&gt; number;</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-hash2">
+        <h4><code>hash2</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function hash2(x: number, y: number): number;</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-hash3">
+        <h4><code>hash3</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function hash3(x: number, y: number, z: number): number;</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-lerp">
+        <h4><code>lerp</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function lerp(a: number, b: number, t: number): number;</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-smoothstep">
+        <h4><code>smoothstep</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function smoothstep(edge0: number, edge1: number, x: number): number;</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-createseededrng">
+        <h4><code>createSeededRng</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSeededRng(seed: number): SeededRng;</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-poissondisk">
+        <h4><code>poissonDisk</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function poissonDisk({ width, height, minDist, rng, k, }: PoissonDiskOptions): Point2[];</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-createnoisetexture">
+        <h4><code>createNoiseTexture</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createNoiseTexture({ size, frequency, octaves, seed, channels, }?: NoiseTextureOptions): THREE.DataTexture | null;</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-createnoise3d">
+        <h4><code>createNoise3D</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createNoise3D(seed?: number): Noise3D;</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-createproceduralbody">
+        <h4><code>createProceduralBody</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createProceduralBody({ radius, detail, seed, type, displacement, frequency, octaves, ridged, palette, water, clouds, rings, }?: ProceduralBodySpec): ProceduralBody;</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-point2">
+        <h4><code>Point2</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type Point2 = [number, number];</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-poissondiskoptions">
+        <h4><code>PoissonDiskOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PoissonDiskOptions {
+    width: number;
+    height: number;
+    minDist: number;
+    rng: () =&gt; number;
+    k?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-noisetextureoptions">
+        <h4><code>NoiseTextureOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface NoiseTextureOptions {
+    size?: number;
+    frequency?: number;
+    octaves?: number;
+    seed?: number;
+    channels?: string;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-noise3d">
+        <h4><code>Noise3D</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface Noise3D {
+    /** Single octave, output roughly in [-1, 1]. */
+    sample(x: number, y: number, z: number): number;
+    /** Fractal Brownian motion, output roughly in [-1, 1]. */
+    fbm(x: number, y: number, z: number, octaves?: number, lacunarity?: number, gain?: number): number;
+    /** Ridged multifractal, output in [0, 1] — sharp crests, good for mountains. */
+    ridged(x: number, y: number, z: number, octaves?: number, lacunarity?: number, gain?: number): number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-proceduralbodyspec">
+        <h4><code>ProceduralBodySpec</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ProceduralBodySpec {
+    radius?: number;
+    /** Icosahedron subdivision. 4 ≈ 5k tris, 5 ≈ 20k. */
+    detail?: number;
+    seed?: number;
+    type?: 'terrestrial' | 'gas';
+    /** Peak height as a fraction of radius (terrestrial). */
+    displacement?: number;
+    frequency?: number;
+    octaves?: number;
+    ridged?: boolean;
+    /** Height palette, low -&gt; high. */
+    palette?: {
+        low: THREE.ColorRepresentation;
+        mid: THREE.ColorRepresentation;
+        high: THREE.ColorRepresentation;
+    };
+    water?: {
+        level: number;
+        color: THREE.ColorRepresentation;
+    } | null;
+    clouds?: {
+        coverage?: number;
+        color?: THREE.ColorRepresentation;
+    } | null;
+    rings?: {
+        inner: number;
+        outer: number;
+        color?: THREE.ColorRepresentation;
+    } | null;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-procedural-proceduralbody">
+        <h4><code>ProceduralBody</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ProceduralBody extends Disposable {
+    object: THREE.Group;
+    /** Slow cloud drift + body spin. */
+    tick(ctx: FrameContext): void;
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-voxels" aria-labelledby="api-voxels-h">
+      <h2 id="api-voxels-h"><code>@tuomashatakka/threejs-scenes/voxels</code></h2>
+      <p>Chunked voxel storage, greedy meshing and a streaming chunk manager for infinite worlds.</p>
+      <pre class="api-example"><code>const chunk = new VoxelChunk(32)
+chunk.fill((x, y, z) =&gt; noise.fbm(x / 16, y / 16, z / 16) &gt; 0.1 ? 1 : 0)
+scene.add(greedyMesh(chunk, material))</code></pre>
+      <div class="api-preview"><iframe loading="lazy" title="voxels live demo" src="demos/voxels.html"></iframe></div>
+      <p class="demo-link"><a href="demos/voxels.html">Open demo — voxels.html</a></p>
+      <article class="api-card" id="api-voxels-voxelchunk">
+        <h4><code>VoxelChunk</code> <span class="badge">class</span></h4>
+        
+        <pre><code>class VoxelChunk {
+    readonly size: number;
+    readonly data: Uint16Array;
+    constructor(size: number);
+    private _idx;
+    get(x: number, y: number, z: number): number;
+    set(x: number, y: number, z: number, id: number): void;
+    fill(id: number): void;
+    forEach(cb: VoxelVisitor): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-voxels-greedymesh">
+        <h4><code>greedyMesh</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function greedyMesh(chunk: VoxelChunk): THREE.BufferGeometry;</code></pre>
+      </article>
+      <article class="api-card" id="api-voxels-createchunkmanager">
+        <h4><code>createChunkManager</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createChunkManager({ chunkSize, viewRadius, rebaseThreshold, build, }: ChunkManagerOptions): ChunkManager;</code></pre>
+      </article>
+      <article class="api-card" id="api-voxels-voxelvisitor">
+        <h4><code>VoxelVisitor</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type VoxelVisitor = (x: number, y: number, z: number, id: number) =&gt; void;</code></pre>
+      </article>
+      <article class="api-card" id="api-voxels-chunkbuilder">
+        <h4><code>ChunkBuilder</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type ChunkBuilder = (cx: number, cz: number, chunk: THREE.Group) =&gt; void | Promise&lt;void&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-voxels-chunkmanageroptions">
+        <h4><code>ChunkManagerOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ChunkManagerOptions {
+    chunkSize: number;
+    viewRadius: number;
+    rebaseThreshold?: number;
+    build: ChunkBuilder;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-voxels-chunkmanager">
+        <h4><code>ChunkManager</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ChunkManager {
+    root: THREE.Group;
+    update(cameraWorldPos: THREE.Vector3): Promise&lt;void&gt;;
+    dispose(): void;
+    readonly loadedCount: number;
+    readonly pooledCount: number;
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-architecture" aria-labelledby="api-architecture-h">
+      <h2 id="api-architecture-h"><code>@tuomashatakka/threejs-scenes/architecture</code></h2>
+      <p>The context-injection module architecture from a shipping project: scene modules, LRU view registries, pooled materials, procedural texture caches, undo stacks, param resolution and distortion-aware picking.</p>
+      <pre class="api-example"><code>const module = createSceneModule({
+  id: 'rocks',
+  setup: ctx =&gt; { /* build once */ },
+  update: (ctx, frame) =&gt; { /* per tick */ },
+})</code></pre>
+      <div class="api-preview"><iframe loading="lazy" title="architecture live demo" src="demos/architecture.html"></iframe></div>
+      <p class="demo-link"><a href="demos/architecture.html">Open demo — architecture.html</a></p>
+      <article class="api-card" id="api-architecture-createscenemodule">
+        <h4><code>createSceneModule</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createSceneModule(def: SceneModuleDefinition): SceneModule;</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-materialpool">
+        <h4><code>MaterialPool</code> <span class="badge">class</span></h4>
+        
+        <pre><code>class MaterialPool implements Disposable {
+    private readonly cache;
+    get&lt;T extends THREE.Material&gt;(key: string, factory: () =&gt; T): T;
+    has(key: string): boolean;
+    get size(): number;
+    dispose(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-createtexturecache">
+        <h4><code>createTextureCache</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createTextureCache(): TextureCache;</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-createproceduraltexture">
+        <h4><code>createProceduralTexture</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createProceduralTexture(key: string, paint: PaintFn, size?: number): THREE.CanvasTexture | null;</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-editstack">
+        <h4><code>EditStack</code> <span class="badge">class</span></h4>
+        
+        <pre><code>class EditStack&lt;T&gt; {
+    private readonly past;
+    private readonly future;
+    private current;
+    constructor(initial: T);
+    get value(): T;
+    get canUndo(): boolean;
+    get canRedo(): boolean;
+    apply(next: T): void;
+    undo(): T;
+    redo(): T;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-resolveparam">
+        <h4><code>resolveParam</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function resolveParam(spec: ParamSpec, given: unknown): ParamValue;</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-resolveparams">
+        <h4><code>resolveParams</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function resolveParams(specs: ParamSpecMap, given?: Record&lt;string, unknown&gt;): Record&lt;string, ParamValue&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-picktoplevel">
+        <h4><code>pickTopLevel</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function pickTopLevel(scene: THREE.Scene, camera: THREE.Camera, ndcX: number, ndcY: number, isPickable?: PickFilter): PickResult | null;</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-pick">
+        <h4><code>pick</code> <span class="badge">function</span></h4>
+        <p>pickTopLevel with a distortion hook + object scoping.</p>
+        <pre><code>function pick(scene: THREE.Scene, camera: THREE.Camera, ndcX: number, ndcY: number, { isPickable, distortion, objects }?: PickOptions): PickResult | null;</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-createclickguard">
+        <h4><code>createClickGuard</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createClickGuard(thresholdPx?: number): CreateClickGuardReturnType;</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-createviewregistry">
+        <h4><code>createViewRegistry</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function createViewRegistry&lt;S = unknown&gt;({ create, limit }: ViewRegistryOptions&lt;S&gt;): ViewRegistry&lt;S&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-proceduraltexturecache">
+        <h4><code>proceduralTextureCache</code> <span class="badge">const</span></h4>
+        
+        <pre><code>const proceduralTextureCache: Disposable;</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-scenemoduledefinition">
+        <h4><code>SceneModuleDefinition</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SceneModuleDefinition {
+    name: string;
+    build(ctx: SceneContext, registerUpdate: (cb: FrameCallback) =&gt; void): void | (() =&gt; void);
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-paintfn">
+        <h4><code>PaintFn</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type PaintFn = (ctx: CanvasRenderingContext2D, size: number) =&gt; void;</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-texturecache">
+        <h4><code>TextureCache</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface TextureCache extends Disposable {
+    get(key: string, paint: PaintFn, size?: number): THREE.CanvasTexture | null;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-pickfilter">
+        <h4><code>PickFilter</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type PickFilter = (object: THREE.Object3D) =&gt; boolean;</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-pickresult">
+        <h4><code>PickResult</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PickResult {
+    object: THREE.Object3D;
+    topLevel: THREE.Object3D;
+    point: THREE.Vector3;
+    distance: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-pickoptions">
+        <h4><code>PickOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PickOptions {
+    isPickable?: PickFilter;
+    /**
+     * Screen-space distortion inverse, applied to the pointer NDC before the
+     * raycast — required when a warping post pass (CRT curvature) is active so
+     * hits match what's on screen. See post/webgl/crt.ts crtCorrectPointer.
+     */
+    distortion?: (ndcX: number, ndcY: number) =&gt; {
+        x: number;
+        y: number;
+    };
+    /** Restrict the cast to these roots instead of the whole scene. */
+    objects?: THREE.Object3D[];
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-viewrenderer">
+        <h4><code>ViewRenderer</code> <span class="badge">interface</span></h4>
+        <p>One "view" of the app (a whole sub-scene). `update` advances animation;
+`updateState` projects app state onto objects; `setActive` toggles
+visibility/attachment when the view is entered/left.</p>
+        <pre><code>interface ViewRenderer&lt;S = unknown&gt; extends Disposable {
+    update?(frame: FrameContext): void;
+    updateState?(state: S): void;
+    getInteractiveObjects?(): THREE.Object3D[];
+    setActive?(active: boolean): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-viewregistryoptions">
+        <h4><code>ViewRegistryOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ViewRegistryOptions&lt;S&gt; {
+    create(key: string, ctx: SceneContext): ViewRenderer&lt;S&gt;;
+    /** Max cached renderers (including the active one). Default 4. */
+    limit?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-architecture-viewregistry">
+        <h4><code>ViewRegistry</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ViewRegistry&lt;S = unknown&gt; extends Disposable {
+    /** Get-or-create the renderer for `key`, make it active, LRU-evict overflow. */
+    activate(key: string, ctx: SceneContext): ViewRenderer&lt;S&gt;;
+    active(): ViewRenderer&lt;S&gt; | null;
+    activeKey(): string | null;
+    get(key: string): ViewRenderer&lt;S&gt; | undefined;
+    /** Tick the ACTIVE renderer only. */
+    update(frame: FrameContext): void;
+    updateState(state: S): void;
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-jsx" aria-labelledby="api-jsx-h">
+      <h2 id="api-jsx-h"><code>@tuomashatakka/threejs-scenes/jsx</code></h2>
+      <p>Reactive JSX layer (no React): author scenes as elements, render() mounts them, signals re-apply reactive props every frame. Component hooks (useScene, useFrame, …) expose the library’s main interfaces inside function components; useFrameLoop works anywhere.</p>
+      <pre class="api-example"><code>import { render, h, useSignal, useFrame, useScene } from '@tuomashatakka/threejs-scenes/jsx'
+
+const [hue, setHue] = useSignal(0.5)
+function Spinner () {
+  const scene = useScene()
+  useFrame(({ delta }) =&gt; { /* per-frame */ })
+  return h('mesh', { geometry: 'box', rotationY: hue })
+}
+render(h(Spinner, {}), { canvas })</code></pre>
+      <div class="api-preview"><iframe loading="lazy" title="jsx live demo" src="demos/jsx-scene.html"></iframe></div>
+      <p class="demo-link"><a href="demos/jsx-scene.html">Open demo — jsx-scene.html</a></p>
+      <article class="api-card" id="api-jsx-useruntime">
+        <h4><code>useRuntime</code> <span class="badge">function</span></h4>
+        <p>The mounting runtime: scene, renderer, loop, rng, camera accessors, …</p>
+        <pre><code>function useRuntime(): Runtime;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-usescene">
+        <h4><code>useScene</code> <span class="badge">function</span></h4>
+        <p>The scene the component mounts into.</p>
+        <pre><code>function useScene(): THREE.Scene;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-userenderer">
+        <h4><code>useRenderer</code> <span class="badge">function</span></h4>
+        <p>The WebGL renderer driving this tree.</p>
+        <pre><code>function useRenderer(): THREE.WebGLRenderer;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-usecamera">
+        <h4><code>useCamera</code> <span class="badge">function</span></h4>
+        <p>Accessor for the active camera. Returns a getter — the camera may be
+replaced by a &lt;camera&gt; element mounting later in the tree.</p>
+        <pre><code>function useCamera(): () =&gt; THREE.Camera;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-useloop">
+        <h4><code>useLoop</code> <span class="badge">function</span></h4>
+        <p>The frame loop driving this tree.</p>
+        <pre><code>function useLoop(): FrameLoop;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-userng">
+        <h4><code>useRng</code> <span class="badge">function</span></h4>
+        <p>The tree's seeded RNG (deterministic per render seed).</p>
+        <pre><code>function useRng(): SeededRng;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-usesize">
+        <h4><code>useSize</code> <span class="badge">function</span></h4>
+        <p>Canvas size accessor: () =&gt; [width, height].</p>
+        <pre><code>function useSize(): () =&gt; [number, number];</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-useaspect">
+        <h4><code>useAspect</code> <span class="badge">function</span></h4>
+        <p>Canvas aspect-ratio accessor.</p>
+        <pre><code>function useAspect(): () =&gt; number;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-useframe">
+        <h4><code>useFrame</code> <span class="badge">function</span></h4>
+        <p>Register a per-frame callback ({ delta, elapsed, frame }). Unsubscribes
+automatically when the tree is disposed.</p>
+        <pre><code>function useFrame(cb: FrameCallback): void;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-usedispose">
+        <h4><code>useDispose</code> <span class="badge">function</span></h4>
+        <p>Register cleanup to run when the tree is disposed.</p>
+        <pre><code>function useDispose(fn: () =&gt; void): void;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-useframeloop">
+        <h4><code>useFrameLoop</code> <span class="badge">function</span></h4>
+        <p>Standalone hook: a FrameLoop backed by the shared frame-capped manager.
+Optionally registers `cb` immediately. Callable anywhere (no JSX needed).</p>
+        <pre><code>function useFrameLoop(cb?: FrameCallback, options?: FrameLoopOptions): FrameLoop;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-mounttree">
+        <h4><code>mountTree</code> <span class="badge">function</span></h4>
+        <p>Mount a tree under the runtime's scene. Entry point used by render().</p>
+        <pre><code>function mountTree(root: SceneChild, rt: Runtime): void;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-jsx">
+        <h4><code>jsx</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function jsx(type: ElementType, props: Record&lt;string, unknown&gt; | null): SceneElement;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-h">
+        <h4><code>h</code> <span class="badge">function</span></h4>
+        <p>Hyperscript builder — `h(Light, { type: 'spot' })`, no transpile needed.</p>
+        <pre><code>function h(type: ElementType, props: Record&lt;string, unknown&gt; | null, ...children: SceneChild[]): SceneElement;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-signal">
+        <h4><code>signal</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function signal&lt;T&gt;(initial: T): [Accessor&lt;T&gt;, Setter&lt;T&gt;];</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-derived">
+        <h4><code>derived</code> <span class="badge">function</span></h4>
+        <p>A derived accessor — just a memo-free computed read, re-run when polled.</p>
+        <pre><code>function derived&lt;T&gt;(fn: Accessor&lt;T&gt;): Accessor&lt;T&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-isaccessor">
+        <h4><code>isAccessor</code> <span class="badge">function</span></h4>
+        <p>Marker so the reconciler can distinguish accessors from plain values.</p>
+        <pre><code>function isAccessor(value: unknown): value is Accessor&lt;unknown&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-render">
+        <h4><code>render</code> <span class="badge">function</span></h4>
+        
+        <pre><code>function render(root: SceneChild, options: RenderOptions): RenderHandle;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-usesignal">
+        <h4><code>useSignal</code> <span class="badge">const</span></h4>
+        <p>Reactive state: const [count, setCount] = useSignal(0). Alias of signal().</p>
+        <pre><code>const useSignal: typeof signal;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-usederived">
+        <h4><code>useDerived</code> <span class="badge">const</span></h4>
+        <p>Computed reactive value derived from other accessors. Alias of derived().</p>
+        <pre><code>const useDerived: typeof derived;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-fragment">
+        <h4><code>Fragment</code> <span class="badge">const</span></h4>
+        
+        <pre><code>const Fragment: unique symbol;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-jsxs">
+        <h4><code>jsxs</code> <span class="badge">const</span></h4>
+        
+        <pre><code>const jsxs: typeof jsx;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-jsxdev">
+        <h4><code>jsxDEV</code> <span class="badge">const</span></h4>
+        
+        <pre><code>const jsxDEV: typeof jsx;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-runtime">
+        <h4><code>Runtime</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface Runtime {
+    scene: THREE.Scene;
+    renderer: THREE.WebGLRenderer;
+    loop: FrameLoop;
+    rng: SeededRng;
+    getCamera(): THREE.Camera;
+    setCamera(camera: THREE.Camera, isDefault?: boolean): void;
+    getAspect(): number;
+    getSize(): [number, number];
+    addReactive(binding: ReactiveBinding): void;
+    addDisposer(fn: () =&gt; void): void;
+    addPostSetup(fn: () =&gt; void): void;
+    setComposer(handle: ComposerHandle): void;
+    disableOrbit(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-host">
+        <h4><code>Host</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface Host {
+    object: THREE.Object3D | null;
+    container: THREE.Object3D | null;
+    setProp(name: string, value: unknown): void;
+    dispose(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-reactivebinding">
+        <h4><code>ReactiveBinding</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface ReactiveBinding {
+    get: () =&gt; unknown;
+    apply: (value: unknown) =&gt; void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-componentfn">
+        <h4><code>ComponentFn</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type ComponentFn = (props: Record&lt;string, unknown&gt;) =&gt; SceneElement | SceneElement[] | null;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-elementtype">
+        <h4><code>ElementType</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type ElementType = string | ComponentFn | typeof Fragment;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-sceneelement">
+        <h4><code>SceneElement</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SceneElement {
+    type: ElementType;
+    props: Record&lt;string, unknown&gt;;
+    children: SceneChild[];
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-scenechild">
+        <h4><code>SceneChild</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type SceneChild = SceneElement | string | number | boolean | null | undefined | SceneChild[];</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-accessor">
+        <h4><code>Accessor</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type Accessor&lt;T&gt; = () =&gt; T;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-setter">
+        <h4><code>Setter</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type Setter&lt;T&gt; = (next: T | ((prev: T) =&gt; T)) =&gt; void;</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-renderoptions">
+        <h4><code>RenderOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface RenderOptions {
+    canvas: HTMLCanvasElement;
+    seed?: number;
+    background?: THREE.ColorRepresentation;
+    orbit?: boolean;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-renderhandle">
+        <h4><code>RenderHandle</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface RenderHandle {
+    scene: THREE.Scene;
+    renderer: THREE.WebGLRenderer;
+    loop: FrameLoop;
+    getCamera(): THREE.Camera;
+    dispose(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-sceneprops">
+        <h4><code>SceneProps</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface SceneProps {
+    background?: THREE.ColorRepresentation;
+    environment?: THREE.Texture;
+    children?: unknown;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-meshprops">
+        <h4><code>MeshProps</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface MeshProps extends CommonProps {
+    geometry?: THREE.BufferGeometry;
+    material?: THREE.Material;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-primitiveprops">
+        <h4><code>PrimitiveProps</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PrimitiveProps extends CommonProps {
+    object: THREE.Object3D;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-lightprops">
+        <h4><code>LightProps</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface LightProps extends CommonProps {
+    type?: 'spot' | 'point' | 'directional' | 'ambient' | 'hemisphere';
+    color?: Reactive&lt;THREE.ColorRepresentation&gt;;
+    intensity?: Reactive&lt;number&gt;;
+    distance?: number;
+    decay?: number;
+    angle?: number;
+    penumbra?: number;
+    groundColor?: THREE.ColorRepresentation;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-cameraprops">
+        <h4><code>CameraProps</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface CameraProps extends CommonProps {
+    type?: 'perspective' | 'iso' | 'follow';
+    fov?: number;
+    near?: number;
+    far?: number;
+    makeDefault?: boolean;
+    target?: THREE.Object3D;
+    offset?: Vec3;
+    viewSize?: number;
+    flavor?: 'true-iso' | 'dimetric';
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-propprops">
+        <h4><code>PropProps</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PropProps extends CommonProps {
+    src: PropFactory | string;
+    autoplay?: boolean;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-instancesprops">
+        <h4><code>InstancesProps</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface InstancesProps extends CommonProps {
+    factory?: PropFactory;
+    src?: string;
+    count?: number;
+    radius?: number;
+    seed?: number;
+    place?: InstancePlaceFn;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-jsx-postprops">
+        <h4><code>PostProps</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PostProps {
+    bloom?: boolean;
+    bloomStrength?: number;
+    bloomRadius?: number;
+    bloomThreshold?: number;
+    children?: unknown;
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-types" aria-labelledby="api-types-h">
+      <h2 id="api-types-h"><code>@tuomashatakka/threejs-scenes/types</code></h2>
+      <p>Shared contracts: SceneContext, SceneModule, FrameLoop/FrameContext, PropDefinition, AnimationController, QualityPreset, SeededRng.</p>
+
+
+      <article class="api-card" id="api-types-disposable">
+        <h4><code>Disposable</code> <span class="badge">interface</span></h4>
+        <p>Anything that owns GPU or DOM resources and must be torn down explicitly.
+three.js never auto-frees GPU memory — see references/production-lessons.md.</p>
+        <pre><code>interface Disposable {
+    dispose(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-framecontext">
+        <h4><code>FrameContext</code> <span class="badge">interface</span></h4>
+        <p>Per-frame context handed to every animated subsystem by the frame loop.
+`delta` is seconds since the last frame, `elapsed` is total seconds,
+`frame` is a monotonically increasing frame counter.</p>
+        <pre><code>interface FrameContext {
+    delta: number;
+    elapsed: number;
+    frame: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-framecallback">
+        <h4><code>FrameCallback</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type FrameCallback = (ctx: FrameContext) =&gt; void;</code></pre>
+      </article>
+      <article class="api-card" id="api-types-frameloop">
+        <h4><code>FrameLoop</code> <span class="badge">interface</span></h4>
+        <p>Self-contained Clock-driven frame loop. Every animated subsystem registers
+through `onFrame` and receives a single shared {@link FrameContext}.
+Mirrors the inlined loop in the templates — no exotic dependency.</p>
+        <pre><code>interface FrameLoop extends Disposable {
+    onFrame(cb: FrameCallback): () =&gt; void;
+    registerUpdate(cb: FrameCallback): () =&gt; void;
+    unregisterUpdate(cb: FrameCallback): void;
+    start(): void;
+    stop(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-pointergesturecallbacks">
+        <h4><code>PointerGestureCallbacks</code> <span class="badge">interface</span></h4>
+        <p>Unified pointer gesture callbacks. The same handlers fire for mouse, touch,
+and pen — always prefer this over discrete mouse/touch listeners.</p>
+        <pre><code>interface PointerGestureCallbacks {
+    onDrag?: (dx: number, dy: number, event: PointerEvent) =&gt; void;
+    onPinch?: (deltaScale: number, centerX: number, centerY: number) =&gt; void;
+    onTap?: (x: number, y: number, event: PointerEvent) =&gt; void;
+    onWheel?: (delta: number, event: WheelEvent) =&gt; void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-pointergestureoptions">
+        <h4><code>PointerGestureOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PointerGestureOptions {
+    tapThresholdMs?: number;
+    tapMovePx?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-qualitytier">
+        <h4><code>QualityTier</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type QualityTier = 'mobile' | 'desktop' | 'highEnd';</code></pre>
+      </article>
+      <article class="api-card" id="api-types-posteffectname">
+        <h4><code>PostEffectName</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type PostEffectName = 'bloom' | 'dof' | 'godRays' | 'filmGrain' | 'glitch';</code></pre>
+      </article>
+      <article class="api-card" id="api-types-qualitypreset">
+        <h4><code>QualityPreset</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface QualityPreset {
+    pixelRatio: number;
+    shadowMapSize: number;
+    shadowsEnabled: boolean;
+    postFx: PostEffectName[];
+    chunkViewRadius: number;
+    particleBudget: number;
+    maxLights: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-qualitysettings">
+        <h4><code>QualitySettings</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface QualitySettings extends QualityPreset {
+    tier: QualityTier;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-seededrng">
+        <h4><code>SeededRng</code> <span class="badge">interface</span></h4>
+        <p>Seeded pseudo-random stream. `fork(label)` derives a deterministic
+sub-stream from a label hash — the determinism lesson: seed once, fork per
+consumer so build order and undo/redo replay never change the output.</p>
+        <pre><code>interface SeededRng {
+    next(): number;
+    range(min: number, max: number): number;
+    int(minInclusive: number, maxInclusive: number): number;
+    pick&lt;T&gt;(items: readonly T[]): T;
+    fork(label: string): SeededRng;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-scenecontext">
+        <h4><code>SceneContext</code> <span class="badge">interface</span></h4>
+        <p>Context injected into every scene module. Modules never reach for globals —
+this kills init-order bugs and keeps modules testable headless.</p>
+        <pre><code>interface SceneContext {
+    scene: THREE.Scene;
+    camera: THREE.Camera;
+    renderer: THREE.WebGLRenderer;
+    rng: SeededRng;
+    loop: FrameLoop;
+    ground?: THREE.Object3D;
+    materials?: MaterialPoolLike;
+    models?: Record&lt;string, THREE.Object3D&gt;;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-scenemodule">
+        <h4><code>SceneModule</code> <span class="badge">interface</span></h4>
+        <p>A self-contained scene feature. `build` receives the {@link SceneContext};
+`dispose` frees only what the module created (never shared/pooled resources).</p>
+        <pre><code>interface SceneModule {
+    name: string;
+    build(ctx: SceneContext): void;
+    dispose(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-materialpoollike">
+        <h4><code>MaterialPoolLike</code> <span class="badge">interface</span></h4>
+        <p>Minimal structural type for a material pool, so {@link SceneContext} can
+reference one without importing the concrete class.</p>
+        <pre><code>interface MaterialPoolLike {
+    get&lt;T extends THREE.Material&gt;(key: string, factory: () =&gt; T): T;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-paramspec">
+        <h4><code>ParamSpec</code> <span class="badge">type</span></h4>
+        <p>A parameter specification used to coerce config- or LLM-driven content.</p>
+        <pre><code>type ParamSpec = {
+    kind: 'number';
+    default: number;
+    min?: number;
+    max?: number;
+} | {
+    kind: 'int';
+    default: number;
+    min?: number;
+    max?: number;
+} | {
+    kind: 'boolean';
+    default: boolean;
+} | {
+    kind: 'string';
+    default: string;
+} | {
+    kind: 'enum';
+    default: string;
+    options: readonly string[];
+};</code></pre>
+      </article>
+      <article class="api-card" id="api-types-paramvalue">
+        <h4><code>ParamValue</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type ParamValue = number | boolean | string;</code></pre>
+      </article>
+      <article class="api-card" id="api-types-paramspecmap">
+        <h4><code>ParamSpecMap</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type ParamSpecMap = Record&lt;string, ParamSpec&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-types-loadedmodel">
+        <h4><code>LoadedModel</code> <span class="badge">interface</span></h4>
+        <p>Normalized result of loading a model file (glTF and friends).</p>
+        <pre><code>interface LoadedModel {
+    scene: THREE.Object3D;
+    animations: THREE.AnimationClip[];
+    cameras: THREE.Camera[];
+    asset?: unknown;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-playoptions">
+        <h4><code>PlayOptions</code> <span class="badge">interface</span></h4>
+        
+        <pre><code>interface PlayOptions {
+    loop?: THREE.AnimationActionLoopStyles;
+    fadeIn?: number;
+    reset?: boolean;
+    clampWhenFinished?: boolean;
+    timeScale?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-animationcontroller">
+        <h4><code>AnimationController</code> <span class="badge">interface</span></h4>
+        <p>Wraps an AnimationMixer + its actions. `tick(ctx)` advances by ctx.delta;
+when built with a FrameLoop it auto-registers so playback follows the render
+loop. `dispose` uncaches the root and unregisters the tick.</p>
+        <pre><code>interface AnimationController extends Disposable {
+    mixer: THREE.AnimationMixer;
+    actions: Map&lt;string, THREE.AnimationAction&gt;;
+    play(name: string, options?: PlayOptions): THREE.AnimationAction | null;
+    crossfade(from: string, to: string, duration?: number): void;
+    stop(name?: string): void;
+    tick(ctx: FrameContext): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-propcontext">
+        <h4><code>PropContext</code> <span class="badge">interface</span></h4>
+        <p>Minimal context a prop needs to build + animate itself. SceneContext satisfies it.</p>
+        <pre><code>interface PropContext {
+    rng?: SeededRng;
+    loop?: FrameLoop;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-instanceplacefn">
+        <h4><code>InstancePlaceFn</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type InstancePlaceFn = (index: number, rng: () =&gt; number, object: THREE.Object3D, color: THREE.Color) =&gt; void;</code></pre>
+      </article>
+      <article class="api-card" id="api-types-propdefinition">
+        <h4><code>PropDefinition</code> <span class="badge">interface</span></h4>
+        <p>Declarative description of a reusable prop: how to build its Object3D, plus
+optional animation clips, embedded lights, and an instancing hint. Author one
+with `defineProp` and mount it with `createProp` (or via &lt;Prop src&gt;).</p>
+        <pre><code>interface PropDefinition {
+    name: string;
+    build(ctx: PropContext): THREE.Object3D;
+    clips?(root: THREE.Object3D): THREE.AnimationClip[];
+    lights?(root: THREE.Object3D): THREE.Light[];
+    instanced?: {
+        count: number;
+        radius?: number;
+        seed?: number;
+        place?: InstancePlaceFn;
+    };
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-types-propfactory">
+        <h4><code>PropFactory</code> <span class="badge">type</span></h4>
+        
+        <pre><code>type PropFactory = PropDefinition;</code></pre>
+      </article>
+      <article class="api-card" id="api-types-propinstance">
+        <h4><code>PropInstance</code> <span class="badge">interface</span></h4>
+        <p>A live, mounted prop. `dispose` frees geometry/materials/controller it owns.</p>
+        <pre><code>interface PropInstance extends Disposable {
+    object: THREE.Object3D;
+    controller?: AnimationController;
+    lights: THREE.Light[];
+}</code></pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

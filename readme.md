@@ -84,10 +84,1541 @@ const { scene, camera, loop, dispose } = bootstrapScene({
 ```
 
 Tree-shakeable subpaths are exported too: `threejs-scenes/core`,
-`/camera`, `/instancing`, `/materials`, `/lighting`, `/particles`, `/post`,
-`/procedural`, `/voxels`, `/architecture`, `/types`.
+`/camera`, `/instancing`, `/materials`, `/geometry`, `/loaders`, `/animation`,
+`/props`, `/lighting`, `/particles`, `/post` (+ `/post/webgpu`, `/post/webgl`),
+`/procedural`, `/voxels`, `/architecture`, `/jsx`, `/types`.
 
-### main factories
+### hooks (`/jsx`)
+
+The `threejs-scenes/jsx` subpath exposes the library's main interfaces as
+**hooks** (no React required). Inside a JSX function component the reconciler
+provides the mounting runtime, so `useScene()`, `useRenderer()`, `useCamera()`,
+`useLoop()`, `useRng()`, `useSize()`, `useAspect()`, `useFrame(cb)` and
+`useDispose(fn)` just work; `useFrameLoop(cb?, { fps })` and
+`useSignal` / `useDerived` are callable anywhere.
+
+```tsx
+import { render, h, useFrame, useSignal } from '@tuomashatakka/threejs-scenes/jsx'
+
+function Spinner () {
+  const [angle, setAngle] = useSignal(0)
+  useFrame(({ delta }) => setAngle(a => a + delta))
+  return <mesh geometry='box' rotationY={angle} />
+}
+render(<Spinner />, { canvas })
+```
+
+### API reference
+
+<!-- api:begin -->
+Generated from the built `.d.ts` files by `bun run docs` — full declarations, doc comments,
+runnable examples and live previews on the [API reference page](https://tuomashatakka.github.io/threejs-scenes-skill/api.html).
+
+#### `@tuomashatakka/threejs-scenes/core`
+
+Scene scaffolding: renderer factory, the canvas-loop-framecapper-backed frame loop, unidirectional app shell, injectable clocks, stores, overlays, pointer gestures, disposal and device-tier quality presets.
+Live demo: [`bootstrap.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/bootstrap.html)
+
+- **`createRenderer`** *(function)*
+
+  ```ts
+  function createRenderer({ canvas, antialias, pixelRatioMax, shadows, toneMapping, toneMappingExposure, logarithmicDepthBuffer, }: RendererOptions): THREE.WebGLRenderer;
+  ```
+- **`attachResizeObserver`** *(function)*
+
+  ```ts
+  function attachResizeObserver(renderer: THREE.WebGLRenderer, camera: THREE.Camera, canvas: HTMLCanvasElement, onResize?: ResizeHandler): () => void;
+  ```
+- **`createFrameLoop`** *(function)*
+
+  ```ts
+  function createFrameLoop({ clock: simClock, fps }?: FrameLoopOptions): FrameLoop;
+  ```
+- **`createClock`** *(function)*
+
+  ```ts
+  function createClock({ mode, step, maxSubSteps }?: ClockOptions): Clock;
+  ```
+- **`createStore`** *(function)*
+
+  ```ts
+  function createStore<S extends object, A = Partial<S>>(initial: S, reducer?: Reducer<S, A>): Store<S, A>;
+  ```
+- **`createApp`** *(function)*
+
+  ```ts
+  function createApp<S extends object = Record<string, unknown>, A = Partial<S>>({ canvas, state, reducer, seed, clock, renderer: rendererOptions, camera: cameraOptions, background, lighting, orbit, modules, onFrame, }: AppOptions<S, A>): App<S, A>;
+  ```
+- **`createOverlayScene`** *(function)*
+
+  ```ts
+  function createOverlayScene(camera: THREE.Camera): OverlayHandle;
+  ```
+- **`renderOverlay`** *(function)* — Composer-free path: call after renderer.render(mainScene, camera).
+
+  ```ts
+  function renderOverlay(renderer: THREE.WebGLRenderer, overlayScene: THREE.Scene, camera: THREE.Camera): void;
+  ```
+- **`projectToScreenUv`** *(function)*
+
+  ```ts
+  function projectToScreenUv(object: THREE.Object3D, camera: THREE.Camera, out?: ScreenProjection): ScreenProjection;
+  ```
+- **`bootstrapScene`** *(function)*
+
+  ```ts
+  function bootstrapScene({ canvas, onSetup }: BootstrapOptions): BootstrappedScene;
+  ```
+- **`attachPointerGesture`** *(function)*
+
+  ```ts
+  function attachPointerGesture(el: HTMLElement, callbacks: PointerGestureCallbacks, { tapThresholdMs, tapMovePx }?: PointerGestureOptions): () => void;
+  ```
+- **`disposeMaterial`** *(function)*
+
+  ```ts
+  function disposeMaterial(mat: THREE.Material): void;
+  ```
+- **`disposeScene`** *(function)*
+
+  ```ts
+  function disposeScene(root: THREE.Object3D): void;
+  ```
+- **`detectTier`** *(function)*
+
+  ```ts
+  function detectTier(): QualityTier;
+  ```
+- **`getQualitySettings`** *(function)*
+
+  ```ts
+  function getQualitySettings(tier?: QualityTier): QualitySettings;
+  ```
+- **`QUALITY_PRESETS`** *(const)*
+- **`RendererOptions`** *(interface)*
+- **`ResizeHandler`** *(type)*
+- **`FrameLoopOptions`** *(interface)*
+- **`ClockMode`** *(type)*
+- **`ClockOptions`** *(interface)*
+- **`Clock`** *(interface)* — A simulation time source.
+- **`Reducer`** *(type)*
+- **`StoreListener`** *(type)*
+- **`Store`** *(interface)*
+- **`AppModule`** *(interface)* — A scene feature in the unidirectional flow.
+- **`AppCameraOptions`** *(interface)*
+- **`AppOptions`** *(interface)*
+- **`App`** *(interface)*
+- **`OverlayHandle`** *(interface)*
+- **`ScreenProjection`** *(interface)*
+- **`BootstrapSetupContext`** *(interface)*
+- **`BootstrapSetup`** *(type)*
+- **`BootstrapOptions`** *(interface)*
+- **`BootstrappedScene`** *(interface)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  import { createApp, createClock } from '@tuomashatakka/threejs-scenes'
+  
+  const app = createApp({
+    canvas,
+    seed:  7,
+    clock: createClock({ mode: 'fixed' }),   // deterministic sim steps
+    state: { hue: 0.52 },
+    modules: [{ id: 'spin', update: ({ scene }, { delta }) => { /* project state -> scene */ } }],
+  })
+  app.start()
+  ```
+  </details>
+
+#### `@tuomashatakka/threejs-scenes/camera`
+
+Camera factories: multi-mode controller (free / flyTo / follow / cockpit) with serializable tuple targets, orthographic isometric rig, framerate-independent third-person follow camera.
+Live demo: [`follow-camera.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/follow-camera.html)
+
+- **`createIsoCamera`** *(function)*
+
+  ```ts
+  function createIsoCamera(aspect: number, { viewSize, flavor, near, far, }?: IsoCameraOptions): THREE.OrthographicCamera;
+  ```
+- **`resizeIsoCamera`** *(function)*
+
+  ```ts
+  function resizeIsoCamera(camera: THREE.OrthographicCamera, aspect: number): void;
+  ```
+- **`createFollowCamera`** *(function)*
+
+  ```ts
+  function createFollowCamera(camera: THREE.Camera, target: THREE.Object3D, { offset, lookAhead, stiffness, rotationStiffness, }: FollowCameraOptions): (ctx: FrameContext) => void;
+  ```
+- **`tupleToVector3`** *(function)*
+
+  ```ts
+  function tupleToVector3(tuple: Vec3Tuple, out?: THREE.Vector3): THREE.Vector3;
+  ```
+- **`vector3ToTuple`** *(function)*
+
+  ```ts
+  function vector3ToTuple(v: THREE.Vector3): Vec3Tuple;
+  ```
+- **`targetFromObject`** *(function)* — Frame an object: stand `distance` away along `direction`, look at its center.
+
+  ```ts
+  function targetFromObject(object: THREE.Object3D, distance: number, direction?: Vec3Tuple): CameraTarget;
+  ```
+- **`createCameraController`** *(function)*
+
+  ```ts
+  function createCameraController(camera: THREE.PerspectiveCamera, { stiffness, lookStiffness, fovStiffness, arriveEpsilon, bounds, }?: CameraControllerOptions): CameraController;
+  ```
+- **`IsoFlavor`** *(type)*
+- **`IsoCameraOptions`** *(interface)*
+- **`FollowCameraOptions`** *(interface)*
+- **`Vec3Tuple`** *(type)*
+- **`CameraTarget`** *(interface)* — A serializable camera intent: where to stand and what to look at.
+- **`CameraMode`** *(type)*
+- **`CameraBounds`** *(interface)*
+- **`CameraControllerOptions`** *(interface)*
+- **`FlyToOptions`** *(interface)*
+- **`CameraController`** *(interface)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  const cam = createCameraController(camera, { bounds: null })
+  cam.flyTo([0, 8, 24], [0, 0, 0], { fov: 40, onArrive: () => cam.follow(ship) })
+  loop.onFrame(ctx => cam.update(ctx))
+  ```
+  </details>
+
+#### `@tuomashatakka/threejs-scenes/instancing`
+
+Draw-call reduction: seeded InstancedMesh scatter fields and BatchedMesh building batches.
+Live demo: [`instanced-field.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/instanced-field.html)
+
+- **`createInstancedField`** *(function)*
+
+  ```ts
+  function createInstancedField({ geometry, material, count, radius, seed, hueBase, hueSpread, scaleMin, scaleMax, place, }: InstancedFieldOptions): THREE.InstancedMesh;
+  ```
+- **`createBatchedBuildings`** *(function)*
+
+  ```ts
+  function createBatchedBuildings({ geometries, material, transforms, sortObjects, perObjectFrustumCulled, }: BatchedBuildingsOptions): THREE.BatchedMesh;
+  ```
+- **`InstancePlacement`** *(interface)*
+- **`PlaceFn`** *(type)*
+- **`InstancedFieldOptions`** *(interface)*
+- **`BatchedBuildingsOptions`** *(interface)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  const field = createInstancedField(geometry, material, {
+    count: 5000, radius: 40, seed: 7, hueRange: [0.5, 0.65],
+  })
+  scene.add(field.mesh)
+  ```
+  </details>
+
+#### `@tuomashatakka/threejs-scenes/materials`
+
+Material factories and presets: standard PBR, toon and holographic (fresnel + scanlines) materials with a userData.tick(elapsed) animation convention.
+Live demo: [`materials.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/materials.html)
+
+- **`createStandardMaterial`** *(function)* — Build a PBR material from a preset name (or raw params), merged with optional.
+
+  ```ts
+  function createStandardMaterial(presetOrParams?: StandardPresetName | THREE.MeshStandardMaterialParameters, overrides?: THREE.MeshStandardMaterialParameters): THREE.MeshStandardMaterial;
+  ```
+- **`createGradientToonMap`** *(function)* — Quantized gradient ramp for cel shading — NearestFilter keeps the bands hard.
+
+  ```ts
+  function createGradientToonMap(steps?: number): THREE.DataTexture;
+  ```
+- **`createToonMaterial`** *(function)*
+
+  ```ts
+  function createToonMaterial(options?: ToonOptions): THREE.MeshToonMaterial;
+  ```
+- **`createMatcapMaterial`** *(function)* — Matcap material.
+
+  ```ts
+  function createMatcapMaterial(matcap?: THREE.Texture | string): THREE.MeshMatcapMaterial;
+  ```
+- **`createHolographicMaterial`** *(function)*
+
+  ```ts
+  function createHolographicMaterial({ baseColor, fresnelStrength, scanlineDensity, opacity, }?: HolographicMaterialOptions): TickableMaterial;
+  ```
+- **`MATERIAL_PRESETS`** *(const)*
+- **`StandardPresetName`** *(type)*
+- **`ToonOptions`** *(interface)*
+- **`HolographicMaterialOptions`** *(interface)*
+- **`TickableMaterial`** *(interface)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  const holo = createHolographicMaterial({ color: '#79f7ff', fresnelStrength: 2 })
+  loop.onFrame(({ elapsed }) => holo.userData.tick?.(elapsed))
+  ```
+  </details>
+
+#### `@tuomashatakka/threejs-scenes/geometry`
+
+Programmatic mesh generation: 2D shape builders, extrusion/lathe, in-place vertex deformers, mesh merging, layout helpers, kNN connection graphs and recentering infinite ground tiles.
+Live demo: [`geometry.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/geometry.html)
+
+- **`roundedRectShape`** *(function)*
+
+  ```ts
+  function roundedRectShape(width: number, height: number, radius: number): THREE.Shape;
+  ```
+- **`polygonShape`** *(function)*
+
+  ```ts
+  function polygonShape(sides: number, radius: number): THREE.Shape;
+  ```
+- **`starShape`** *(function)*
+
+  ```ts
+  function starShape(points: number, outerRadius: number, innerRadius: number): THREE.Shape;
+  ```
+- **`gearShape`** *(function)*
+
+  ```ts
+  function gearShape(teeth: number, outerRadius: number, innerRadius: number, toothDepth?: number): THREE.Shape;
+  ```
+- **`ringShape`** *(function)*
+
+  ```ts
+  function ringShape(outerRadius: number, innerRadius: number): THREE.Shape;
+  ```
+- **`createExtrudedMesh`** *(function)*
+
+  ```ts
+  function createExtrudedMesh(options: ExtrudeOptions): THREE.Mesh;
+  ```
+- **`extrudeAlongPath`** *(function)*
+
+  ```ts
+  function extrudeAlongPath(shape: THREE.Shape, path: THREE.Curve<THREE.Vector3>, options?: ExtrudeAlongPathOptions): THREE.Mesh;
+  ```
+- **`createLatheMesh`** *(function)*
+
+  ```ts
+  function createLatheMesh(profile: ReadonlyArray<readonly [number, number] | THREE.Vector2>, options?: LatheOptions): THREE.Mesh;
+  ```
+- **`applyTwist`** *(function)* — Twist around `axis`: rotation grows linearly from 0 to `angle` along the axis.
+
+  ```ts
+  function applyTwist(geo: THREE.BufferGeometry, angle: number, axis?: Axis): THREE.BufferGeometry;
+  ```
+- **`applyTaper`** *(function)* — Taper: the two axes perpendicular to `axis` scale from 1 to `factor` along it.
+
+  ```ts
+  function applyTaper(geo: THREE.BufferGeometry, factor: number, axis?: Axis): THREE.BufferGeometry;
+  ```
+- **`applyBend`** *(function)* — Bend the geometry into an arc of `angle` radians around its `axis` extent.
+
+  ```ts
+  function applyBend(geo: THREE.BufferGeometry, angle: number, axis?: Axis): THREE.BufferGeometry;
+  ```
+- **`displaceByNoise`** *(function)* — Push each vertex along its normal by seeded value noise.
+
+  ```ts
+  function displaceByNoise(geo: THREE.BufferGeometry, options?: NoiseDisplaceOptions): THREE.BufferGeometry;
+  ```
+- **`simplifyGeometry`** *(function)* — Collapse to roughly `targetCount` vertices via SimplifyModifier.
+
+  ```ts
+  function simplifyGeometry(geo: THREE.BufferGeometry, targetCount: number): THREE.BufferGeometry;
+  ```
+- **`tessellateGeometry`** *(function)* — Subdivide long edges.
+
+  ```ts
+  function tessellateGeometry(geo: THREE.BufferGeometry, maxEdgeLength?: number, iterations?: number): THREE.BufferGeometry;
+  ```
+- **`edgeSplit`** *(function)* — Split shared vertices across hard edges so flat-shaded creases stay sharp.
+
+  ```ts
+  function edgeSplit(geo: THREE.BufferGeometry, cutOffAngleRad?: number, keepNormals?: boolean): THREE.BufferGeometry;
+  ```
+- **`mergeVertices`** *(function)* — Weld duplicate vertices within `tolerance` (indexes the geometry).
+
+  ```ts
+  function mergeVertices(geo: THREE.BufferGeometry, tolerance?: number): THREE.BufferGeometry;
+  ```
+- **`recomputeNormals`** *(function)*
+
+  ```ts
+  function recomputeNormals(geo: THREE.BufferGeometry): THREE.BufferGeometry;
+  ```
+- **`mergeMeshes`** *(function)* — Merge `meshes` into a single Mesh when they share one material, or a Group of.
+
+  ```ts
+  function mergeMeshes(meshes: THREE.Mesh[]): THREE.Object3D;
+  ```
+- **`mergeGeometryList`** *(function)* — Merge a raw list of geometries (assumed already in a common space).
+
+  ```ts
+  function mergeGeometryList(geometries: THREE.BufferGeometry[], useGroups?: boolean): THREE.BufferGeometry;
+  ```
+- **`createGroup`** *(function)*
+
+  ```ts
+  function createGroup(children?: THREE.Object3D[], transform?: Transform): THREE.Group;
+  ```
+- **`layoutGrid`** *(function)*
+
+  ```ts
+  function layoutGrid(objects: THREE.Object3D[], options?: GridLayout): THREE.Object3D[];
+  ```
+- **`layoutRadial`** *(function)*
+
+  ```ts
+  function layoutRadial(objects: THREE.Object3D[], options?: RadialLayout): THREE.Object3D[];
+  ```
+- **`layoutStack`** *(function)*
+
+  ```ts
+  function layoutStack(objects: THREE.Object3D[], axis?: Axis, spacing?: number): THREE.Object3D[];
+  ```
+- **`groupBounds`** *(function)*
+
+  ```ts
+  function groupBounds(obj: THREE.Object3D): THREE.Box3;
+  ```
+- **`createConnectionGraph`** *(function)*
+
+  ```ts
+  function createConnectionGraph(nodes: ReadonlyArray<readonly [number, number, number]>, { neighbors, maxDistance, color, highlightColor, opacity, }?: ConnectionGraphOptions): ConnectionGraph;
+  ```
+- **`createInfiniteGround`** *(function)*
+
+  ```ts
+  function createInfiniteGround({ tileSize, gridRadius, segments, displace, material, }?: InfiniteGroundOptions): InfiniteGround;
+  ```
+- **`ExtrudeOptions`** *(interface)*
+- **`ExtrudeAlongPathOptions`** *(interface)*
+- **`LatheOptions`** *(interface)*
+- **`Axis`** *(type)*
+- **`NoiseDisplaceOptions`** *(interface)*
+- **`Transform`** *(interface)*
+- **`GridLayout`** *(interface)*
+- **`RadialLayout`** *(interface)*
+- **`ConnectionGraphOptions`** *(interface)*
+- **`ConnectionGraph`** *(interface)*
+- **`InfiniteGroundOptions`** *(interface)*
+- **`InfiniteGround`** *(interface)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  const gear = createExtrudedMesh(gearShape({ teeth: 12, radius: 1 }), material, { depth: 0.3 })
+  applyTwist(gear.geometry, { angle: Math.PI / 6 })
+  ```
+  </details>
+
+#### `@tuomashatakka/threejs-scenes/loaders`
+
+Asset loading with progress aggregation, draco/ktx2 wiring and dispose-safe caches.
+
+- **`createGLTFLoader`** *(function)*
+
+  ```ts
+  function createGLTFLoader(options?: GLTFLoaderOptions): GLTFLoader;
+  ```
+- **`loadGLTF`** *(function)*
+
+  ```ts
+  function loadGLTF(url: string, options?: GLTFLoaderOptions): Promise<LoadedModel>;
+  ```
+- **`createModelCache`** *(function)*
+
+  ```ts
+  function createModelCache(): ModelCache;
+  ```
+- **`loadModel`** *(function)*
+
+  ```ts
+  function loadModel(src: string, options?: GLTFLoaderOptions): Promise<LoadedModel>;
+  ```
+- **`clearModelCache`** *(function)*
+
+  ```ts
+  function clearModelCache(): void;
+  ```
+- **`FORMAT_LOADERS`** *(const)*
+- **`GLTFLoaderOptions`** *(interface)*
+- **`ModelLoader`** *(type)*
+- **`ModelCache`** *(interface)*
+
+#### `@tuomashatakka/threejs-scenes/animation`
+
+Animation controllers: clip playback with crossfades, tweens, easing curves and per-frame drivers registered on the frame loop.
+Live demo: [`animation.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/animation.html)
+
+- **`numberTrack`** *(function)*
+
+  ```ts
+  function numberTrack(targetPath: string, times: number[], values: number[]): THREE.NumberKeyframeTrack;
+  ```
+- **`vectorTrack`** *(function)*
+
+  ```ts
+  function vectorTrack(targetPath: string, times: number[], values: number[]): THREE.VectorKeyframeTrack;
+  ```
+- **`quaternionTrack`** *(function)*
+
+  ```ts
+  function quaternionTrack(targetPath: string, times: number[], values: number[]): THREE.QuaternionKeyframeTrack;
+  ```
+- **`trackFromKeyframes`** *(function)*
+
+  ```ts
+  function trackFromKeyframes(spec: TrackSpec): THREE.KeyframeTrack;
+  ```
+- **`clipFromTracks`** *(function)*
+
+  ```ts
+  function clipFromTracks(name: string, duration: number, tracks: THREE.KeyframeTrack[]): THREE.AnimationClip;
+  ```
+- **`spinClip`** *(function)* — Continuous 360° rotation around `axis`.
+
+  ```ts
+  function spinClip(axis?: 'x' | 'y' | 'z', duration?: number, name?: string): THREE.AnimationClip;
+  ```
+- **`bobClip`** *(function)* — Vertical bob (sine, seamless loop).
+
+  ```ts
+  function bobClip(amp?: number, duration?: number, name?: string): THREE.AnimationClip;
+  ```
+- **`pulseScaleClip`** *(function)* — Uniform scale pulse between `min` and `max`.
+
+  ```ts
+  function pulseScaleClip(min?: number, max?: number, duration?: number, name?: string): THREE.AnimationClip;
+  ```
+- **`combineClips`** *(function)*
+
+  ```ts
+  function combineClips(name: string, clips: THREE.AnimationClip[]): THREE.AnimationClip;
+  ```
+- **`createAnimationController`** *(function)*
+
+  ```ts
+  function createAnimationController(root: THREE.Object3D, clips?: THREE.AnimationClip[], loop?: FrameLoop): AnimationController;
+  ```
+- **`TrackSpec`** *(interface)*
+
+#### `@tuomashatakka/threejs-scenes/props`
+
+Declarative prop definitions: seed-deterministic factories that build, place and dispose themed objects.
+Live demo: [`props.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/props.html)
+
+- **`defineProp`** *(function)* — Validate + tag a prop definition.
+
+  ```ts
+  function defineProp(def: PropDefinition): PropFactory;
+  ```
+- **`createProp`** *(function)*
+
+  ```ts
+  function createProp(factory: PropFactory, ctx?: PropContext, options?: CreatePropOptions): PropInstance;
+  ```
+- **`createInstancedProp`** *(function)*
+
+  ```ts
+  function createInstancedProp(factory: PropFactory, options: InstancedPropOptions, ctx?: PropContext): InstancedPropResult;
+  ```
+- **`createPropComposite`** *(function)*
+
+  ```ts
+  function createPropComposite(parts: CompositePart[]): PropComposite;
+  ```
+- **`createPropRegistry`** *(function)*
+
+  ```ts
+  function createPropRegistry(): PropRegistry;
+  ```
+- **`registerProp`** *(function)*
+
+  ```ts
+  function registerProp(name: string, factory: PropFactory): void;
+  ```
+- **`getProp`** *(function)*
+
+  ```ts
+  function getProp(name: string): PropFactory | undefined;
+  ```
+- **`resolveProp`** *(function)*
+
+  ```ts
+  function resolveProp(src: PropFactory | string, ctx?: PropContext): Promise<PropInstance>;
+  ```
+- **`CreatePropOptions`** *(interface)*
+- **`InstancedPropOptions`** *(interface)*
+- **`InstancedPropResult`** *(interface)*
+- **`CompositePart`** *(interface)*
+- **`PropComposite`** *(interface)*
+- **`PropRegistry`** *(interface)*
+
+#### `@tuomashatakka/threejs-scenes/lighting`
+
+Lighting rigs: IBL environment, shadow-tuned sun, hemisphere fill.
+Live demo: [`lighting.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/lighting.html)
+
+- **`applyEnvironment`** *(function)*
+
+  ```ts
+  function applyEnvironment(scene: THREE.Scene, renderer: THREE.WebGLRenderer, { intensity, envScene }?: EnvironmentOptions): THREE.Texture;
+  ```
+- **`createSun`** *(function)*
+
+  ```ts
+  function createSun({ color, intensity, position, shadowMapSize, shadowFrustum, shadowFar, }?: SunOptions): THREE.DirectionalLight;
+  ```
+- **`createHemisphereFill`** *(function)*
+
+  ```ts
+  function createHemisphereFill({ skyColor, groundColor, intensity, }?: HemisphereFillOptions): THREE.HemisphereLight;
+  ```
+- **`setupStandardLighting`** *(function)*
+
+  ```ts
+  function setupStandardLighting(scene: THREE.Scene, renderer: THREE.WebGLRenderer, options?: StandardLightingOptions): StandardLighting;
+  ```
+- **`EnvironmentOptions`** *(interface)*
+- **`SunOptions`** *(interface)*
+- **`HemisphereFillOptions`** *(interface)*
+- **`StandardLightingOptions`** *(interface)*
+- **`StandardLighting`** *(interface)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  const rig = setupStandardLighting(scene, renderer, { environment: true, sun: true })
+  ```
+  </details>
+
+#### `@tuomashatakka/threejs-scenes/particles`
+
+Deterministic particle systems: CPU emitter with shapes, rates, bursts and curves over lifetime, plus a GPGPU emitter for 50k+ particles; curve bakers for shader-side sampling.
+Live demo: [`particles.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/particles.html)
+
+- **`sampleCurve`** *(function)* — Sample a scalar curve at t.
+
+  ```ts
+  function sampleCurve(curve: ScalarCurve, t: number): number;
+  ```
+- **`bakeCurve`** *(function)* — Bake a scalar curve into a Float32Array LUT of `resolution` samples.
+
+  ```ts
+  function bakeCurve(curve: ScalarCurve, resolution?: number): Float32Array;
+  ```
+- **`bakeCurveTexture`** *(function)* — Bake color + alpha + size curves into one 2-row RGBA DataTexture:.
+
+  ```ts
+  function bakeCurveTexture(color: ColorCurve, alpha: ScalarCurve, size: ScalarCurve, resolution?: number): THREE.DataTexture;
+  ```
+- **`sampleShape`** *(function)* — Sample a spawn position + emission direction from an emitter shape.
+
+  ```ts
+  function sampleShape(shape: EmitterShape, r: () => number, out: SpawnSample): void;
+  ```
+- **`createEmitter`** *(function)*
+
+  ```ts
+  function createEmitter({ capacity, rate, bursts, lifetime, shape, speed, gravity, damping, size, sizeCurve, color, alphaCurve, rotation, texture, blending, seed, }: EmitterOptions): Emitter;
+  ```
+- **`createGpuEmitter`** *(function)*
+
+  ```ts
+  function createGpuEmitter(renderer: THREE.WebGLRenderer, options: GpuEmitterOptions): Emitter;
+  ```
+- **`createParticleEmitter`** *(function)*
+
+  ```ts
+  function createParticleEmitter({ count, texture, bounds, seed, gravity, damping, }: ParticleEmitterOptions): ParticleEmitter;
+  ```
+- **`ScalarCurve`** *(type)* — [t, value] stops, t in 0..1 ascending.
+- **`ColorCurve`** *(type)* — [t, color] stops; color as css string or [r,g,b] in 0..1.
+- **`EmitterShape`** *(type)*
+- **`EmitterOptions`** *(interface)*
+- **`Emitter`** *(interface)*
+- **`SpawnSample`** *(interface)*
+- **`GpuEmitterOptions`** *(type)*
+- **`ParticleEmitterOptions`** *(interface)*
+- **`ParticleEmitter`** *(interface)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  const emitter = createEmitter({
+    shape: { type: 'cone', angle: 0.4 }, rate: 200,
+    velocity: [0, 3, 0], lifetime: [0.8, 1.4],
+    size: { curve: [[0, 0.1], [0.2, 0.35], [1, 0]] },
+    seed: 7,
+  })
+  scene.add(emitter.points)
+  loop.onFrame(ctx => emitter.update(ctx))
+  ```
+  </details>
+
+#### `@tuomashatakka/threejs-scenes/post`
+
+WebGL EffectComposer post-processing: reorderable named pipeline plus individual passes — colour grade, god rays, depth-of-field with chromatic aberration, film grain, CRT, glitch stack, lensing, HUD beams, stereo.
+Live demo: [`post-processing.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/post-processing.html)
+
+- **`createComposer`** *(function)*
+
+  ```ts
+  function createComposer({ renderer, scene, camera, width, height, withDepth, withBloom, bloomStrength, bloomRadius, bloomThreshold, }: ComposerOptions): ComposerHandle;
+  ```
+- **`createPostPipeline`** *(function)*
+
+  ```ts
+  function createPostPipeline({ renderer, scene, camera, width, height, withDepth, }: PostPipelineOptions): PostPipeline;
+  ```
+- **`createGradePass`** *(function)*
+
+  ```ts
+  function createGradePass({ tint, contrast, saturation, vignette, grain, chromatic, }?: GradePassOptions): GradePass;
+  ```
+- **`createRgbShiftPass`** *(function)*
+
+  ```ts
+  function createRgbShiftPass(): ShaderPass;
+  ```
+- **`createBlockDisplacementPass`** *(function)*
+
+  ```ts
+  function createBlockDisplacementPass(): ShaderPass;
+  ```
+- **`createScanCorruptionPass`** *(function)*
+
+  ```ts
+  function createScanCorruptionPass(): ShaderPass;
+  ```
+- **`createGodRaysPass`** *(function)*
+
+  ```ts
+  function createGodRaysPass(): GodRaysPass;
+  ```
+- **`createDofPass`** *(function)*
+
+  ```ts
+  function createDofPass({ focalDistance, focalRange, maxBlur, caStrength, near, far, }?: DofPassOptions): DofPass;
+  ```
+- **`createFilmGrainPass`** *(function)*
+
+  ```ts
+  function createFilmGrainPass({ intensity, luma, desat, }?: FilmGrainOptions): ShaderPass;
+  ```
+- **`createHudBeamTransition`** *(function)*
+
+  ```ts
+  function createHudBeamTransition({ duration, beamWidth, beamColor, onComplete, }?: HudBeamOptions): HudBeamTransition;
+  ```
+- **`createStereoRenderer`** *(function)*
+
+  ```ts
+  function createStereoRenderer(renderer: THREE.WebGLRenderer, mode: StereoMode, { width, height }?: StereoSizeOptions): StereoRenderer;
+  ```
+- **`GradeShader`** *(const)*
+- **`ComposerOptions`** *(interface)*
+- **`ComposerHandle`** *(interface)*
+- **`PostPipelineOptions`** *(interface)*
+- **`PostPipeline`** *(interface)*
+- **`GradePassOptions`** *(interface)*
+- **`GradePass`** *(interface)*
+- **`GodRaysPass`** *(interface)*
+- **`DofPassOptions`** *(interface)*
+- **`DofPass`** *(interface)*
+- **`FilmGrainOptions`** *(interface)*
+- **`HudBeamOptions`** *(interface)*
+- **`HudBeamTransition`** *(interface)*
+- **`StereoMode`** *(type)*
+- **`StereoRenderer`** *(interface)*
+- **`StereoSizeOptions`** *(interface)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  const post = createPostPipeline(renderer, scene, camera, [
+    ['bloom', { strength: 0.7 }],
+    ['grade', { saturation: 1.1, lift: [0, 0, 0.02] }],
+  ])
+  loop.onFrame(({ delta }) => post.render(delta))
+  ```
+  </details>
+
+#### `@tuomashatakka/threejs-scenes/post/webgpu`
+
+WebGPU/TSL node-based effects mirroring the three.js WebGPU postprocessing examples: AO/GTAO, bloom (incl. selective + emissive), DOF, god rays, SSR, SSGI, SSS, TRAA, motion blur, outline, LUT, SMAA/FXAA/SSAA and more. Requires WebGPURenderer.
+Live demo: [`effects.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/effects.html)
+
+- **`createBloom`** *(function)*
+
+  ```ts
+  function createBloom(input: ColorNode, options?: BloomOptions): import("three/addons/tsl/display/BloomNode.js").default;
+  ```
+- **`createBloomSelective`** *(function)*
+
+  ```ts
+  function createBloomSelective(scenePass: PassNode, options?: BloomSelectiveOptions): {
+  ```
+- **`createBloomEmissive`** *(function)*
+
+  ```ts
+  function createBloomEmissive(scenePass: PassNode, options?: BloomEmissiveOptions): {
+  ```
+- **`createDof`** *(function)*
+
+  ```ts
+  function createDof(input: ColorNode, viewZ: ColorNode, options?: DofOptions): import("three/addons/tsl/display/DepthOfFieldNode.js").default;
+  ```
+- **`createDofBasic`** *(function)*
+
+  ```ts
+  function createDofBasic(input: Node<'vec4'>, viewZ: Node<'float'>, options?: DofBasicOptions): Node<"vec4">;
+  ```
+- **`createAo`** *(function)*
+
+  ```ts
+  function createAo(viewZ: ColorNode, normal: ColorNode, camera: THREE.Camera): import("three/addons/tsl/display/GTAONode.js").default;
+  ```
+- **`createOutline`** *(function)*
+
+  ```ts
+  function createOutline(scene: THREE.Scene, camera: THREE.Camera, options?: OutlineOptions): import("three/addons/tsl/display/OutlineNode.js").default;
+  ```
+- **`createLut`** *(function)*
+
+  ```ts
+  function createLut(input: ColorNode, options: LutOptions): import("three/addons/tsl/display/Lut3DNode.js").default;
+  ```
+- **`createAfterImage`** *(function)*
+
+  ```ts
+  function createAfterImage(input: ColorNode, options?: AfterImageOptions): import("three/addons/tsl/display/AfterImageNode.js").default;
+  ```
+- **`createAnamorphic`** *(function)*
+
+  ```ts
+  function createAnamorphic(input: ColorNode, options?: AnamorphicOptions): import("three/addons/tsl/display/AnamorphicNode.js").default;
+  ```
+- **`createChromaticAberration`** *(function)*
+
+  ```ts
+  function createChromaticAberration(input: ColorNode, options?: ChromaticAberrationOptions): import("three/addons/tsl/display/ChromaticAberrationNode.js").default;
+  ```
+- **`createFxaa`** *(function)*
+
+  ```ts
+  function createFxaa(input: ColorNode): import("three/addons/tsl/display/FXAANode.js").default;
+  ```
+- **`createSmaa`** *(function)*
+
+  ```ts
+  function createSmaa(input: ColorNode): import("three/addons/tsl/display/SMAANode.js").SMAANode;
+  ```
+- **`createSobel`** *(function)*
+
+  ```ts
+  function createSobel(input: ColorNode): import("three/addons/tsl/display/SobelOperatorNode.js").default;
+  ```
+- **`createRadialBlur`** *(function)*
+
+  ```ts
+  function createRadialBlur(input: ColorNode, options?: RadialBlurOptions): import("three/webgpu").Node;
+  ```
+- **`createDifference`** *(function)*
+
+  ```ts
+  function createDifference(scenePass: PassNode, options?: DifferenceOptions): import("three/webgpu").Node<"vec3">;
+  ```
+- **`createMasking`** *(function)*
+
+  ```ts
+  function createMasking(base: Node<'vec4'>, camera: THREE.Camera, layers: MaskLayer[]): Node;
+  ```
+- **`createGodrays`** *(function)*
+
+  ```ts
+  function createGodrays(depthNode: TextureNode, camera: Camera, light: DirectionalLight | PointLight, options?: GodraysOptions): import("three/addons/tsl/display/GodraysNode.js").default;
+  ```
+- **`createLensflare`** *(function)*
+
+  ```ts
+  function createLensflare(input: Node, options?: LensflareOptions): import("three/addons/tsl/display/LensflareNode.js").default;
+  ```
+- **`createMotionBlur`** *(function)*
+
+  ```ts
+  function createMotionBlur(input: Node, velocityNode: Node, options?: MotionBlurOptions): Node<"vec4">;
+  ```
+- **`createPixelationPass`** *(function)*
+
+  ```ts
+  function createPixelationPass(scene: THREE.Scene, camera: THREE.Camera, options?: PixelOptions): import("three/addons/tsl/display/PixelationPassNode.js").default;
+  ```
+- **`createRetroPass`** *(function)*
+
+  ```ts
+  function createRetroPass(scene: THREE.Scene, camera: THREE.Camera, options?: RetroOptions): import("three/addons/tsl/display/RetroPassNode.js").default;
+  ```
+- **`createSsaaPass`** *(function)*
+
+  ```ts
+  function createSsaaPass(scene: THREE.Scene, camera: THREE.Camera, options?: SsaaOptions): import("three/addons/tsl/display/SSAAPassNode.js").default;
+  ```
+- **`createTransition`** *(function)*
+
+  ```ts
+  function createTransition(passA: Node, passB: Node, mixTexture: Node, options?: TransitionOptions): import("three/addons/tsl/display/TransitionNode.js").default;
+  ```
+- **`createSsr`** *(function)*
+
+  ```ts
+  function createSsr(colorNode: Node, depthNode: Node, normalNode: Node, metalness: Node, roughness: Node, camera: Camera, options?: SsrOptions): import("three/addons/tsl/display/SSRNode.js").default;
+  ```
+- **`createSsgi`** *(function)*
+
+  ```ts
+  function createSsgi(beautyNode: Node, depthNode: Node, normalNode: Node, camera: PerspectiveCamera, options?: SsgiOptions): import("three/addons/tsl/display/SSGINode.js").default;
+  ```
+- **`createSss`** *(function)*
+
+  ```ts
+  function createSss(depthNode: TextureNode, camera: Camera, mainLight: DirectionalLight, options?: SssOptions): import("three/addons/tsl/display/SSSNode.js").default;
+  ```
+- **`createTraa`** *(function)*
+
+  ```ts
+  function createTraa(beautyNode: Node, depthNode: TextureNode, velocityNode: TextureNode, camera: Camera, options?: TraaOptions): import("three/addons/tsl/display/TRAANode.js").default;
+  ```
+- **`createScenePass`** *(function)*
+
+  ```ts
+  function createScenePass(scene: THREE.Scene, camera: THREE.Camera): ScenePassTargets;
+  ```
+- **`createScenePassMRT`** *(function)*
+
+  ```ts
+  function createScenePassMRT(scene: THREE.Scene, camera: THREE.Camera): ScenePassTargets;
+  ```
+- **`createScenePassVelocity`** *(function)*
+
+  ```ts
+  function createScenePassVelocity(scene: THREE.Scene, camera: THREE.Camera): import("three/webgpu").PassNode;
+  ```
+- **`createScenePassEmissive`** *(function)*
+
+  ```ts
+  function createScenePassEmissive(scene: THREE.Scene, camera: THREE.Camera): import("three/webgpu").PassNode;
+  ```
+- **`createScenePassSSR`** *(function)*
+
+  ```ts
+  function createScenePassSSR(scene: THREE.Scene, camera: THREE.Camera): import("three/webgpu").PassNode;
+  ```
+- **`createRenderPipeline`** *(function)*
+
+  ```ts
+  function createRenderPipeline(renderer: Renderer, outputNode: Node): RenderPipeline;
+  ```
+- **`createPostProcessing`** *(const)*
+- **`BloomOptions`** *(interface)*
+- **`BloomSelectiveOptions`** *(interface)*
+- **`BloomEmissiveOptions`** *(interface)*
+- **`DofOptions`** *(interface)*
+- **`DofBasicOptions`** *(interface)*
+- **`OutlineOptions`** *(type)*
+- **`LutOptions`** *(interface)*
+- **`AfterImageOptions`** *(interface)*
+- **`AnamorphicOptions`** *(interface)*
+- **`ChromaticAberrationOptions`** *(interface)*
+- **`RadialBlurOptions`** *(interface)*
+- **`DifferenceOptions`** *(interface)*
+- **`MaskLayer`** *(interface)*
+- **`GodraysOptions`** *(interface)*
+- **`LensflareOptions`** *(interface)*
+- **`MotionBlurOptions`** *(interface)*
+- **`PixelOptions`** *(interface)*
+- **`RetroOptions`** *(interface)*
+- **`SsaaOptions`** *(interface)*
+- **`TransitionOptions`** *(interface)*
+- **`SsrOptions`** *(interface)*
+- **`SsgiOptions`** *(interface)*
+- **`SssOptions`** *(interface)*
+- **`TraaOptions`** *(interface)*
+- **`ColorNode`** *(type)*
+- **`ScenePassTargets`** *(interface)*
+- **`ColorEffect`** *(type)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  import * as webgpuPost from '@tuomashatakka/threejs-scenes/post/webgpu'
+  
+  const { color, viewZ } = webgpuPost.createScenePass(scene, camera)
+  const bloom  = webgpuPost.createBloom(color, { strength: 0.8 })
+  const graded = webgpuPost.createDof(color.add(bloom), viewZ, { bokehScale: 2 })
+  const post   = webgpuPost.createPostProcessing(renderer, graded)
+  ```
+  </details>
+
+#### `@tuomashatakka/threejs-scenes/post/webgl`
+
+ShaderPass ports of the WebGPU effect set for plain WebGLRenderer + EffectComposer chains.
+Live demo: [`effects.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/effects.html)
+
+- **`Pass`** *(class)*
+- **`createBloom`** *(function)*
+
+  ```ts
+  function createBloom(options?: BloomOptions): Pass;
+  ```
+- **`createSelectiveBloom`** *(function)*
+
+  ```ts
+  function createSelectiveBloom(ctx: WebGlPassContext, options?: SelectiveBloomOptions): SelectiveBloomHandle;
+  ```
+- **`createEmissiveBloom`** *(function)*
+
+  ```ts
+  function createEmissiveBloom(ctx: WebGlPassContext, options?: EmissiveBloomOptions): SelectiveBloomHandle;
+  ```
+- **`createDof`** *(function)*
+
+  ```ts
+  function createDof(ctx: WebGlPassContext, options?: DofOptions): Pass;
+  ```
+- **`createAo`** *(function)*
+
+  ```ts
+  function createAo(ctx: WebGlPassContext, options?: AoOptions): Pass;
+  ```
+- **`createOutline`** *(function)*
+
+  ```ts
+  function createOutline(ctx: WebGlPassContext, options?: OutlineOptions): Pass;
+  ```
+- **`createSsr`** *(function)*
+
+  ```ts
+  function createSsr(ctx: WebGlPassContext, options?: SsrOptions): Pass;
+  ```
+- **`createLUT`** *(function)*
+
+  ```ts
+  function createLUT(options?: LUTOptions): Pass;
+  ```
+- **`createAfterimage`** *(function)*
+
+  ```ts
+  function createAfterimage(options?: AfterimageOptions): Pass;
+  ```
+- **`createAnamorphic`** *(function)*
+
+  ```ts
+  function createAnamorphic(options?: AnamorphicOptions): AnamorphicPass;
+  ```
+- **`createChromaticAberration`** *(function)*
+
+  ```ts
+  function createChromaticAberration(options?: ChromaticAberrationOptions): Pass;
+  ```
+- **`createDifference`** *(function)*
+
+  ```ts
+  function createDifference(options?: DifferenceOptions): DifferencePass;
+  ```
+- **`createRadialBlur`** *(function)*
+
+  ```ts
+  function createRadialBlur(options?: RadialBlurOptions): Pass;
+  ```
+- **`createGodRaysPass`** *(function)*
+
+  ```ts
+  function createGodRaysPass(): GodRaysPass;
+  ```
+- **`createMotionBlur`** *(function)*
+
+  ```ts
+  function createMotionBlur(options?: MotionBlurOptions): MotionBlurPass;
+  ```
+- **`createRetroPass`** *(function)*
+
+  ```ts
+  function createRetroPass(options?: RetroOptions): RetroPass;
+  ```
+- **`createFXAA`** *(function)*
+
+  ```ts
+  function createFXAA(_options?: FXAAOptions): Pass;
+  ```
+- **`createSMAA`** *(function)*
+
+  ```ts
+  function createSMAA(_options?: SMAAOptions): Pass;
+  ```
+- **`createSobel`** *(function)*
+
+  ```ts
+  function createSobel(options?: SobelOptions): Pass;
+  ```
+- **`createSsaa`** *(function)*
+
+  ```ts
+  function createSsaa(ctx: WebGlPassContext, options?: SsaaOptions): Pass;
+  ```
+- **`createTraa`** *(function)*
+
+  ```ts
+  function createTraa(ctx: WebGlPassContext, options?: TraaOptions): Pass;
+  ```
+- **`createCrtPass`** *(function)*
+
+  ```ts
+  function createCrtPass({ curvature, vignette, glitch }?: CrtOptions): CrtPass;
+  ```
+- **`crtCorrectPointer`** *(function)*
+
+  ```ts
+  function crtCorrectPointer(ndcX: number, ndcY: number, curvature: number): CrtCorrectPointerReturnType;
+  ```
+- **`ShaderPass`** *(class)*
+- **`createLensingPass`** *(function)*
+
+  ```ts
+  function createLensingPass({ radius, strength, coreSize }?: LensingOptions): LensingPass;
+  ```
+- **`createBurnInPass`** *(function)*
+
+  ```ts
+  function createBurnInPass({ decay }?: BurnInOptions): BurnInPass;
+  ```
+- **`BurnInPass`** *(class)*
+- **`createPixel`** *(function)*
+
+  ```ts
+  function createPixel(ctx: WebGlPassContext, options?: PixelOptions): Pass;
+  ```
+- **`createTransition`** *(function)*
+
+  ```ts
+  function createTransition(sceneA: THREE.Scene, cameraA: THREE.Camera, sceneB: THREE.Scene, cameraB: THREE.Camera, options?: TransitionOptions): Pass;
+  ```
+- **`createMaskPasses`** *(function)*
+
+  ```ts
+  function createMaskPasses(maskScene: THREE.Scene, maskCamera: THREE.Camera, options?: {
+  ```
+- **`createLensflare`** *(function)*
+
+  ```ts
+  function createLensflare(options?: LensflareOptions): Lensflare;
+  ```
+- **`createSsgi`** *(function)*
+
+  ```ts
+  function createSsgi(_options?: SsgiOptions): never;
+  ```
+- **`createSss`** *(function)*
+
+  ```ts
+  function createSss(_options?: SssOptions): never;
+  ```
+- **`BLOOM_LAYER`** *(const)*
+- **`WebGlPassContext`** *(interface)*
+- **`WebGlEffect`** *(type)*
+- **`Resizable`** *(interface)*
+- **`BloomOptions`** *(interface)*
+- **`SelectiveBloomOptions`** *(interface)*
+- **`SelectiveBloomHandle`** *(interface)*
+- **`EmissiveBloomOptions`** *(interface)*
+- **`DofOptions`** *(interface)*
+- **`AoOptions`** *(interface)*
+- **`OutlineOptions`** *(interface)*
+- **`SsrOptions`** *(interface)*
+- **`LUTOptions`** *(interface)*
+- **`AfterimageOptions`** *(interface)*
+- **`AnamorphicOptions`** *(interface)*
+- **`AnamorphicPass`** *(interface)*
+- **`ChromaticAberrationOptions`** *(interface)*
+- **`DifferenceOptions`** *(interface)*
+- **`DifferencePass`** *(interface)*
+- **`RadialBlurOptions`** *(interface)*
+- **`GodRaysPass`** *(interface)*
+- **`MotionBlurOptions`** *(interface)*
+- **`MotionBlurPass`** *(interface)*
+- **`RetroOptions`** *(interface)*
+- **`RetroPass`** *(interface)*
+- **`FXAAOptions`** *(type)*
+- **`SMAAOptions`** *(type)*
+- **`SobelOptions`** *(interface)*
+- **`SsaaOptions`** *(interface)*
+- **`TraaOptions`** *(interface)*
+- **`CrtOptions`** *(interface)*
+- **`CrtPass`** *(interface)*
+- **`LensingOptions`** *(interface)*
+- **`LensingPass`** *(interface)*
+- **`BurnInOptions`** *(interface)*
+- **`PixelOptions`** *(interface)*
+- **`TransitionOptions`** *(interface)*
+- **`MaskLayer`** *(interface)*
+- **`LensflareElementSpec`** *(interface)*
+- **`LensflareOptions`** *(interface)*
+- **`SsgiOptions`** *(interface)*
+- **`SssOptions`** *(interface)*
+
+#### `@tuomashatakka/threejs-scenes/procedural`
+
+Deterministic procedural generation: seeded mulberry32 RNG with per-consumer forking, Poisson-disk sampling, seamless noise textures, 3D simplex noise with fbm/ridged sums, procedural planets.
+Live demo: [`procedural.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/procedural.html)
+
+- **`mulberry32`** *(function)*
+
+  ```ts
+  function mulberry32(seed: number): () => number;
+  ```
+- **`hash2`** *(function)*
+
+  ```ts
+  function hash2(x: number, y: number): number;
+  ```
+- **`hash3`** *(function)*
+
+  ```ts
+  function hash3(x: number, y: number, z: number): number;
+  ```
+- **`lerp`** *(function)*
+
+  ```ts
+  function lerp(a: number, b: number, t: number): number;
+  ```
+- **`smoothstep`** *(function)*
+
+  ```ts
+  function smoothstep(edge0: number, edge1: number, x: number): number;
+  ```
+- **`createSeededRng`** *(function)*
+
+  ```ts
+  function createSeededRng(seed: number): SeededRng;
+  ```
+- **`poissonDisk`** *(function)*
+
+  ```ts
+  function poissonDisk({ width, height, minDist, rng, k, }: PoissonDiskOptions): Point2[];
+  ```
+- **`createNoiseTexture`** *(function)*
+
+  ```ts
+  function createNoiseTexture({ size, frequency, octaves, seed, channels, }?: NoiseTextureOptions): THREE.DataTexture | null;
+  ```
+- **`createNoise3D`** *(function)*
+
+  ```ts
+  function createNoise3D(seed?: number): Noise3D;
+  ```
+- **`createProceduralBody`** *(function)*
+
+  ```ts
+  function createProceduralBody({ radius, detail, seed, type, displacement, frequency, octaves, ridged, palette, water, clouds, rings, }?: ProceduralBodySpec): ProceduralBody;
+  ```
+- **`Point2`** *(type)*
+- **`PoissonDiskOptions`** *(interface)*
+- **`NoiseTextureOptions`** *(interface)*
+- **`Noise3D`** *(interface)*
+- **`ProceduralBodySpec`** *(interface)*
+- **`ProceduralBody`** *(interface)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  const rng = createSeededRng(42)
+  const planet = createProceduralBody({ seed: rng.int(1e9), radius: 2, type: 'terrestrial' })
+  scene.add(planet.object)
+  ```
+  </details>
+
+#### `@tuomashatakka/threejs-scenes/voxels`
+
+Chunked voxel storage, greedy meshing and a streaming chunk manager for infinite worlds.
+Live demo: [`voxels.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/voxels.html)
+
+- **`VoxelChunk`** *(class)*
+- **`greedyMesh`** *(function)*
+
+  ```ts
+  function greedyMesh(chunk: VoxelChunk): THREE.BufferGeometry;
+  ```
+- **`createChunkManager`** *(function)*
+
+  ```ts
+  function createChunkManager({ chunkSize, viewRadius, rebaseThreshold, build, }: ChunkManagerOptions): ChunkManager;
+  ```
+- **`VoxelVisitor`** *(type)*
+- **`ChunkBuilder`** *(type)*
+- **`ChunkManagerOptions`** *(interface)*
+- **`ChunkManager`** *(interface)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  const chunk = new VoxelChunk(32)
+  chunk.fill((x, y, z) => noise.fbm(x / 16, y / 16, z / 16) > 0.1 ? 1 : 0)
+  scene.add(greedyMesh(chunk, material))
+  ```
+  </details>
+
+#### `@tuomashatakka/threejs-scenes/architecture`
+
+The context-injection module architecture from a shipping project: scene modules, LRU view registries, pooled materials, procedural texture caches, undo stacks, param resolution and distortion-aware picking.
+Live demo: [`architecture.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/architecture.html)
+
+- **`createSceneModule`** *(function)*
+
+  ```ts
+  function createSceneModule(def: SceneModuleDefinition): SceneModule;
+  ```
+- **`MaterialPool`** *(class)*
+- **`createTextureCache`** *(function)*
+
+  ```ts
+  function createTextureCache(): TextureCache;
+  ```
+- **`createProceduralTexture`** *(function)*
+
+  ```ts
+  function createProceduralTexture(key: string, paint: PaintFn, size?: number): THREE.CanvasTexture | null;
+  ```
+- **`EditStack`** *(class)*
+- **`resolveParam`** *(function)*
+
+  ```ts
+  function resolveParam(spec: ParamSpec, given: unknown): ParamValue;
+  ```
+- **`resolveParams`** *(function)*
+
+  ```ts
+  function resolveParams(specs: ParamSpecMap, given?: Record<string, unknown>): Record<string, ParamValue>;
+  ```
+- **`pickTopLevel`** *(function)*
+
+  ```ts
+  function pickTopLevel(scene: THREE.Scene, camera: THREE.Camera, ndcX: number, ndcY: number, isPickable?: PickFilter): PickResult | null;
+  ```
+- **`pick`** *(function)* — pickTopLevel with a distortion hook + object scoping.
+
+  ```ts
+  function pick(scene: THREE.Scene, camera: THREE.Camera, ndcX: number, ndcY: number, { isPickable, distortion, objects }?: PickOptions): PickResult | null;
+  ```
+- **`createClickGuard`** *(function)*
+
+  ```ts
+  function createClickGuard(thresholdPx?: number): CreateClickGuardReturnType;
+  ```
+- **`createViewRegistry`** *(function)*
+
+  ```ts
+  function createViewRegistry<S = unknown>({ create, limit }: ViewRegistryOptions<S>): ViewRegistry<S>;
+  ```
+- **`proceduralTextureCache`** *(const)*
+- **`SceneModuleDefinition`** *(interface)*
+- **`PaintFn`** *(type)*
+- **`TextureCache`** *(interface)*
+- **`PickFilter`** *(type)*
+- **`PickResult`** *(interface)*
+- **`PickOptions`** *(interface)*
+- **`ViewRenderer`** *(interface)* — One "view" of the app (a whole sub-scene).
+- **`ViewRegistryOptions`** *(interface)*
+- **`ViewRegistry`** *(interface)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  const module = createSceneModule({
+    id: 'rocks',
+    setup: ctx => { /* build once */ },
+    update: (ctx, frame) => { /* per tick */ },
+  })
+  ```
+  </details>
+
+#### `@tuomashatakka/threejs-scenes/jsx`
+
+Reactive JSX layer (no React): author scenes as elements, render() mounts them, signals re-apply reactive props every frame. Component hooks (useScene, useFrame, …) expose the library’s main interfaces inside function components; useFrameLoop works anywhere.
+Live demo: [`jsx-scene.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/jsx-scene.html)
+
+- **`useRuntime`** *(function)* — The mounting runtime: scene, renderer, loop, rng, camera accessors, ….
+
+  ```ts
+  function useRuntime(): Runtime;
+  ```
+- **`useScene`** *(function)* — The scene the component mounts into.
+
+  ```ts
+  function useScene(): THREE.Scene;
+  ```
+- **`useRenderer`** *(function)* — The WebGL renderer driving this tree.
+
+  ```ts
+  function useRenderer(): THREE.WebGLRenderer;
+  ```
+- **`useCamera`** *(function)* — Accessor for the active camera.
+
+  ```ts
+  function useCamera(): () => THREE.Camera;
+  ```
+- **`useLoop`** *(function)* — The frame loop driving this tree.
+
+  ```ts
+  function useLoop(): FrameLoop;
+  ```
+- **`useRng`** *(function)* — The tree's seeded RNG (deterministic per render seed).
+
+  ```ts
+  function useRng(): SeededRng;
+  ```
+- **`useSize`** *(function)* — Canvas size accessor: () => [width, height].
+
+  ```ts
+  function useSize(): () => [number, number];
+  ```
+- **`useAspect`** *(function)* — Canvas aspect-ratio accessor.
+
+  ```ts
+  function useAspect(): () => number;
+  ```
+- **`useFrame`** *(function)* — Register a per-frame callback ({ delta, elapsed, frame }).
+
+  ```ts
+  function useFrame(cb: FrameCallback): void;
+  ```
+- **`useDispose`** *(function)* — Register cleanup to run when the tree is disposed.
+
+  ```ts
+  function useDispose(fn: () => void): void;
+  ```
+- **`useFrameLoop`** *(function)* — Standalone hook: a FrameLoop backed by the shared frame-capped manager.
+
+  ```ts
+  function useFrameLoop(cb?: FrameCallback, options?: FrameLoopOptions): FrameLoop;
+  ```
+- **`mountTree`** *(function)* — Mount a tree under the runtime's scene.
+
+  ```ts
+  function mountTree(root: SceneChild, rt: Runtime): void;
+  ```
+- **`jsx`** *(function)*
+
+  ```ts
+  function jsx(type: ElementType, props: Record<string, unknown> | null): SceneElement;
+  ```
+- **`h`** *(function)* — Hyperscript builder — `h(Light, { type: 'spot' })`, no transpile needed.
+
+  ```ts
+  function h(type: ElementType, props: Record<string, unknown> | null, ...children: SceneChild[]): SceneElement;
+  ```
+- **`signal`** *(function)*
+
+  ```ts
+  function signal<T>(initial: T): [Accessor<T>, Setter<T>];
+  ```
+- **`derived`** *(function)* — A derived accessor — just a memo-free computed read, re-run when polled.
+
+  ```ts
+  function derived<T>(fn: Accessor<T>): Accessor<T>;
+  ```
+- **`isAccessor`** *(function)* — Marker so the reconciler can distinguish accessors from plain values.
+
+  ```ts
+  function isAccessor(value: unknown): value is Accessor<unknown>;
+  ```
+- **`render`** *(function)*
+
+  ```ts
+  function render(root: SceneChild, options: RenderOptions): RenderHandle;
+  ```
+- **`useSignal`** *(const)* — Reactive state: const [count, setCount] = useSignal(0).
+- **`useDerived`** *(const)* — Computed reactive value derived from other accessors.
+- **`Fragment`** *(const)*
+- **`jsxs`** *(const)*
+- **`jsxDEV`** *(const)*
+- **`Runtime`** *(interface)*
+- **`Host`** *(interface)*
+- **`ReactiveBinding`** *(interface)*
+- **`ComponentFn`** *(type)*
+- **`ElementType`** *(type)*
+- **`SceneElement`** *(interface)*
+- **`SceneChild`** *(type)*
+- **`Accessor`** *(type)*
+- **`Setter`** *(type)*
+- **`RenderOptions`** *(interface)*
+- **`RenderHandle`** *(interface)*
+- **`SceneProps`** *(interface)*
+- **`MeshProps`** *(interface)*
+- **`PrimitiveProps`** *(interface)*
+- **`LightProps`** *(interface)*
+- **`CameraProps`** *(interface)*
+- **`PropProps`** *(interface)*
+- **`InstancesProps`** *(interface)*
+- **`PostProps`** *(interface)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  import { render, h, useSignal, useFrame, useScene } from '@tuomashatakka/threejs-scenes/jsx'
+  
+  const [hue, setHue] = useSignal(0.5)
+  function Spinner () {
+    const scene = useScene()
+    useFrame(({ delta }) => { /* per-frame */ })
+    return h('mesh', { geometry: 'box', rotationY: hue })
+  }
+  render(h(Spinner, {}), { canvas })
+  ```
+  </details>
+
+#### `@tuomashatakka/threejs-scenes/types`
+
+Shared contracts: SceneContext, SceneModule, FrameLoop/FrameContext, PropDefinition, AnimationController, QualityPreset, SeededRng.
+
+- **`Disposable`** *(interface)* — Anything that owns GPU or DOM resources and must be torn down explicitly.
+- **`FrameContext`** *(interface)* — Per-frame context handed to every animated subsystem by the frame loop.
+- **`FrameCallback`** *(type)*
+- **`FrameLoop`** *(interface)* — Self-contained Clock-driven frame loop.
+- **`PointerGestureCallbacks`** *(interface)* — Unified pointer gesture callbacks.
+- **`PointerGestureOptions`** *(interface)*
+- **`QualityTier`** *(type)*
+- **`PostEffectName`** *(type)*
+- **`QualityPreset`** *(interface)*
+- **`QualitySettings`** *(interface)*
+- **`SeededRng`** *(interface)* — Seeded pseudo-random stream.
+- **`SceneContext`** *(interface)* — Context injected into every scene module.
+- **`SceneModule`** *(interface)* — A self-contained scene feature.
+- **`MaterialPoolLike`** *(interface)* — Minimal structural type for a material pool, so {@link SceneContext} can.
+- **`ParamSpec`** *(type)* — A parameter specification used to coerce config- or LLM-driven content.
+- **`ParamValue`** *(type)*
+- **`ParamSpecMap`** *(type)*
+- **`LoadedModel`** *(interface)* — Normalized result of loading a model file (glTF and friends).
+- **`PlayOptions`** *(interface)*
+- **`AnimationController`** *(interface)* — Wraps an AnimationMixer + its actions.
+- **`PropContext`** *(interface)* — Minimal context a prop needs to build + animate itself.
+- **`InstancePlaceFn`** *(type)*
+- **`PropDefinition`** *(interface)* — Declarative description of a reusable prop: how to build its Object3D, plus.
+- **`PropFactory`** *(type)*
+- **`PropInstance`** *(interface)* — A live, mounted prop.
+
+<!-- api:end -->
+
+### at a glance
 
 | Area | Exports |
 |------|---------|
@@ -103,9 +1634,13 @@ Tree-shakeable subpaths are exported too: `threejs-scenes/core`,
 | **voxels / infinite** | `VoxelChunk`, `greedyMesh`, `createChunkManager` |
 | **architecture** | `createSceneModule`, `createViewRegistry` (LRU view cache), `MaterialPool`, `createProceduralTexture` / `createTextureCache`, `EditStack`, `resolveParam` / `resolveParams`, `pickTopLevel`, `pick` (distortion-aware) / `createClickGuard` |
 
-The frame loop is **self-contained** (a `THREE.Clock`-driven `requestAnimationFrame`
-with `registerUpdate` / `unregisterUpdate`) so the package has no exotic
-dependencies. The LLM codegen module (`scripts/llm-functions.js`) is **not**
+The frame loop is backed by
+[`@tuomashatakka/canvas-loop-framecapper`](https://github.com/tuomashatakka/canvas-loop-framecapper):
+one shared `FrameLoopManager` owns the single `requestAnimationFrame` and can
+cap it to a fixed frame rate (`createFrameLoop({ fps })` — capped frames get a
+fixed `delta = 1/fps`), while each `createFrameLoop()` keeps its own
+subscriber set, frame counter and elapsed time (`registerUpdate` /
+`unregisterUpdate` / `onFrame`). The LLM codegen module (`scripts/llm-functions.js`) is **not**
 ported — it needs `ai` / `@ai-sdk/google` / `zod`, which would be hard deps; use
 the script directly if you need it.
 

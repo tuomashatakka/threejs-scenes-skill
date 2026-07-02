@@ -100,8 +100,9 @@
     "lib": "lib"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && bun run copy:lib",
+    "build": "tsc -p tsconfig.json && bun run copy:lib && bun run docs",
     "copy:lib": "bun run scripts/copy-lib.ts",
+    "docs": "bun run scripts/generate-docs.ts",
     "package:skill": "bun run build && bun run scripts/package-skill.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint lib",
