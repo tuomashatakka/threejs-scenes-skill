@@ -15,9 +15,12 @@ permissions:
   pages: write
   id-token: write
 
+# Queue Pages runs instead of cancelling: a run cancelled mid-deploy strands an
+# "in progress" deployment server-side, and every later deploy then 400s with
+# "cancel <sha> first" until it is cancelled via the API.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
