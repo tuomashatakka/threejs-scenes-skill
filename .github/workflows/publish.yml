@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
   pages: write
   id-token: write
 
@@ -27,6 +28,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
 
       - name: Build library and package skill
+        env:
+          GH_PAT: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           bun install --frozen-lockfile
