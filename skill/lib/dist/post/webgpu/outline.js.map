@@ -1,1 +1,0 @@
-{"version":3,"file":"outline.js","sourceRoot":"","sources":["../../../lib/post/webgpu/outline.ts"],"names":[],"mappings":"AAAA,6BAA6B;AAC7B,+EAA+E;AAC/E,gFAAgF;AAChF,0DAA0D;AAG1D,OAAO,EAAE,OAAO,EAAE,MAAM,yCAAyC,CAAA;AAMjE,MAAM,UAAU,aAAa,CAAE,KAAkB,EAAE,MAAoB,EAAE,OAAwB;IAC/F,OAAO,OAAO,CAAC,KAAK,EAAE,MAAM,EAAE,OAAO,CAAC,CAAA;AACxC,CAAC;AAED,oEAAoE"}

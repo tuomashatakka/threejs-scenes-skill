@@ -1,1 +1,0 @@
-{"version":3,"file":"sobel.js","sourceRoot":"","sources":["../../../lib/post/webgpu/sobel.ts"],"names":[],"mappings":"AAAA,2BAA2B;AAC3B,iFAAiF;AACjF,wEAAwE;AACxE,oEAAoE;AAEpE,OAAO,EAAE,KAAK,EAAE,MAAM,+CAA+C,CAAA;AAIrE,MAAM,UAAU,WAAW,CAAE,KAAgB;IAC3C,OAAO,KAAK,CAAC,KAAK,CAAC,CAAA;AACrB,CAAC;AAED,+CAA+C"}

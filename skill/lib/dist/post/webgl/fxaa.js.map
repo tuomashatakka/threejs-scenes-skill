@@ -1,1 +1,0 @@
-{"version":3,"file":"fxaa.js","sourceRoot":"","sources":["../../../lib/post/webgl/fxaa.ts"],"names":[],"mappings":"AAAA,yBAAyB;AACzB,4EAA4E;AAC5E,gFAAgF;AAChF,+EAA+E;AAC/E,iEAAiE;AAEjE,OAAO,EAAE,QAAQ,EAAE,MAAM,yCAAyC,CAAA;AAOlE,MAAM,UAAU,UAAU,CAAE,WAAwB,EAAE;IACpD,OAAO,IAAI,QAAQ,EAAE,CAAA;AACvB,CAAC;AAED,+CAA+C"}

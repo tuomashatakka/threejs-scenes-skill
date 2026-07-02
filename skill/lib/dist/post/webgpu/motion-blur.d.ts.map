@@ -1,1 +1,0 @@
-{"version":3,"file":"motion-blur.d.ts","sourceRoot":"","sources":["../../../lib/post/webgpu/motion-blur.ts"],"names":[],"mappings":"AAMA,OAAO,KAAK,EAAE,IAAI,EAAE,MAAM,cAAc,CAAA;AAIxC,MAAM,WAAW,iBAAiB;IAEhC,UAAU,CAAC,EAAE,MAAM,CAAA;CACpB;AAID,wBAAgB,gBAAgB,CAAE,KAAK,EAAE,IAAI,EAAE,YAAY,EAAE,IAAI,EAAE,OAAO,GAAE,iBAAsB,gBAKjG"}
