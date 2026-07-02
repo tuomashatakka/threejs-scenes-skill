@@ -32,9 +32,18 @@ jobs:
 
       - name: Build library and package skill
         env:
-          GH_PAT: ${{ secrets.GITHUB_TOKEN }}
+          # Private GitHub Packages dependencies can only be read by the
+          # workflow GITHUB_TOKEN when those packages have granted this repo
+          # access. Use PACKAGES_TOKEN (classic PAT with read:packages) when
+          # they live in a different/private package repo, and fall back to the
+          # workflow token for linked packages.
+          GH_PAT: ${{ secrets.PACKAGES_TOKEN || github.token }}
         run: |
           set -euo pipefail
+          if [ -z "${GH_PAT:-}" ]; then
+            echo "GH_PAT is required to install @tuomashatakka packages from GitHub Packages" >&2
+            exit 1
+          fi
           bun install --frozen-lockfile
           # tsc build + copy-lib refreshes skill/lib/dist and public/lib/dist,
           # then package-skill.ts validates SKILL.md and zips skill/ into
