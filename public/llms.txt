@@ -1,0 +1,36 @@
+# threejs-scenes
+
+> Strictly-typed factories and interfaces for building production-quality vanilla three.js (WebGL2) scenes: renderer/loop/dispose scaffolding, cameras, geometry, materials, props, animation, instancing, lighting, particles, post-processing (WebGL + WebGPU/TSL), procedural generation, voxels, infinite worlds, a context-injection module architecture, and a reactive JSX layer. Ships both as an npm package (`@tuomashatakka/threejs-scenes`) and as an installable Claude skill bundle.
+
+Everything on this site is public and may be fetched by LLMs and agents. No
+authentication is required for any URL listed here.
+
+## Documentation
+
+- [Module overview](https://tuomashatakka.github.io/threejs-scenes-skill/index.html): every submodule with its exports, live demo links, and code examples
+- [Full API reference](https://tuomashatakka.github.io/threejs-scenes-skill/api.html): generated per-export API documentation
+- [Source repository](https://github.com/tuomashatakka/threejs-scenes-skill): TypeScript sources under `lib/`, skill sources under `skill/`
+
+## Downloads (no token required)
+
+- [threejs-scenes.skill](https://tuomashatakka.github.io/threejs-scenes-skill/threejs-scenes.skill): the packaged Claude skill bundle (zip; extracts to `threejs-scenes/`)
+- [threejs-scenes.tgz](https://tuomashatakka.github.io/threejs-scenes-skill/threejs-scenes.tgz): the npm package tarball — install without a GitHub token: `npm install https://tuomashatakka.github.io/threejs-scenes-skill/threejs-scenes.tgz`
+- [Latest GitHub release](https://github.com/tuomashatakka/threejs-scenes-skill/releases/latest): same artifacts, versioned — `npm install https://github.com/tuomashatakka/threejs-scenes-skill/releases/latest/download/threejs-scenes.tgz`
+
+## Live demos
+
+- [Demo index](https://tuomashatakka.github.io/threejs-scenes-skill/index.html#demos): every demo below runs in the browser with no build step
+- [bootstrap](https://tuomashatakka.github.io/threejs-scenes-skill/demos/bootstrap.html): createApp — unidirectional state flow, fixed-step clock, seeded emitter
+- [minimal-scene](https://tuomashatakka.github.io/threejs-scenes-skill/demos/minimal-scene.html): renderer, frame loop, pointer-orbit, resize, dispose
+- [geometry](https://tuomashatakka.github.io/threejs-scenes-skill/demos/geometry.html): extrusion, vertex deformers, grid layout
+- [materials](https://tuomashatakka.github.io/threejs-scenes-skill/demos/materials.html): PBR presets, toon, matcap
+- [particles](https://tuomashatakka.github.io/threejs-scenes-skill/demos/particles.html): emitter shapes, lifetime curves, GPGPU field
+- [post-processing](https://tuomashatakka.github.io/threejs-scenes-skill/demos/post-processing.html): composer chain — bloom, grade, depth passes
+- [voxels](https://tuomashatakka.github.io/threejs-scenes-skill/demos/voxels.html): chunked voxel terrain with greedy meshing
+- [isometric-infinite](https://tuomashatakka.github.io/threejs-scenes-skill/demos/isometric-infinite.html): endless heightmap terrain under an iso camera
+
+## Optional
+
+- [three.js docs for LLMs](https://threejs.org/docs/llms.txt): upstream three.js guidelines and API index
+- [three.js full LLM reference](https://threejs.org/docs/llms-full.txt): complete TSL specification and per-page markdown catalog
+- [Package on GitHub Packages](https://github.com/tuomashatakka/threejs-scenes-skill/pkgs/npm/threejs-scenes): registry install (`npm.pkg.github.com`) — requires a GitHub token; prefer the tokenless tarball URLs above

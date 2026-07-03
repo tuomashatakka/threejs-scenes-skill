@@ -3,7 +3,8 @@
 Distilled from the [three.js manual](https://threejs.org/manual/) fundamentals
 chapters, mapped onto this library's modules. Read this when you need the
 *conceptual* model behind a feature; read the per-module reference for the API.
-Source digests live under `digests/threejs-manual/en/`.
+For the upstream source, query the live docs — `node scripts/query-threejs-docs.js
+manual en/<chapter>` or `page <ClassName>` (see [threejs-docs-lookup.md](./threejs-docs-lookup.md)).
 
 | Manual chapter | What to know | In this library |
 | --- | --- | --- |

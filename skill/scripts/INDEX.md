@@ -12,6 +12,12 @@ When adapting for live artifacts, replace bare specifiers (`three`,
 `three/addons/...`) with esm.sh URLs or wire an importmap. See `SKILL.md`
 section "Embedding Scripts in Live Artifacts".
 
+## Tooling
+
+| Script | Purpose | Reference |
+|--------|---------|-----------|
+| `query-threejs-docs.js` | CLI for the live three.js docs — per-class markdown pages, llms-full.txt sections (TSL), search, manual articles. Not a scene module; run with `node`/`bun`. | `threejs-docs-lookup.md` |
+
 ## Foundation
 
 | Script | Purpose | Reference |

@@ -60,3 +60,9 @@ rather than building one per mesh — fewer compiles, fewer state changes. For p
 sharing across modules use `MaterialPool` (see [project-architecture.md](./project-architecture.md)).
 Dispose materials (and their textures) on teardown via `disposeScene(root)`; never
 dispose a pooled/shared material a module didn't create.
+
+## Live three.js docs
+
+- API pages: [MeshStandardMaterial](https://threejs.org/docs/pages/MeshStandardMaterial.html.md), [MeshPhysicalMaterial](https://threejs.org/docs/pages/MeshPhysicalMaterial.html.md), [MeshToonMaterial](https://threejs.org/docs/pages/MeshToonMaterial.html.md), [MeshMatcapMaterial](https://threejs.org/docs/pages/MeshMatcapMaterial.html.md).
+- Node materials (WebGPU/TSL): [llms-full.txt](https://threejs.org/docs/llms-full.txt) sections *NodeMaterial* → *SpriteNodeMaterial* (`node scripts/query-threejs-docs.js section nodematerial`).
+- Manual: `node scripts/query-threejs-docs.js manual en/materials` (also `en/material-table`). Lookup guide: [threejs-docs-lookup.md](./threejs-docs-lookup.md).

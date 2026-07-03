@@ -146,3 +146,8 @@ Detect tier at boot from `navigator.hardwareConcurrency`, GPU info via
   side missing breaks the whole effect.
 - Adding/removing lights at runtime — triggers shader recompile every time.
 - Using `RectAreaLight` and expecting shadows — they don't support shadows.
+
+## Live three.js docs
+
+- API pages: [DirectionalLight](https://threejs.org/docs/pages/DirectionalLight.html.md), [HemisphereLight](https://threejs.org/docs/pages/HemisphereLight.html.md), [SpotLight](https://threejs.org/docs/pages/SpotLight.html.md), [RectAreaLight](https://threejs.org/docs/pages/RectAreaLight.html.md), [PMREMGenerator](https://threejs.org/docs/pages/PMREMGenerator.html.md).
+- Manual: `node scripts/query-threejs-docs.js manual en/lights` (also `en/shadows`). Lookup guide: [threejs-docs-lookup.md](./threejs-docs-lookup.md).

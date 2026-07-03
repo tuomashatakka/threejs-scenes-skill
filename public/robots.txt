@@ -1,0 +1,8 @@
+# All crawlers — including AI/LLM agents — are welcome on this site.
+User-agent: *
+Allow: /
+
+Sitemap: https://tuomashatakka.github.io/threejs-scenes-skill/sitemap.xml
+
+# Machine-readable site summary for LLMs:
+# https://tuomashatakka.github.io/threejs-scenes-skill/llms.txt

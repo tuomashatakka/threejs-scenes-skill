@@ -128,3 +128,8 @@ worker.postMessage({ chunkData: chunk.data, size: chunk.size }, [chunk.data.buff
 - Not marking neighbor chunks dirty on edge-voxel edits — leaves invisible
   faces visible.
 - Per-voxel `Mesh` instances — death by 1000 draw calls.
+
+## Live three.js docs
+
+- API pages: [BufferGeometry](https://threejs.org/docs/pages/BufferGeometry.html.md), [BufferAttribute](https://threejs.org/docs/pages/BufferAttribute.html.md).
+- Manual: `node scripts/query-threejs-docs.js manual en/voxel-geometry`. Lookup guide: [threejs-docs-lookup.md](./threejs-docs-lookup.md).

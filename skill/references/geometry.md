@@ -84,3 +84,8 @@ Rule of thumb: repeated identical geometry → instance; a fixed pile of distinc
 ## Disposal
 
 Every geometry you build owns GPU memory. Dispose it (or `disposeScene(root)`) on teardown — three.js never auto-frees. Deformers mutate in place so there is one geometry to dispose; addon wrappers create a new geometry, so dispose the original if you discard it.
+
+## Live three.js docs
+
+- API pages: [ExtrudeGeometry](https://threejs.org/docs/pages/ExtrudeGeometry.html.md), [LatheGeometry](https://threejs.org/docs/pages/LatheGeometry.html.md), [ShapeGeometry](https://threejs.org/docs/pages/ShapeGeometry.html.md), [TubeGeometry](https://threejs.org/docs/pages/TubeGeometry.html.md), [module-BufferGeometryUtils](https://threejs.org/docs/pages/module-BufferGeometryUtils.html.md).
+- Manual: `node scripts/query-threejs-docs.js manual en/custom-buffergeometry` (also `en/primitives`). Lookup guide: [threejs-docs-lookup.md](./threejs-docs-lookup.md).

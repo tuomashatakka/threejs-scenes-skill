@@ -1,9 +1,11 @@
 # Animation system
 
 A convenience layer over three's `AnimationMixer` / `AnimationClip` / `AnimationAction`
-(see the digested manual at `digests/threejs-manual/en/` → *animation-system*, and the
-API pages `digests/threejs-docs/AnimationMixer.md`, `AnimationClip.md`,
-`AnimationAction.md`). From the `animation` module
+(upstream docs: `node scripts/query-threejs-docs.js manual en/animation-system`,
+and the API pages [AnimationMixer](https://threejs.org/docs/pages/AnimationMixer.html.md),
+[AnimationClip](https://threejs.org/docs/pages/AnimationClip.html.md),
+[AnimationAction](https://threejs.org/docs/pages/AnimationAction.html.md)).
+From the `animation` module
 (`@tuomashatakka/threejs-scenes/animation`, or `@scenes`).
 
 ## Controller

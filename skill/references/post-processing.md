@@ -231,3 +231,9 @@ const PASSES = {
 - Mixing `composer.render()` and `renderer.render()` — pick one per frame.
 - Bloom radius scaled with viewport — looks dramatic on small screens, weak
   on big ones. Use a fixed pixel-equivalent radius.
+
+## Live three.js docs
+
+- API pages: [EffectComposer](https://threejs.org/docs/pages/EffectComposer.html.md), [RenderPass](https://threejs.org/docs/pages/RenderPass.html.md), [ShaderPass](https://threejs.org/docs/pages/ShaderPass.html.md), [UnrealBloomPass](https://threejs.org/docs/pages/UnrealBloomPass.html.md), [OutputPass](https://threejs.org/docs/pages/OutputPass.html.md).
+- WebGPU/TSL pipeline: [llms-full.txt](https://threejs.org/docs/llms-full.txt) section *Render Pipeline* (`node scripts/query-threejs-docs.js section render pipeline`).
+- Manual: `node scripts/query-threejs-docs.js manual en/post-processing` (also `en/webgpu-postprocessing`). Lookup guide: [threejs-docs-lookup.md](./threejs-docs-lookup.md).
