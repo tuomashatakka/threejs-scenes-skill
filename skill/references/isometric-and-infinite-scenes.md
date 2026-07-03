@@ -160,3 +160,8 @@ the same chunk manager but key chunks by x only (1D), not (cx, cz).
 - Forgetting that ortho cameras have no perspective foreshortening — long
   thin objects look weird. Use a perspective camera with very low FOV (~15°)
   if you need "fake iso" with subtle depth cues.
+
+## Live three.js docs
+
+- API pages: [OrthographicCamera](https://threejs.org/docs/pages/OrthographicCamera.html.md), [Fog](https://threejs.org/docs/pages/Fog.html.md), [FogExp2](https://threejs.org/docs/pages/FogExp2.html.md).
+- Manual: `node scripts/query-threejs-docs.js manual en/fog`. Lookup guide: [threejs-docs-lookup.md](./threejs-docs-lookup.md).

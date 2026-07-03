@@ -126,3 +126,8 @@ This needs zero per-frame JS work — set the attributes once, animate via
   themselves and cause visual sorting bugs.
 - Computing `Math.random()` per particle per frame on the CPU — pre-bake
   randomness into attributes once.
+
+## Live three.js docs
+
+- API pages: [Points](https://threejs.org/docs/pages/Points.html.md), [PointsMaterial](https://threejs.org/docs/pages/PointsMaterial.html.md), [GPUComputationRenderer](https://threejs.org/docs/pages/GPUComputationRenderer.html.md), [Sprite](https://threejs.org/docs/pages/Sprite.html.md).
+- Lookup guide: [threejs-docs-lookup.md](./threejs-docs-lookup.md).

@@ -144,3 +144,8 @@ const QUALITY = {
   framebuffer memory.
 - `setPixelRatio(window.devicePixelRatio)` uncapped on retina mobile —
   effectively 3× the fragment work.
+
+## Live three.js docs
+
+- API pages: [LOD](https://threejs.org/docs/pages/LOD.html.md), [WebGLRenderer](https://threejs.org/docs/pages/WebGLRenderer.html.md) (`.info` for draw-call/memory counters).
+- Manual: `node scripts/query-threejs-docs.js manual en/optimize-lots-of-objects-animated` (also `en/cleanup`, `en/how-to-dispose-of-objects`, `en/offscreencanvas`, `en/rendering-on-demand`). Lookup guide: [threejs-docs-lookup.md](./threejs-docs-lookup.md).

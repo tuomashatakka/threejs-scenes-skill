@@ -180,3 +180,9 @@ Do this after the scene is fully populated but before the first visible frame.
   transforms when normals don't curve much).
 - Sampling a texture in a loop with non-constant index — kills perf and may not
   compile on older drivers.
+
+## Live three.js docs
+
+- TSL (WebGPU shading): `node scripts/query-threejs-docs.js section tsl specification` — the full spec lives in [llms-full.txt](https://threejs.org/docs/llms-full.txt) (sections *Learning TSL* → *Transitioning common GLSL properties to TSL*).
+- API pages: [ShaderMaterial](https://threejs.org/docs/pages/ShaderMaterial.html.md), [RawShaderMaterial](https://threejs.org/docs/pages/RawShaderMaterial.html.md), [module-UniformsUtils](https://threejs.org/docs/pages/module-UniformsUtils.html.md).
+- Lookup guide: [threejs-docs-lookup.md](./threejs-docs-lookup.md).

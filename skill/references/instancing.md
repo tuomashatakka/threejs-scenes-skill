@@ -89,3 +89,8 @@ A demo with 9,000 chair meshes dropped to ~300 draw calls after switching to
   `BatchedMesh` for one repeated geometry (use `InstancedMesh`).
 - Setting `frustumCulled = true` on a single InstancedMesh covering a huge area —
   three.js culls the entire mesh as one unit, which never helps for ground cover.
+
+## Live three.js docs
+
+- API pages: [InstancedMesh](https://threejs.org/docs/pages/InstancedMesh.html.md), [BatchedMesh](https://threejs.org/docs/pages/BatchedMesh.html.md), [InstancedBufferAttribute](https://threejs.org/docs/pages/InstancedBufferAttribute.html.md), [InstancedBufferGeometry](https://threejs.org/docs/pages/InstancedBufferGeometry.html.md).
+- Manual: `node scripts/query-threejs-docs.js manual en/optimize-lots-of-objects`. Lookup guide: [threejs-docs-lookup.md](./threejs-docs-lookup.md).

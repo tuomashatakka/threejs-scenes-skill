@@ -30,6 +30,7 @@ Load only what the current task needs. Don't read every file by default.
 | File | Load when… |
 |------|-----------|
 | `references/core-principles.md` | starting any new three.js work — read first |
+| `references/threejs-docs-lookup.md` | you need upstream three.js API/TSL detail — query the live docs (`scripts/query-threejs-docs.js`) instead of guessing |
 | `references/fundamentals.md` | the three.js mental model — primitives, scenegraph, materials, textures, lights, cameras, shadows, fog, render targets, custom BufferGeometry, physics (manual distilled, mapped to modules) |
 | `references/project-architecture.md` | scaffolding a project, organizing folders, wiring the frame loop |
 | `references/instancing.md` | rendering many copies of geometry; choosing `InstancedMesh` vs `BatchedMesh` |
@@ -65,6 +66,23 @@ Load only what the current task needs. Don't read every file by default.
 **Multi-module / shipping scene:** always read `production-lessons.md` first.
 **Mesh / material / prop authoring:** `geometry.md` + `materials.md` + `props-and-factories.md`.
 **Animation:** `animation-system.md`. **Declarative scenes:** `jsx-layer.md` + `library-local.md`.
+
+## Querying the three.js docs
+
+Never answer upstream three.js API questions from memory. three.js publishes
+LLM-friendly docs — `https://threejs.org/docs/llms.txt` (guidelines + curated
+index), `https://threejs.org/docs/llms-full.txt` (full TSL reference + page
+catalog), and per-class markdown at `https://threejs.org/docs/pages/<Name>.html.md`.
+Use the bundled CLI to fetch exactly what the task needs:
+
+```sh
+node scripts/query-threejs-docs.js page InstancedMesh      # one class as markdown
+node scripts/query-threejs-docs.js section render pipeline # one llms-full.txt section
+node scripts/query-threejs-docs.js search compute shader   # find pages + sections
+```
+
+See `references/threejs-docs-lookup.md` for the full command set and a
+topic → relevant-pages map for every reference file in this skill.
 
 ## Scripts Index
 

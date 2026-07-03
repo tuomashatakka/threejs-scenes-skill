@@ -140,3 +140,8 @@ use uncompressed only for procedural data textures.
 - Loading PNG in a hot loop — use `KTX2` or pre-decode via `ImageBitmapLoader`.
 - Setting `anisotropy` to a value larger than `getMaxAnisotropy()` returns —
   silently capped, no error.
+
+## Live three.js docs
+
+- API pages: [Texture](https://threejs.org/docs/pages/Texture.html.md), [DataTexture](https://threejs.org/docs/pages/DataTexture.html.md), [TextureLoader](https://threejs.org/docs/pages/TextureLoader.html.md), [CanvasTexture](https://threejs.org/docs/pages/CanvasTexture.html.md).
+- Manual: `node scripts/query-threejs-docs.js manual en/textures` (also `en/canvas-textures`, `en/indexed-textures`). Lookup guide: [threejs-docs-lookup.md](./threejs-docs-lookup.md).

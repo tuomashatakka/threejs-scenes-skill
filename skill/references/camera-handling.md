@@ -171,3 +171,8 @@ canvas.addEventListener('pointerdown', (e) => {
   — raycasts off-screen when canvas isn't at origin.
 - Updating `OrbitControls.target` without re-fitting `controls.minDistance`
   — camera can clip into the new target.
+
+## Live three.js docs
+
+- API pages: [PerspectiveCamera](https://threejs.org/docs/pages/PerspectiveCamera.html.md), [OrthographicCamera](https://threejs.org/docs/pages/OrthographicCamera.html.md), [OrbitControls](https://threejs.org/docs/pages/OrbitControls.html.md).
+- Manual: `node scripts/query-threejs-docs.js manual en/cameras`. Lookup guide: [threejs-docs-lookup.md](./threejs-docs-lookup.md).

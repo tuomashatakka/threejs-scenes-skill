@@ -96,3 +96,8 @@ Needs `DepthTexture` bound on the main render target.
   fixes it) or accept the bug for foliage where it doesn't matter.
 - Billboard math computed in JS each frame via `lookAt` — slow for high
   counts; do it in the shader.
+
+## Live three.js docs
+
+- API pages: [Sprite](https://threejs.org/docs/pages/Sprite.html.md), [SpriteMaterial](https://threejs.org/docs/pages/SpriteMaterial.html.md).
+- Manual: `node scripts/query-threejs-docs.js manual en/billboards`. Lookup guide: [threejs-docs-lookup.md](./threejs-docs-lookup.md).
