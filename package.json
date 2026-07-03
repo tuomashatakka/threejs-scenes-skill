@@ -1,6 +1,6 @@
 {
   "name": "@tuomashatakka/threejs-scenes",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
