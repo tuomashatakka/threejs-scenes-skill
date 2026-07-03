@@ -1,8 +1,9 @@
 name: Publish package, showcase & skill
 
-# Publishes the npm package to GitHub Packages, then publishes the public/
-# showcase and packaged threejs-scenes.skill to GitHub Pages. Requires Pages source
-# set to "GitHub Actions" once in repo Settings → Pages.
+# Publishes the npm package to GitHub Packages, creates a GitHub release with
+# the .skill archive + npm tarball (both downloadable without a token), then
+# publishes the public/ showcase and packaged threejs-scenes.skill to GitHub
+# Pages. Requires Pages source set to "GitHub Actions" once in repo Settings → Pages.
 
 on:
   push:
@@ -10,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write # create releases + upload release assets
   packages: write
   pages: write
   id-token: write
@@ -51,6 +52,18 @@ jobs:
           bun run build
           bun run scripts/package-skill.ts
 
+      - name: Pack npm tarball
+        run: |
+          set -euo pipefail
+          # npm pack produces the same tarball `bun publish` would upload
+          # (tuomashatakka-threejs-scenes-<version>.tgz). It is attached to the
+          # GitHub release and copied onto the Pages site so the package can be
+          # installed without a GitHub Packages token:
+          #   npm install https://github.com/${{ github.repository }}/releases/latest/download/threejs-scenes.tgz
+          npm pack --ignore-scripts
+          cp tuomashatakka-threejs-scenes-*.tgz threejs-scenes.tgz
+          ls -la ./*.tgz threejs-scenes.skill
+
       - name: Publish package to GitHub Packages
         if: github.event_name == 'push'
         env:
@@ -72,12 +85,41 @@ jobs:
             bun publish --registry https://npm.pkg.github.com
           fi
 
+      - name: Create GitHub release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PKG_VER=$(node -p "require('./package.json').version")
+          TAG="v$PKG_VER"
+
+          # One release per version; re-runs of an already-released version
+          # refresh the assets instead of failing.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists — refreshing assets"
+          else
+            gh release create "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "threejs-scenes $PKG_VER" \
+              --generate-notes
+          fi
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber \
+            threejs-scenes.skill \
+            threejs-scenes.tgz \
+            tuomashatakka-threejs-scenes-"$PKG_VER".tgz
+
       - name: Assemble site
         run: |
           set -euo pipefail
           mkdir -p _site
           cp -r public/. _site/
           cp threejs-scenes.skill _site/
+          # tokenless npm install straight from Pages:
+          #   npm install https://tuomashatakka.github.io/threejs-scenes-skill/threejs-scenes.tgz
+          cp threejs-scenes.tgz _site/
+          cp tuomashatakka-threejs-scenes-*.tgz _site/
           ls -la _site
 
       - uses: actions/configure-pages@v5
