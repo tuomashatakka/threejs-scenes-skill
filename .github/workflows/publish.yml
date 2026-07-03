@@ -72,17 +72,23 @@ jobs:
           set -euo pipefail
           PKG_VER=$(node -p "require('./package.json').version")
 
-          # Check if this version already exists on the registry to avoid
-          # "Cannot publish over existing version" errors for unchanged versions.
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: token $GH_PAT" \
-            "https://npm.pkg.github.com/@tuomashatakka%2fthreejs-scenes/$PKG_VER" \
-            2>/dev/null || echo "000")
-
-          if [ "$HTTP_STATUS" = "200" ]; then
+          # Skip publishing when this version already exists on the registry.
+          # npm view resolves auth from .npmrc (${GH_PAT}); the raw
+          # npm.pkg.github.com/<pkg>/<version> endpoint used previously does
+          # not reliably return 200 for existing versions, which let publish
+          # run into a 409. As a second guard, a 409 "cannot publish over
+          # existing version" from bun publish is treated as already-published
+          # instead of failing the run — any other publish error still fails.
+          if npm view "@tuomashatakka/threejs-scenes@$PKG_VER" version >/dev/null 2>&1; then
             echo "Version $PKG_VER already published — skipping"
+          elif OUT=$(bun publish --registry https://npm.pkg.github.com 2>&1); then
+            echo "$OUT"
+          elif echo "$OUT" | grep -qiE 'cannot publish over existing version|409 conflict'; then
+            echo "$OUT"
+            echo "Version $PKG_VER already published (409) — continuing"
           else
-            bun publish --registry https://npm.pkg.github.com
+            echo "$OUT" >&2
+            exit 1
           fi
 
       - name: Create GitHub release
