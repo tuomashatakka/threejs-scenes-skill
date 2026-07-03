@@ -1,6 +1,6 @@
 ---
 name: threejs-scenes
-version: 1.7.0
+version: 1.7.1
 description: >
   Build production-quality three.js WebGL scenes with vanilla three.js (no R3F).
   Use this skill whenever the user mentions three.js, WebGL, 3D scenes in the browser,
