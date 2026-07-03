@@ -1,4 +1,10 @@
 export * from './types.js';
+export * as primitives from './primitives/index.js';
+export * as raster from './raster/index.js';
+export * as compose from './compose/index.js';
+export * as view from './view/index.js';
+export * as state from './state/index.js';
+export * as scaffold from './scaffold/index.js';
 export * from './core/index.js';
 export * from './camera/index.js';
 export * from './instancing/index.js';

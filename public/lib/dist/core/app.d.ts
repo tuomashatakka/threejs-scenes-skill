@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Clock } from './clock.js';
 import type { Store, Reducer } from './state.js';
-import type { RendererOptions } from './renderer.js';
+import type { RendererOptions, ResizeHandler } from './renderer.js';
 import type { FrameContext, SceneContext, Disposable } from '../types.js';
 /**
  * A scene feature in the unidirectional flow. `build` creates objects once;
@@ -30,8 +30,13 @@ export interface AppOptions<S extends object, A = Partial<S>> {
     /** Injectable time source. Pass createClock({ mode: 'fixed' }) for determinism. */
     clock?: Clock;
     renderer?: Omit<RendererOptions, 'canvas'>;
-    camera?: AppCameraOptions;
+    /** Perspective-camera options, or a prebuilt camera (e.g. an iso ortho rig). */
+    camera?: AppCameraOptions | THREE.Camera;
     background?: THREE.ColorRepresentation;
+    /** Runs after the built-in resize handling — resize ortho frustums, composers, … */
+    onResize?: ResizeHandler;
+    /** Replaces the default renderer.render(scene, camera) — wire a composer here. */
+    render?: () => void;
     /** Standard three-light rig. Default true. */
     lighting?: boolean;
     /** Built-in pointer orbit. Default true; disable when using a camera controller. */
@@ -51,5 +56,5 @@ export interface App<S extends object, A = Partial<S>> extends Disposable {
     start(): void;
     stop(): void;
 }
-export declare function createApp<S extends object = Record<string, unknown>, A = Partial<S>>({ canvas, state, reducer, seed, clock, renderer: rendererOptions, camera: cameraOptions, background, lighting, orbit, modules, onFrame, }: AppOptions<S, A>): App<S, A>;
+export declare function createApp<S extends object = Record<string, unknown>, A = Partial<S>>({ canvas, state, reducer, seed, clock, renderer: rendererOptions, camera: cameraOptions, background, lighting, orbit, modules, onFrame, onResize, render, }: AppOptions<S, A>): App<S, A>;
 //# sourceMappingURL=app.d.ts.map

@@ -4,6 +4,15 @@
 // may also import from the subpaths: 'threejs-scenes/core',
 // 'threejs-scenes/post', 'threejs-scenes/jsx', etc.
 export * from './types.js';
+// Domain namespaces (1.6): the same library grouped by concern. Prefer these
+// (or the matching subpaths /primitives /raster /compose /view /state
+// /scaffold, and the curated barrel /main) in new code.
+export * as primitives from './primitives/index.js';
+export * as raster from './raster/index.js';
+export * as compose from './compose/index.js';
+export * as view from './view/index.js';
+export * as state from './state/index.js';
+export * as scaffold from './scaffold/index.js';
 export * from './core/index.js';
 export * from './camera/index.js';
 export * from './instancing/index.js';

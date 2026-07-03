@@ -14,16 +14,22 @@ import { createClock } from './clock.js';
 import { createStore } from './state.js';
 import { setupStandardLighting } from '../lighting/lighting.js';
 import { createSeededRng } from '../procedural/rng.js';
-export function createApp({ canvas, state = {}, reducer, seed = 1, clock = createClock(), renderer: rendererOptions, camera: cameraOptions, background = '#0a0a14', lighting = true, orbit = true, modules = [], onFrame, }) {
+export function createApp({ canvas, state = {}, reducer, seed = 1, clock = createClock(), renderer: rendererOptions, camera: cameraOptions, background = '#0a0a14', lighting = true, orbit = true, modules = [], onFrame, onResize, render, }) {
     if (!canvas)
         throw new Error('createApp: canvas required');
     const renderer = createRenderer({ canvas, ...rendererOptions });
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(background);
-    const aspect = canvas.clientWidth / canvas.clientHeight || 1;
-    const camera = new THREE.PerspectiveCamera(cameraOptions?.fov ?? 50, aspect, cameraOptions?.near ?? 0.1, cameraOptions?.far ?? 200);
-    camera.position.set(...cameraOptions?.position ?? [4, 3, 6]);
-    camera.lookAt(new THREE.Vector3(...cameraOptions?.lookAt ?? [0, 0, 0]));
+    let camera;
+    if (cameraOptions instanceof THREE.Camera)
+        camera = cameraOptions;
+    else {
+        const aspect = canvas.clientWidth / canvas.clientHeight || 1;
+        const perspective = new THREE.PerspectiveCamera(cameraOptions?.fov ?? 50, aspect, cameraOptions?.near ?? 0.1, cameraOptions?.far ?? 200);
+        perspective.position.set(...cameraOptions?.position ?? [4, 3, 6]);
+        perspective.lookAt(new THREE.Vector3(...cameraOptions?.lookAt ?? [0, 0, 0]));
+        camera = perspective;
+    }
     const lights = lighting ? setupStandardLighting(scene, renderer) : null;
     const store = createStore(state, reducer);
     const rng = createSeededRng(seed);
@@ -57,7 +63,7 @@ export function createApp({ canvas, state = {}, reducer, seed = 1, clock = creat
             },
         });
     }
-    const detachResize = attachResizeObserver(renderer, camera, canvas);
+    const detachResize = attachResizeObserver(renderer, camera, canvas, onResize);
     for (const module of modules)
         module.build(ctx);
     renderer.compile(scene, camera);
@@ -74,7 +80,10 @@ export function createApp({ canvas, state = {}, reducer, seed = 1, clock = creat
     function pump(realDelta) {
         for (const delta of clock.advance(realDelta))
             step(delta);
-        renderer.render(scene, camera);
+        if (render)
+            render();
+        else
+            renderer.render(scene, camera);
     }
     const stopFrame = loop.onFrame(({ delta }) => pump(delta));
     loop.stop();

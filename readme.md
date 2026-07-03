@@ -114,6 +114,130 @@ render(<Spinner />, { canvas })
 Generated from the built `.d.ts` files by `bun run docs` — full declarations, doc comments,
 runnable examples and live previews on the [API reference page](https://tuomashatakka.github.io/threejs-scenes-skill/api.html).
 
+#### `@tuomashatakka/threejs-scenes/scaffold`
+
+Genre-level wiring in one call (1.6): isometric scenes (iso camera + pan/zoom + infinite ground), orbit product viewers (turntable stage + fit-to-object), third-person follow, on-rails segment streaming, and first-person pointer-lock movement. Every scaffold wraps createApp and accepts a plain object, a store, or any { get, subscribe } controller as its state source.
+
+- **`createApp`** *(function)*
+
+  ```ts
+  function createApp<S extends object = Record<string, unknown>, A = Partial<S>>({ canvas, state, reducer, seed, clock, renderer: rendererOptions, camera: cameraOptions, background, lighting, orbit, modules, onFrame, onResize, render, }: AppOptions<S, A>): App<S, A>;
+  ```
+- **`createIsoScaffold`** *(function)*
+
+  ```ts
+  function createIsoScaffold<S extends object = Record<string, unknown>>({ state, viewSize, flavor, near, far, pan, zoom, ground: groundOptions, ...appOptions }: IsoScaffoldOptions<S>): IsoScaffold<S>;
+  ```
+- **`createOrbitScaffold`** *(function)*
+
+  ```ts
+  function createOrbitScaffold<S extends object = Record<string, unknown>>({ state, autoRotate, ...appOptions }: OrbitScaffoldOptions<S>): OrbitScaffold<S>;
+  ```
+- **`createTppScaffold`** *(function)*
+
+  ```ts
+  function createTppScaffold<S extends object = Record<string, unknown>>({ state, target, offset, lookAhead, stiffness, rotationStiffness, ...appOptions }: TppScaffoldOptions<S>): TppScaffold<S>;
+  ```
+- **`createRailsScaffold`** *(function)*
+
+  ```ts
+  function createRailsScaffold<S extends object = Record<string, unknown>>({ state, segment, prefetchDistance, maxActive, lift, tension, yawRange, pitchRange, smoothing, speed, ...appOptions }: RailsScaffoldOptions<S>): RailsScaffold<S>;
+  ```
+- **`createFpsScaffold`** *(function)*
+
+  ```ts
+  function createFpsScaffold<S extends object = Record<string, unknown>>({ state, speed, lookSpeed, eyeHeight, pointerLock, collide, groundHeight, ...appOptions }: FpsScaffoldOptions<S>): FpsScaffold<S>;
+  ```
+- **`AppModule`** *(interface)* — A scene feature in the unidirectional flow.
+- **`AppCameraOptions`** *(interface)*
+- **`AppOptions`** *(interface)*
+- **`App`** *(interface)*
+- **`IsoScaffoldOptions`** *(interface)*
+- **`IsoScaffold`** *(interface)*
+- **`OrbitScaffoldOptions`** *(interface)*
+- **`OrbitScaffold`** *(interface)*
+- **`TppScaffoldOptions`** *(interface)*
+- **`TppScaffold`** *(interface)*
+- **`RailsScaffoldOptions`** *(interface)*
+- **`RailsScaffold`** *(interface)*
+- **`FpsScaffoldOptions`** *(interface)*
+- **`FpsScaffold`** *(interface)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  import { createIsoScaffold } from '@tuomashatakka/threejs-scenes/scaffold/iso'
+  
+  const iso = createIsoScaffold({
+    canvas,
+    seed:     7,
+    viewSize: 24,
+    ground:   { tileSize: 24, displace: (x, z) => noise.fbm(x / 40, 0, z / 40) * 3 },
+    modules:  [worldModule],
+  })
+  iso.app.start()
+  ```
+  </details>
+
+#### `@tuomashatakka/threejs-scenes/state`
+
+Unidirectional data flow as a layer (1.6): the serializable store, the { get, subscribe } controller protocol (plain objects are wrapped, external controllers stay bound), and tweened/lerpOnChange transition helpers that ease numeric state changes over frames — timed easing or exp-damped chase.
+
+- **`createStore`** *(function)*
+
+  ```ts
+  function createStore<S extends object, A = Partial<S>>(initial: S, reducer?: Reducer<S, A>): Store<S, A>;
+  ```
+- **`isStateController`** *(function)*
+
+  ```ts
+  function isStateController<S extends object>(source: StateSource<S> | undefined): source is StateController<S>;
+  ```
+- **`toController`** *(function)* — Normalize any state source to a controller.
+
+  ```ts
+  function toController<S extends object>(source: StateSource<S>): StateController<S>;
+  ```
+- **`resolveInitialState`** *(function)* — Mirror an external controller into an app: seed with `resolveInitialState`,.
+
+  ```ts
+  function resolveInitialState<S extends object>(source: StateSource<S> | undefined, fallback: S): S;
+  ```
+- **`bindStateSource`** *(function)*
+
+  ```ts
+  function bindStateSource<S extends object>(target: {
+  ```
+- **`tweened`** *(function)* — Follow a numeric selection of controller state, easing every change.
+
+  ```ts
+  function tweened<S extends object, V extends TweenValue>(source: StateController<S>, select: (state: S) => V, { duration, easing, stiffness }?: TweenOptions): Tweened<V>;
+  ```
+- **`lerpOnChange`** *(function)* — Apply-on-animate: like {@link tweened}, but pushes each interpolated value.
+
+  ```ts
+  function lerpOnChange<S extends object, V extends TweenValue>(source: StateController<S>, select: (state: S) => V, apply: (value: V) => void, options?: TweenOptions): Disposable & {
+  ```
+- **`EASINGS`** *(const)*
+- **`Reducer`** *(type)*
+- **`StoreListener`** *(type)*
+- **`Store`** *(interface)*
+- **`StateController`** *(interface)* — Read side of a store: the minimal contract scaffolds consume state through.
+- **`StateSource`** *(type)* — What a scaffold accepts as its state input.
+- **`Easing`** *(type)*
+- **`TweenValue`** *(type)* — Scalars and fixed-length numeric tuples — positions, scales, rgb colors.
+- **`TweenOptions`** *(interface)*
+- **`Tweened`** *(interface)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  const zoom = tweened(store, s => s.zoom, { duration: 0.3, easing: EASINGS.easeInOut })
+  loop.onFrame(ctx => { zoom.tick(ctx); camera.zoom = zoom.value(); camera.updateProjectionMatrix() })
+  store.set({ zoom: 2 })   // eases instead of snapping
+  ```
+  </details>
+
 #### `@tuomashatakka/threejs-scenes/core`
 
 Scene scaffolding: renderer factory, the canvas-loop-framecapper-backed frame loop, unidirectional app shell, injectable clocks, stores, overlays, pointer gestures, disposal and device-tier quality presets.
@@ -147,7 +271,7 @@ Live demo: [`bootstrap.html`](https://tuomashatakka.github.io/threejs-scenes-ski
 - **`createApp`** *(function)*
 
   ```ts
-  function createApp<S extends object = Record<string, unknown>, A = Partial<S>>({ canvas, state, reducer, seed, clock, renderer: rendererOptions, camera: cameraOptions, background, lighting, orbit, modules, onFrame, }: AppOptions<S, A>): App<S, A>;
+  function createApp<S extends object = Record<string, unknown>, A = Partial<S>>({ canvas, state, reducer, seed, clock, renderer: rendererOptions, camera: cameraOptions, background, lighting, orbit, modules, onFrame, onResize, render, }: AppOptions<S, A>): App<S, A>;
   ```
 - **`createOverlayScene`** *(function)*
 

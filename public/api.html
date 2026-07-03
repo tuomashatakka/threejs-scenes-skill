@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>API reference — threejs-scenes</title>
-  <meta name="description" content="Complete generated API reference for @tuomashatakka/threejs-scenes v1.4.0: every export, its exact declaration and doc comment, with runnable examples and live previews.">
+  <meta name="description" content="Complete generated API reference for @tuomashatakka/threejs-scenes v1.6.0: every export, its exact declaration and doc comment, with runnable examples and live previews.">
   <link rel="stylesheet" href="styles.css">
   <style>
     .api-card { border: 1px solid #2a3346; border-radius: 8px; padding: .2rem 1rem .8rem; margin: .8rem 0; background: #10141f; }
@@ -35,11 +35,13 @@
   <a class="skip-link" href="#main">Skip to content</a>
   <header>
     <h1>API reference</h1>
-    <p><code>@tuomashatakka/threejs-scenes</code> v1.4.0 — every export with its exact declaration, generated from the package's <code>.d.ts</code> files. See the <a href="index.html">showcase</a> for the guided tour.</p>
+    <p><code>@tuomashatakka/threejs-scenes</code> v1.6.0 — every export with its exact declaration, generated from the package's <code>.d.ts</code> files. See the <a href="index.html">showcase</a> for the guided tour.</p>
   </header>
   <main id="main">
     <nav aria-label="Module table of contents">
       <ul>
+        <li><a href="#api-scaffold">scaffold</a></li>
+        <li><a href="#api-state">state</a></li>
         <li><a href="#api-core">core</a></li>
         <li><a href="#api-camera">camera</a></li>
         <li><a href="#api-instancing">instancing</a></li>
@@ -60,6 +62,482 @@
         <li><a href="#api-types">types</a></li>
       </ul>
     </nav>
+    <section id="api-scaffold" aria-labelledby="api-scaffold-h">
+      <h2 id="api-scaffold-h"><code>@tuomashatakka/threejs-scenes/scaffold</code></h2>
+      <p>Genre-level wiring in one call (1.6): isometric scenes (iso camera + pan/zoom + infinite ground), orbit product viewers (turntable stage + fit-to-object), third-person follow, on-rails segment streaming, and first-person pointer-lock movement. Every scaffold wraps createApp and accepts a plain object, a store, or any { get, subscribe } controller as its state source.</p>
+      <pre class="api-example"><code>import { createIsoScaffold } from '@tuomashatakka/threejs-scenes/scaffold/iso'
+
+const iso = createIsoScaffold({
+  canvas,
+  seed:     7,
+  viewSize: 24,
+  ground:   { tileSize: 24, displace: (x, z) =&gt; noise.fbm(x / 40, 0, z / 40) * 3 },
+  modules:  [worldModule],
+})
+iso.app.start()</code></pre>
+
+      <article class="api-card" id="api-scaffold-createapp">
+        <div class="api-card-head">
+          <h4><code>createApp</code> <span class="badge">function</span></h4>
+
+        </div>
+        
+        <pre><code>function createApp&lt;S extends object = Record&lt;string, unknown&gt;, A = Partial&lt;S&gt;&gt;({ canvas, state, reducer, seed, clock, renderer: rendererOptions, camera: cameraOptions, background, lighting, orbit, modules, onFrame, onResize, render, }: AppOptions&lt;S, A&gt;): App&lt;S, A&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-createisoscaffold">
+        <div class="api-card-head">
+          <h4><code>createIsoScaffold</code> <span class="badge">function</span></h4>
+
+        </div>
+        
+        <pre><code>function createIsoScaffold&lt;S extends object = Record&lt;string, unknown&gt;&gt;({ state, viewSize, flavor, near, far, pan, zoom, ground: groundOptions, ...appOptions }: IsoScaffoldOptions&lt;S&gt;): IsoScaffold&lt;S&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-createorbitscaffold">
+        <div class="api-card-head">
+          <h4><code>createOrbitScaffold</code> <span class="badge">function</span></h4>
+
+        </div>
+        
+        <pre><code>function createOrbitScaffold&lt;S extends object = Record&lt;string, unknown&gt;&gt;({ state, autoRotate, ...appOptions }: OrbitScaffoldOptions&lt;S&gt;): OrbitScaffold&lt;S&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-createtppscaffold">
+        <div class="api-card-head">
+          <h4><code>createTppScaffold</code> <span class="badge">function</span></h4>
+
+        </div>
+        
+        <pre><code>function createTppScaffold&lt;S extends object = Record&lt;string, unknown&gt;&gt;({ state, target, offset, lookAhead, stiffness, rotationStiffness, ...appOptions }: TppScaffoldOptions&lt;S&gt;): TppScaffold&lt;S&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-createrailsscaffold">
+        <div class="api-card-head">
+          <h4><code>createRailsScaffold</code> <span class="badge">function</span></h4>
+
+        </div>
+        
+        <pre><code>function createRailsScaffold&lt;S extends object = Record&lt;string, unknown&gt;&gt;({ state, segment, prefetchDistance, maxActive, lift, tension, yawRange, pitchRange, smoothing, speed, ...appOptions }: RailsScaffoldOptions&lt;S&gt;): RailsScaffold&lt;S&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-createfpsscaffold">
+        <div class="api-card-head">
+          <h4><code>createFpsScaffold</code> <span class="badge">function</span></h4>
+
+        </div>
+        
+        <pre><code>function createFpsScaffold&lt;S extends object = Record&lt;string, unknown&gt;&gt;({ state, speed, lookSpeed, eyeHeight, pointerLock, collide, groundHeight, ...appOptions }: FpsScaffoldOptions&lt;S&gt;): FpsScaffold&lt;S&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-appmodule">
+        <div class="api-card-head">
+          <h4><code>AppModule</code> <span class="badge">interface</span></h4>
+
+        </div>
+        <p>A scene feature in the unidirectional flow. `build` creates objects once;
+`update` projects the current state onto them every simulation tick. Modules
+read state — they never write it back.</p>
+        <pre><code>interface AppModule&lt;S extends object = Record&lt;string, unknown&gt;&gt; {
+    name: string;
+    build(ctx: SceneContext): void;
+    update?(state: S, frame: FrameContext, ctx: SceneContext): void;
+    dispose(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-appcameraoptions">
+        <div class="api-card-head">
+          <h4><code>AppCameraOptions</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface AppCameraOptions {
+    fov?: number;
+    near?: number;
+    far?: number;
+    position?: readonly [number, number, number];
+    lookAt?: readonly [number, number, number];
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-appoptions">
+        <div class="api-card-head">
+          <h4><code>AppOptions</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface AppOptions&lt;S extends object, A = Partial&lt;S&gt;&gt; {
+    canvas: HTMLCanvasElement;
+    /** Initial serializable app state. Defaults to an empty object. */
+    state?: S;
+    reducer?: Reducer&lt;S, A&gt;;
+    seed?: number;
+    /** Injectable time source. Pass createClock({ mode: 'fixed' }) for determinism. */
+    clock?: Clock;
+    renderer?: Omit&lt;RendererOptions, 'canvas'&gt;;
+    /** Perspective-camera options, or a prebuilt camera (e.g. an iso ortho rig). */
+    camera?: AppCameraOptions | THREE.Camera;
+    background?: THREE.ColorRepresentation;
+    /** Runs after the built-in resize handling — resize ortho frustums, composers, … */
+    onResize?: ResizeHandler;
+    /** Replaces the default renderer.render(scene, camera) — wire a composer here. */
+    render?: () =&gt; void;
+    /** Standard three-light rig. Default true. */
+    lighting?: boolean;
+    /** Built-in pointer orbit. Default true; disable when using a camera controller. */
+    orbit?: boolean;
+    modules?: AppModule&lt;S&gt;[];
+    /** Runs after module updates, before render — the place for app-level per-frame glue. */
+    onFrame?: (state: S, frame: FrameContext, ctx: SceneContext) =&gt; void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-app">
+        <div class="api-card-head">
+          <h4><code>App</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface App&lt;S extends object, A = Partial&lt;S&gt;&gt; extends Disposable {
+    ctx: SceneContext;
+    store: Store&lt;S, A&gt;;
+    getState(): S;
+    setState(patch: Partial&lt;S&gt;): void;
+    dispatch(action: A): void;
+    /** Advance the simulation by `realDelta` seconds (default: one clock step) and render. */
+    tick(realDelta?: number): void;
+    start(): void;
+    stop(): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-isoscaffoldoptions">
+        <div class="api-card-head">
+          <h4><code>IsoScaffoldOptions</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface IsoScaffoldOptions&lt;S extends object&gt; extends Omit&lt;AppOptions&lt;S&gt;, 'camera' | 'orbit' | 'state'&gt;, IsoCameraOptions {
+    /** Plain object, store, or controller — external controllers stay bound. */
+    state?: StateSource&lt;S&gt;;
+    /** Drag panning in the ground plane. Default true. */
+    pan?: boolean;
+    /** viewSize clamp for pinch/wheel zoom. Default [6, 80]; false disables zoom. */
+    zoom?: readonly [number, number] | false;
+    /** Recentering tiled terrain following the pan focus. Off by default. */
+    ground?: InfiniteGroundOptions;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-isoscaffold">
+        <div class="api-card-head">
+          <h4><code>IsoScaffold</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface IsoScaffold&lt;S extends object&gt; extends Disposable {
+    app: App&lt;S&gt;;
+    camera: THREE.OrthographicCamera;
+    /** The pan focus in the ground plane — tiles recenter around it. */
+    focus: THREE.Vector3;
+    ground: InfiniteGround | null;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-orbitscaffoldoptions">
+        <div class="api-card-head">
+          <h4><code>OrbitScaffoldOptions</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface OrbitScaffoldOptions&lt;S extends object&gt; extends Omit&lt;AppOptions&lt;S&gt;, 'state'&gt; {
+    state?: StateSource&lt;S&gt;;
+    /** Turntable speed in radians/second. Default 0 (off). */
+    autoRotate?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-orbitscaffold">
+        <div class="api-card-head">
+          <h4><code>OrbitScaffold</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface OrbitScaffold&lt;S extends object&gt; extends Disposable {
+    app: App&lt;S&gt;;
+    /** Auto-rotating content root — add viewer content here. */
+    stage: THREE.Group;
+    /** Frame an object: distance the camera so it fits with `margin` headroom. */
+    fitTo(object: THREE.Object3D, margin?: number): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-tppscaffoldoptions">
+        <div class="api-card-head">
+          <h4><code>TppScaffoldOptions</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface TppScaffoldOptions&lt;S extends object&gt; extends Omit&lt;AppOptions&lt;S&gt;, 'orbit' | 'state'&gt; {
+    state?: StateSource&lt;S&gt;;
+    /** Object to chase; can also be set later with setTarget. */
+    target?: THREE.Object3D;
+    /** Camera offset in the target's local frame. Default [0, 3, -6]. */
+    offset?: Vec3Tuple;
+    /** Look-at point offset ahead of the target. Default [0, 1, 4]. */
+    lookAhead?: Vec3Tuple;
+    stiffness?: number;
+    rotationStiffness?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-tppscaffold">
+        <div class="api-card-head">
+          <h4><code>TppScaffold</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface TppScaffold&lt;S extends object&gt; extends Disposable {
+    app: App&lt;S&gt;;
+    setTarget(target: THREE.Object3D | null): void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-railsscaffoldoptions">
+        <div class="api-card-head">
+          <h4><code>RailsScaffoldOptions</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface RailsScaffoldOptions&lt;S extends object&gt; extends Omit&lt;AppOptions&lt;S&gt;, 'orbit' | 'state'&gt;, SegmentStreamOptions, PathCameraOptions {
+    state?: StateSource&lt;S&gt;;
+    /** Build segment #index. Runs ahead of the camera; keep it deterministic via rng. */
+    segment: (index: number, rng: SeededRng) =&gt; StreamSegmentInput;
+    /** Append the next segment when less than this path length remains. Default 40. */
+    prefetchDistance?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-railsscaffold">
+        <div class="api-card-head">
+          <h4><code>RailsScaffold</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface RailsScaffold&lt;S extends object&gt; extends Disposable {
+    app: App&lt;S&gt;;
+    stream: SegmentStream;
+    rig: PathCamera;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-fpsscaffoldoptions">
+        <div class="api-card-head">
+          <h4><code>FpsScaffoldOptions</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface FpsScaffoldOptions&lt;S extends object&gt; extends Omit&lt;AppOptions&lt;S&gt;, 'orbit' | 'state'&gt; {
+    state?: StateSource&lt;S&gt;;
+    /** Movement speed, units/second. Default 5. */
+    speed?: number;
+    /** Radians of yaw/pitch per pixel of pointer movement. Default 0.0022. */
+    lookSpeed?: number;
+    /** Camera height above the ground. Default 1.7. */
+    eyeHeight?: number;
+    /** Request pointer lock on canvas click. Default true (drag-look otherwise). */
+    pointerLock?: boolean;
+    /** Veto/adjust movement: return the corrected position, or null to block. */
+    collide?: (next: THREE.Vector3, previous: THREE.Vector3) =&gt; THREE.Vector3 | null;
+    /** Terrain height under (x, z); eyeHeight rides on top of it. */
+    groundHeight?: (x: number, z: number) =&gt; number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-scaffold-fpsscaffold">
+        <div class="api-card-head">
+          <h4><code>FpsScaffold</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface FpsScaffold&lt;S extends object&gt; extends Disposable {
+    app: App&lt;S&gt;;
+    /** Current yaw/pitch, readable for HUDs or minimap needles. */
+    orientation(): {
+        yaw: number;
+        pitch: number;
+    };
+}</code></pre>
+      </article>
+    </section>
+
+    <section id="api-state" aria-labelledby="api-state-h">
+      <h2 id="api-state-h"><code>@tuomashatakka/threejs-scenes/state</code></h2>
+      <p>Unidirectional data flow as a layer (1.6): the serializable store, the { get, subscribe } controller protocol (plain objects are wrapped, external controllers stay bound), and tweened/lerpOnChange transition helpers that ease numeric state changes over frames — timed easing or exp-damped chase.</p>
+      <pre class="api-example"><code>const zoom = tweened(store, s =&gt; s.zoom, { duration: 0.3, easing: EASINGS.easeInOut })
+loop.onFrame(ctx =&gt; { zoom.tick(ctx); camera.zoom = zoom.value(); camera.updateProjectionMatrix() })
+store.set({ zoom: 2 })   // eases instead of snapping</code></pre>
+
+      <article class="api-card" id="api-state-createstore">
+        <div class="api-card-head">
+          <h4><code>createStore</code> <span class="badge">function</span></h4>
+
+        </div>
+        
+        <pre><code>function createStore&lt;S extends object, A = Partial&lt;S&gt;&gt;(initial: S, reducer?: Reducer&lt;S, A&gt;): Store&lt;S, A&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-state-isstatecontroller">
+        <div class="api-card-head">
+          <h4><code>isStateController</code> <span class="badge">function</span></h4>
+
+        </div>
+        
+        <pre><code>function isStateController&lt;S extends object&gt;(source: StateSource&lt;S&gt; | undefined): source is StateController&lt;S&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-state-tocontroller">
+        <div class="api-card-head">
+          <h4><code>toController</code> <span class="badge">function</span></h4>
+
+        </div>
+        <p>Normalize any state source to a controller. Plain objects become a fresh
+store seeded with the object, so downstream code has one code path.</p>
+        <pre><code>function toController&lt;S extends object&gt;(source: StateSource&lt;S&gt;): StateController&lt;S&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-state-resolveinitialstate">
+        <div class="api-card-head">
+          <h4><code>resolveInitialState</code> <span class="badge">function</span></h4>
+
+        </div>
+        <p>Mirror an external controller into an app: seed with `resolveInitialState`,
+then keep the app state following the controller with `bindStateSource`.
+Data flows controller -&gt; app only; the returned function detaches.</p>
+        <pre><code>function resolveInitialState&lt;S extends object&gt;(source: StateSource&lt;S&gt; | undefined, fallback: S): S;</code></pre>
+      </article>
+      <article class="api-card" id="api-state-bindstatesource">
+        <div class="api-card-head">
+          <h4><code>bindStateSource</code> <span class="badge">function</span></h4>
+
+        </div>
+        
+        <pre><code>function bindStateSource&lt;S extends object&gt;(target: {
+    setState(patch: Partial&lt;S&gt;): void;
+}, source: StateSource&lt;S&gt; | undefined): () =&gt; void;</code></pre>
+      </article>
+      <article class="api-card" id="api-state-tweened">
+        <div class="api-card-head">
+          <h4><code>tweened</code> <span class="badge">function</span></h4>
+
+        </div>
+        <p>Follow a numeric selection of controller state, easing every change.
+`tweened(store, s =&gt; s.zoom)` re-targets itself whenever the store commits
+a new zoom and `tick()` walks the value there over `duration` seconds.</p>
+        <pre><code>function tweened&lt;S extends object, V extends TweenValue&gt;(source: StateController&lt;S&gt;, select: (state: S) =&gt; V, { duration, easing, stiffness }?: TweenOptions): Tweened&lt;V&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-state-lerponchange">
+        <div class="api-card-head">
+          <h4><code>lerpOnChange</code> <span class="badge">function</span></h4>
+
+        </div>
+        <p>Apply-on-animate: like {@link tweened}, but pushes each interpolated value
+into `apply` while a transition is running (plus one final settled call).
+The go-to for "lerp the camera/opacity/color when this state key changes".</p>
+        <pre><code>function lerpOnChange&lt;S extends object, V extends TweenValue&gt;(source: StateController&lt;S&gt;, select: (state: S) =&gt; V, apply: (value: V) =&gt; void, options?: TweenOptions): Disposable &amp; {
+    tick(ctx: FrameContext): void;
+};</code></pre>
+      </article>
+      <article class="api-card" id="api-state-easings">
+        <div class="api-card-head">
+          <h4><code>EASINGS</code> <span class="badge">const</span></h4>
+
+        </div>
+        
+        <pre><code>const EASINGS: {
+    linear: (t: number) =&gt; number;
+    easeIn: (t: number) =&gt; number;
+    easeOut: (t: number) =&gt; number;
+    easeInOut: (t: number) =&gt; number;
+    smoothstep: (t: number) =&gt; number;
+};</code></pre>
+      </article>
+      <article class="api-card" id="api-state-reducer">
+        <div class="api-card-head">
+          <h4><code>Reducer</code> <span class="badge">type</span></h4>
+
+        </div>
+        
+        <pre><code>type Reducer&lt;S, A&gt; = (state: S, action: A) =&gt; S;</code></pre>
+      </article>
+      <article class="api-card" id="api-state-storelistener">
+        <div class="api-card-head">
+          <h4><code>StoreListener</code> <span class="badge">type</span></h4>
+
+        </div>
+        
+        <pre><code>type StoreListener&lt;S&gt; = (state: S, prev: S) =&gt; void;</code></pre>
+      </article>
+      <article class="api-card" id="api-state-store">
+        <div class="api-card-head">
+          <h4><code>Store</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface Store&lt;S, A = Partial&lt;S&gt;&gt; {
+    get(): S;
+    /** Shallow-merge a patch into the state and notify subscribers. */
+    set(patch: Partial&lt;S&gt;): void;
+    /** Run the reducer. Throws when the store was created without one. */
+    dispatch(action: A): void;
+    subscribe(listener: StoreListener&lt;S&gt;): () =&gt; void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-state-statecontroller">
+        <div class="api-card-head">
+          <h4><code>StateController</code> <span class="badge">interface</span></h4>
+
+        </div>
+        <p>Read side of a store: the minimal contract scaffolds consume state through.</p>
+        <pre><code>interface StateController&lt;S extends object&gt; {
+    get(): S;
+    subscribe(listener: (state: S, prev: S) =&gt; void): () =&gt; void;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-state-statesource">
+        <div class="api-card-head">
+          <h4><code>StateSource</code> <span class="badge">type</span></h4>
+
+        </div>
+        <p>What a scaffold accepts as its state input.</p>
+        <pre><code>type StateSource&lt;S extends object&gt; = S | StateController&lt;S&gt;;</code></pre>
+      </article>
+      <article class="api-card" id="api-state-easing">
+        <div class="api-card-head">
+          <h4><code>Easing</code> <span class="badge">type</span></h4>
+
+        </div>
+        
+        <pre><code>type Easing = (t: number) =&gt; number;</code></pre>
+      </article>
+      <article class="api-card" id="api-state-tweenvalue">
+        <div class="api-card-head">
+          <h4><code>TweenValue</code> <span class="badge">type</span></h4>
+
+        </div>
+        <p>Scalars and fixed-length numeric tuples — positions, scales, rgb colors.</p>
+        <pre><code>type TweenValue = number | readonly number[];</code></pre>
+      </article>
+      <article class="api-card" id="api-state-tweenoptions">
+        <div class="api-card-head">
+          <h4><code>TweenOptions</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface TweenOptions {
+    /** Seconds per transition (timed mode). Default 0.4; 0 snaps. */
+    duration?: number;
+    easing?: Easing;
+    /** When set, use continuous exp-damping toward the target instead of a timed tween. */
+    stiffness?: number;
+}</code></pre>
+      </article>
+      <article class="api-card" id="api-state-tweened">
+        <div class="api-card-head">
+          <h4><code>Tweened</code> <span class="badge">interface</span></h4>
+
+        </div>
+        
+        <pre><code>interface Tweened&lt;V extends TweenValue&gt; extends Disposable {
+    /** Current interpolated value. Tuples return the same array instance — copy to keep. */
+    value(): V;
+    target(): V;
+    settled(): boolean;
+    /** Advance the interpolation; call once per frame. */
+    tick(ctx: FrameContext): void;
+}</code></pre>
+      </article>
+    </section>
+
     <section id="api-core" aria-labelledby="api-core-h">
       <h2 id="api-core-h"><code>@tuomashatakka/threejs-scenes/core</code></h2>
       <p>Scene scaffolding: renderer factory, the canvas-loop-framecapper-backed frame loop, unidirectional app shell, injectable clocks, stores, overlays, pointer gestures, disposal and device-tier quality presets.</p>
@@ -125,7 +603,7 @@ app.start()</code></pre>
 
         </div>
         
-        <pre><code>function createApp&lt;S extends object = Record&lt;string, unknown&gt;, A = Partial&lt;S&gt;&gt;({ canvas, state, reducer, seed, clock, renderer: rendererOptions, camera: cameraOptions, background, lighting, orbit, modules, onFrame, }: AppOptions&lt;S, A&gt;): App&lt;S, A&gt;;</code></pre>
+        <pre><code>function createApp&lt;S extends object = Record&lt;string, unknown&gt;, A = Partial&lt;S&gt;&gt;({ canvas, state, reducer, seed, clock, renderer: rendererOptions, camera: cameraOptions, background, lighting, orbit, modules, onFrame, onResize, render, }: AppOptions&lt;S, A&gt;): App&lt;S, A&gt;;</code></pre>
       </article>
       <article class="api-card" id="api-core-createoverlayscene">
         <div class="api-card-head">
@@ -371,8 +849,13 @@ read state — they never write it back.</p>
     /** Injectable time source. Pass createClock({ mode: 'fixed' }) for determinism. */
     clock?: Clock;
     renderer?: Omit&lt;RendererOptions, 'canvas'&gt;;
-    camera?: AppCameraOptions;
+    /** Perspective-camera options, or a prebuilt camera (e.g. an iso ortho rig). */
+    camera?: AppCameraOptions | THREE.Camera;
     background?: THREE.ColorRepresentation;
+    /** Runs after the built-in resize handling — resize ortho frustums, composers, … */
+    onResize?: ResizeHandler;
+    /** Replaces the default renderer.render(scene, camera) — wire a composer here. */
+    render?: () =&gt; void;
     /** Standard three-light rig. Default true. */
     lighting?: boolean;
     /** Built-in pointer orbit. Default true; disable when using a camera controller. */
