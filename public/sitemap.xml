@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/index.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/api.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/llms.txt</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/animation.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/architecture.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/batched-buildings.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/bootstrap.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/dof.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/effects.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/follow-camera.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/geometry.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/glitch.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/god-rays.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/icaras-foundry.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/instanced-field.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/isometric-infinite.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/isometric.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/jsx-scene.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/lighting.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/materials.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/minimal-scene.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/particles.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/post-processing.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/procedural.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/props.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/shader-material.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/voxels.html</loc></url>
+</urlset>
