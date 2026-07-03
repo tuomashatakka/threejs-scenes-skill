@@ -24,6 +24,27 @@ interface ModuleMeta {
 // Subpath modules, in exports-map order. desc/example/demo are hand-curated;
 // export lists and signatures come from the .d.ts files.
 const MODULES: Record<string, ModuleMeta> = {
+  scaffold: {
+    entry: 'dist/scaffold/index.d.ts',
+    desc:  'Genre-level wiring in one call (1.6): isometric scenes (iso camera + pan/zoom + infinite ground), orbit product viewers (turntable stage + fit-to-object), third-person follow, on-rails segment streaming, and first-person pointer-lock movement. Every scaffold wraps createApp and accepts a plain object, a store, or any { get, subscribe } controller as its state source.',
+    example: `import { createIsoScaffold } from '@tuomashatakka/threejs-scenes/scaffold/iso'
+
+const iso = createIsoScaffold({
+  canvas,
+  seed:     7,
+  viewSize: 24,
+  ground:   { tileSize: 24, displace: (x, z) => noise.fbm(x / 40, 0, z / 40) * 3 },
+  modules:  [worldModule],
+})
+iso.app.start()`,
+  },
+  state: {
+    entry: 'dist/state/index.d.ts',
+    desc:  'Unidirectional data flow as a layer (1.6): the serializable store, the { get, subscribe } controller protocol (plain objects are wrapped, external controllers stay bound), and tweened/lerpOnChange transition helpers that ease numeric state changes over frames — timed easing or exp-damped chase.',
+    example: `const zoom = tweened(store, s => s.zoom, { duration: 0.3, easing: EASINGS.easeInOut })
+loop.onFrame(ctx => { zoom.tick(ctx); camera.zoom = zoom.value(); camera.updateProjectionMatrix() })
+store.set({ zoom: 2 })   // eases instead of snapping`,
+  },
   core: {
     entry: 'dist/core/index.d.ts',
     demo:  'bootstrap',
@@ -284,7 +305,7 @@ interface PlaySeed {
   code:       string
 }
 
-const PLAY_EXCLUDED_MODULES = new Set([ 'post/webgpu', 'types' ])
+const PLAY_EXCLUDED_MODULES = new Set([ 'post/webgpu', 'types', 'scaffold', 'state' ])
 const HARNESS_VARIABLES = new Set([ 'scene', 'camera', 'renderer', 'canvas', 'loop' ])
 
 function escapeJsonForHtml (value: unknown): string {

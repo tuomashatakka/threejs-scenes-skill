@@ -1,7 +1,11 @@
 # Plan: concise package contents & meaningful submodule exports
 
-Status: **proposal** (no code moved yet). Target: `@tuomashatakka/threejs-scenes` v2.0.0,
-introduced incrementally through 1.x as described in [Phasing](#phasing).
+Status: **phases P0–P2 implemented in 1.6.0** — facade subpaths
+`/primitives` `/raster` `/compose` `/view`, the `/state` layer (controller
+protocol + `tweened`/`lerpOnChange`), all five `/scaffold/*` genre scaffolds,
+and the curated `/main` barrel, all as re-export facades over the existing
+folders with zero breaking changes. Remaining: P3 (physical moves + curated
+root as default, v2.0.0) and P4 (shim removal, v3.0.0).
 
 ## Problem
 

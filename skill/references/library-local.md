@@ -59,3 +59,27 @@ it from a public CDN. A bundled local copy keeps every generated scene:
 
 Working references: every file in `skill/templates/*.html` imports the local lib this
 way. The public showcase (`public/`) uses the same pattern against `public/lib/dist/`.
+
+## Domain subpaths (1.6)
+
+The same library is also grouped by concern — prefer these in new code:
+
+| Subpath | Contains |
+| --- | --- |
+| `/primitives` | geometry construction + deformers, materials, procedural textures/noise/rng, instancing, voxel storage + meshing |
+| `/raster` | lighting rigs, cameras, color grading + every WebGL post pass, particle emitters (`/raster/webgpu` = the TSL node effects) |
+| `/compose` | scene modules, view registry, props, loaders, animation, group/layout, chunk manager, `createSkybox`, `bindSceneEvents` |
+| `/view` | renderer, frame loop, clocks, pointer gestures, overlay, projection, dispose, quality tiers |
+| `/state` | store + `{ get, subscribe }` controller protocol (`toController`, `bindStateSource`) + `tweened`/`lerpOnChange` transitions |
+| `/scaffold` | `createApp` + genre scaffolds; also `/scaffold/{iso,orbit,tpp,rails,fps}` individually |
+| `/main` | curated barrel: the six namespaces + the everyday twenty symbols |
+
+```js
+import { createIsoScaffold } from '@tuomashatakka/threejs-scenes/scaffold/iso'
+import { tweened, EASINGS } from '@tuomashatakka/threejs-scenes/state'
+```
+
+Every scaffold accepts `state` as a plain object, a store, or any
+`{ get, subscribe }` controller; external controllers stay bound so data flows
+controller → app → modules → scene, one direction, with `tweened` easing the
+numeric transitions.

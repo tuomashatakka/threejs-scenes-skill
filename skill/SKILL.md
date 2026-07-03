@@ -1,6 +1,6 @@
 ---
 name: threejs-scenes
-version: 1.5.0
+version: 1.6.0
 description: >
   Build production-quality three.js WebGL scenes with vanilla three.js (no R3F).
   Use this skill whenever the user mentions three.js, WebGL, 3D scenes in the browser,
@@ -162,7 +162,12 @@ through an importmap so artifacts stay self-contained:
 
 Subpath entry points: `@tuomashatakka/threejs-scenes/{core,camera,geometry,
 materials,loaders,animation,props,instancing,lighting,particles,post,post/webgpu,
-procedural,voxels,architecture,jsx}`. New in 1.1: **geometry** (extrusion, vertex
+procedural,voxels,architecture,jsx}`. **New in 1.6 — domain subpaths**: the same
+library grouped by concern as `/{primitives,raster,compose,view,state,scaffold}`
+plus the curated `/main` barrel; `/scaffold/{iso,orbit,tpp,rails,fps}` wire whole
+genres (iso builder, product viewer, third-person, on-rails, first-person) around
+`createApp`, and `/state` adds the controller protocol + `tweened`/`lerpOnChange`
+transitions. New in 1.1: **geometry** (extrusion, vertex
 modifiers, merge/layout), **materials** presets (PBR/toon/matcap), **loaders**
 (GLTF + DRACO/KTX2/meshopt), **animation** (AnimationMixer controller + programmatic
 clips), **props** (`defineProp` / composites / instancing), and the reactive **jsx**

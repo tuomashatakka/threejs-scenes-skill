@@ -1,6 +1,6 @@
 {
   "name": "@tuomashatakka/threejs-scenes",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
@@ -13,6 +13,58 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./main": {
+      "types": "./dist/main.d.ts",
+      "import": "./dist/main.js"
+    },
+    "./primitives": {
+      "types": "./dist/primitives/index.d.ts",
+      "import": "./dist/primitives/index.js"
+    },
+    "./raster": {
+      "types": "./dist/raster/index.d.ts",
+      "import": "./dist/raster/index.js"
+    },
+    "./raster/webgpu": {
+      "types": "./dist/post/webgpu/index.d.ts",
+      "import": "./dist/post/webgpu/index.js"
+    },
+    "./compose": {
+      "types": "./dist/compose/index.d.ts",
+      "import": "./dist/compose/index.js"
+    },
+    "./view": {
+      "types": "./dist/view/index.d.ts",
+      "import": "./dist/view/index.js"
+    },
+    "./state": {
+      "types": "./dist/state/index.d.ts",
+      "import": "./dist/state/index.js"
+    },
+    "./scaffold": {
+      "types": "./dist/scaffold/index.d.ts",
+      "import": "./dist/scaffold/index.js"
+    },
+    "./scaffold/iso": {
+      "types": "./dist/scaffold/iso.d.ts",
+      "import": "./dist/scaffold/iso.js"
+    },
+    "./scaffold/orbit": {
+      "types": "./dist/scaffold/orbit.d.ts",
+      "import": "./dist/scaffold/orbit.js"
+    },
+    "./scaffold/tpp": {
+      "types": "./dist/scaffold/tpp.d.ts",
+      "import": "./dist/scaffold/tpp.js"
+    },
+    "./scaffold/rails": {
+      "types": "./dist/scaffold/rails.d.ts",
+      "import": "./dist/scaffold/rails.js"
+    },
+    "./scaffold/fps": {
+      "types": "./dist/scaffold/fps.d.ts",
+      "import": "./dist/scaffold/fps.js"
     },
     "./core": {
       "types": "./dist/core/index.d.ts",

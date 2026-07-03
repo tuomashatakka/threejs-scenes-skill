@@ -18,7 +18,7 @@ import { setupStandardLighting } from '../lighting/lighting.js'
 import { createSeededRng } from '../procedural/rng.js'
 import type { Clock } from './clock.js'
 import type { Store, Reducer } from './state.js'
-import type { RendererOptions } from './renderer.js'
+import type { RendererOptions, ResizeHandler } from './renderer.js'
 import type { FrameContext, SceneContext, Disposable } from '../types.js'
 
 
@@ -51,10 +51,18 @@ export interface AppOptions<S extends object, A = Partial<S>> {
   seed?:    number
 
   /** Injectable time source. Pass createClock({ mode: 'fixed' }) for determinism. */
-  clock?:      Clock
-  renderer?:   Omit<RendererOptions, 'canvas'>
-  camera?:     AppCameraOptions
+  clock?:    Clock
+  renderer?: Omit<RendererOptions, 'canvas'>
+
+  /** Perspective-camera options, or a prebuilt camera (e.g. an iso ortho rig). */
+  camera?:     AppCameraOptions | THREE.Camera
   background?: THREE.ColorRepresentation
+
+  /** Runs after the built-in resize handling — resize ortho frustums, composers, … */
+  onResize?: ResizeHandler
+
+  /** Replaces the default renderer.render(scene, camera) — wire a composer here. */
+  render?: () => void
 
   /** Standard three-light rig. Default true. */
   lighting?: boolean
@@ -93,6 +101,8 @@ export function createApp<S extends object = Record<string, unknown>, A = Partia
   orbit = true,
   modules = [],
   onFrame,
+  onResize,
+  render,
 }: AppOptions<S, A>): App<S, A> {
   if (!canvas)
     throw new Error('createApp: canvas required')
@@ -101,15 +111,21 @@ export function createApp<S extends object = Record<string, unknown>, A = Partia
   const scene      = new THREE.Scene()
   scene.background = new THREE.Color(background)
 
-  const aspect = canvas.clientWidth / canvas.clientHeight || 1
-  const camera = new THREE.PerspectiveCamera(
-    cameraOptions?.fov ?? 50,
-    aspect,
-    cameraOptions?.near ?? 0.1,
-    cameraOptions?.far ?? 200,
-  )
-  camera.position.set(...cameraOptions?.position ?? [ 4, 3, 6 ])
-  camera.lookAt(new THREE.Vector3(...cameraOptions?.lookAt ?? [ 0, 0, 0 ]))
+  let camera: THREE.Camera
+  if (cameraOptions instanceof THREE.Camera)
+    camera = cameraOptions
+  else {
+    const aspect      = canvas.clientWidth / canvas.clientHeight || 1
+    const perspective = new THREE.PerspectiveCamera(
+      cameraOptions?.fov ?? 50,
+      aspect,
+      cameraOptions?.near ?? 0.1,
+      cameraOptions?.far ?? 200,
+    )
+    perspective.position.set(...cameraOptions?.position ?? [ 4, 3, 6 ])
+    perspective.lookAt(new THREE.Vector3(...cameraOptions?.lookAt ?? [ 0, 0, 0 ]))
+    camera = perspective
+  }
 
   const lights = lighting ? setupStandardLighting(scene, renderer) : null
   const store  = createStore<S, A>(state, reducer)
@@ -148,7 +164,7 @@ export function createApp<S extends object = Record<string, unknown>, A = Partia
     })
   }
 
-  const detachResize = attachResizeObserver(renderer, camera, canvas)
+  const detachResize = attachResizeObserver(renderer, camera, canvas, onResize)
 
   for (const module of modules)
     module.build(ctx)
@@ -169,7 +185,10 @@ export function createApp<S extends object = Record<string, unknown>, A = Partia
   function pump (realDelta: number): void {
     for (const delta of clock.advance(realDelta))
       step(delta)
-    renderer.render(scene, camera)
+    if (render)
+      render()
+    else
+      renderer.render(scene, camera)
   }
 
   const stopFrame = loop.onFrame(({ delta }) => pump(delta))
