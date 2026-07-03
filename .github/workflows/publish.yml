@@ -91,6 +91,33 @@ jobs:
             exit 1
           fi
 
+      - name: Publish package to npm registry
+        if: github.event_name == 'push'
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NPM_TOKEN:-}" ]; then
+            echo "NPM_TOKEN secret not set — skipping npmjs publish" >&2
+            exit 0
+          fi
+          PKG_VER=$(node -p "require('./package.json').version")
+
+          # Same idempotency guard as the GitHub Packages step, pointed at
+          # npmjs explicitly since .npmrc's scope mapping defaults @tuomashatakka
+          # to GitHub Packages. Scoped packages need --access public here.
+          if npm view --registry https://registry.npmjs.org "@tuomashatakka/threejs-scenes@$PKG_VER" version >/dev/null 2>&1; then
+            echo "Version $PKG_VER already published — skipping"
+          elif OUT=$(bun publish --registry https://registry.npmjs.org --access public 2>&1); then
+            echo "$OUT"
+          elif echo "$OUT" | grep -qiE 'cannot publish over existing version|409 conflict'; then
+            echo "$OUT"
+            echo "Version $PKG_VER already published (409) — continuing"
+          else
+            echo "$OUT" >&2
+            exit 1
+          fi
+
       - name: Create GitHub release
         if: github.event_name == 'push'
         env:
