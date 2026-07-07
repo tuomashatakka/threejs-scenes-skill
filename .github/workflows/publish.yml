@@ -1,6 +1,6 @@
 name: Publish package, showcase & skill
 
-# Publishes the npm package to GitHub Packages, creates a GitHub release with
+# Publishes the npm package to the npm registry, creates a GitHub release with
 # the .skill archive + npm tarball (both downloadable without a token), then
 # publishes the vite-built site and packaged threejs-scenes.skill to GitHub
 # Pages. Requires Pages source set to "GitHub Actions" once in repo Settings → Pages.
@@ -12,7 +12,6 @@ on:
 
 permissions:
   contents: write # create releases + upload release assets
-  packages: write
   pages: write
   id-token: write
 
@@ -26,25 +25,19 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # .npmrc references ${NPM_TOKEN}; npm hard-errors on undefined env vars
+      # in config, so keep it defined (empty is fine for registry reads) for
+      # every npm invocation in this job.
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: oven-sh/setup-bun@v2
 
       - name: Build library and package skill
-        env:
-          # Private GitHub Packages dependencies can only be read by the
-          # workflow GITHUB_TOKEN when those packages have granted this repo
-          # access. Use PACKAGES_TOKEN (classic PAT with read:packages/write:packages) when
-          # they live in a different/private package repo, and fall back to the
-          # workflow token for linked packages.
-          GH_PAT: ${{ secrets.PACKAGES_TOKEN || github.token }}
         run: |
           set -euo pipefail
-          if [ -z "${GH_PAT:-}" ]; then
-            echo "GH_PAT is required to install @tuomashatakka packages from GitHub Packages" >&2
-            exit 1
-          fi
           bun install --frozen-lockfile
           # tsc build + copy-lib refreshes skill/lib/dist and site/public/lib/dist,
           # docs generates vite site data, vite builds site-dist, then
@@ -65,37 +58,8 @@ jobs:
           cp tuomashatakka-threejs-scenes-*.tgz threejs-scenes.tgz
           ls -la ./*.tgz threejs-scenes.skill
 
-      - name: Publish package to GitHub Packages
-        if: github.event_name == 'push'
-        env:
-          GH_PAT: ${{ secrets.PACKAGES_TOKEN || github.token }}
-        run: |
-          set -euo pipefail
-          PKG_VER=$(node -p "require('./package.json').version")
-
-          # Skip publishing when this version already exists on the registry.
-          # npm view resolves auth from .npmrc (${GH_PAT}); the raw
-          # npm.pkg.github.com/<pkg>/<version> endpoint used previously does
-          # not reliably return 200 for existing versions, which let publish
-          # run into a 409. As a second guard, a 409 "cannot publish over
-          # existing version" from bun publish is treated as already-published
-          # instead of failing the run — any other publish error still fails.
-          if npm view "@tuomashatakka/threejs-scenes@$PKG_VER" version >/dev/null 2>&1; then
-            echo "Version $PKG_VER already published — skipping"
-          elif OUT=$(bun publish --registry https://npm.pkg.github.com 2>&1); then
-            echo "$OUT"
-          elif echo "$OUT" | grep -qiE 'cannot publish over existing version|409 conflict'; then
-            echo "$OUT"
-            echo "Version $PKG_VER already published (409) — continuing"
-          else
-            echo "$OUT" >&2
-            exit 1
-          fi
-
       - name: Publish package to npm registry
         if: github.event_name == 'push'
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
           if [ -z "${NPM_TOKEN:-}" ]; then
@@ -104,9 +68,10 @@ jobs:
           fi
           PKG_VER=$(node -p "require('./package.json').version")
 
-          # Same idempotency guard as the GitHub Packages step, pointed at
-          # npmjs explicitly since .npmrc's scope mapping defaults @tuomashatakka
-          # to GitHub Packages. Scoped packages need --access public here.
+          # Skip publishing when this version already exists on the registry.
+          # As a second guard, a 409 "cannot publish over existing version"
+          # from bun publish is treated as already-published instead of
+          # failing the run. Scoped packages need --access public here.
           if npm view --registry https://registry.npmjs.org "@tuomashatakka/threejs-scenes@$PKG_VER" version >/dev/null 2>&1; then
             echo "Version $PKG_VER already published — skipping"
           elif OUT=$(bun publish --registry https://registry.npmjs.org --access public 2>&1); then
