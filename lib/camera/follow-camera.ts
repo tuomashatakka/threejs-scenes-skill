@@ -1,10 +1,11 @@
 // lib/camera/follow-camera.ts
-// Third-person follow camera with framerate-independent damping. Lerp with
-// `1 - exp(-k * delta)` so behavior is consistent regardless of FPS. Ported
-// from scripts/follow-camera.js.
+// Third-person follow camera with framerate-independent damping. Wires into the
+// CameraController interface for interchangeable control.
 
 import * as THREE from 'three'
-
+import { tupleToVector3 } from './targets.js'
+import type { Vec3Tuple } from './targets.js'
+import type { CameraController, CameraMode } from './camera-controller.js'
 import type { FrameContext } from '../types.js'
 
 
@@ -28,29 +29,70 @@ export function createFollowCamera (
     stiffness = 8,
     rotationStiffness = 6,
   }: FollowCameraOptions,
-): (ctx: FrameContext) => void {
+): CameraController {
   if (!offset)
     throw new Error('createFollowCamera: offset is required')
 
-  return ({ delta }: FrameContext) => {
-    target.getWorldPosition(scratchTargetPos)
+  let currentTarget: THREE.Object3D | null = target
+  const currentOffset    = offset.clone()
+  const currentLookAhead = lookAhead.clone()
+  let mode: CameraMode = 'follow'
+
+  const update = ({ delta }: FrameContext): void => {
+    if (mode !== 'follow' || !currentTarget)
+      return
+
+    currentTarget.getWorldPosition(scratchTargetPos)
     scratchDesired
-      .copy(offset)
-      .applyQuaternion(target.quaternion)
+      .copy(currentOffset)
+      .applyQuaternion(currentTarget.quaternion)
       .add(scratchTargetPos)
 
     const tPos = 1 - Math.exp(-stiffness * delta)
     camera.position.lerp(scratchDesired, tPos)
 
     scratchLookAt
-      .copy(lookAhead)
-      .applyQuaternion(target.quaternion)
+      .copy(currentLookAhead)
+      .applyQuaternion(currentTarget.quaternion)
       .add(scratchTargetPos)
 
     const tLook = 1 - Math.exp(-rotationStiffness * delta)
     scratchLookAt.lerp(scratchTargetPos, tLook)
     camera.lookAt(scratchLookAt)
   }
-}
 
-// perf: cheap. three scratch vectors at module scope; zero per-frame alloc.
+  return {
+    camera,
+    mode: () => mode,
+    follow (object, nextOffset) {
+      currentTarget = object
+      if (nextOffset)
+        currentOffset.set(nextOffset[0], nextOffset[1], nextOffset[2])
+      mode = 'follow'
+    },
+    free () {
+      mode = 'free'
+    },
+    flyTo (_position, _lookAt, _options) {
+      // Free camera to allow fly-to or no-op
+      mode = 'free'
+    },
+    cockpit (_rig) {
+      mode = 'cockpit'
+    },
+    setFov (_fov) {
+      // Perspective-specific, no-op for generic camera
+    },
+    setBounds (_bounds) {
+      // No-op
+    },
+    snapTo (position, lookAt) {
+      tupleToVector3(position, camera.position)
+      tupleToVector3(lookAt, scratchLookAt)
+      camera.lookAt(scratchLookAt)
+      mode = 'free'
+    },
+    isMoving: () => mode !== 'free',
+    update,
+  }
+}

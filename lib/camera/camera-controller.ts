@@ -38,7 +38,7 @@ export interface FlyToOptions {
 }
 
 export interface CameraController {
-  readonly camera: THREE.PerspectiveCamera
+  readonly camera: THREE.Camera
   mode (): CameraMode
 
   /** Ease toward a position + look-at; fires onArrive once, then goes free. */

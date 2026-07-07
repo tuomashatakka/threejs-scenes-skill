@@ -1,21 +1,8 @@
 // lib/index.ts
-// threejs-scenes — strictly-typed factories and interfaces for production
-// vanilla three.js scenes. Re-exports every submodule. For tree-shaking you
-// may also import from the subpaths: 'threejs-scenes/core',
-// 'threejs-scenes/post', 'threejs-scenes/jsx', etc.
+// @tuomashatakka/threejs-scenes — unified entrypoint for core WebGL utilities,
+// scaffolding, cameras, materials, geometry, animations, and lighting.
 
 export * from './types.js'
-
-// Domain namespaces (1.6): the same library grouped by concern. Prefer these
-// (or the matching subpaths /primitives /raster /compose /view /state
-// /scaffold, and the curated barrel /main) in new code.
-export * as primitives from './primitives/index.js'
-export * as raster from './raster/index.js'
-export * as compose from './compose/index.js'
-export * as view from './view/index.js'
-export * as state from './state/index.js'
-export * as scaffold from './scaffold/index.js'
-
 export * from './core/index.js'
 export * from './camera/index.js'
 export * from './instancing/index.js'
@@ -30,10 +17,16 @@ export * from './post/index.js'
 export * from './procedural/index.js'
 export * from './voxels/index.js'
 export * from './architecture/index.js'
+export * from './compose/skybox.js'
+export * from './compose/scene-events.js'
 
-// NOTE: WebGPU/TSL post effects are intentionally NOT re-exported from this
-// barrel — they pull in `three/webgpu` + `three/tsl`, which would force every
-// consumer of this WebGL barrel (including importmap / CDN users) to resolve
-// those modules. Import them from the dedicated subpath instead:
-//   import * as webgpuPost from '@tuomashatakka/threejs-scenes/post/webgpu'
-// The reactive JSX layer is likewise its own subpath: '@tuomashatakka/threejs-scenes/jsx'.
+// State and transitions
+export * from './state/controller.js'
+export * from './state/tween.js'
+
+// Scaffolds
+export * from './scaffold/iso.js'
+export * from './scaffold/orbit.js'
+export * from './scaffold/tpp.js'
+export * from './scaffold/rails.js'
+export * from './scaffold/fps.js'

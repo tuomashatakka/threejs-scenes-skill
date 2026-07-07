@@ -21,7 +21,7 @@ export interface FlyToOptions {
     onArrive?: () => void;
 }
 export interface CameraController {
-    readonly camera: THREE.PerspectiveCamera;
+    readonly camera: THREE.Camera;
     mode(): CameraMode;
     /** Ease toward a position + look-at; fires onArrive once, then goes free. */
     flyTo(position: Vec3Tuple, lookAt: Vec3Tuple, options?: FlyToOptions): void;

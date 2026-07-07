@@ -83,10 +83,10 @@ const { scene, camera, loop, dispose } = bootstrapScene({
 })
 ```
 
-Tree-shakeable subpaths are exported too: `threejs-scenes/core`,
-`/camera`, `/instancing`, `/materials`, `/geometry`, `/loaders`, `/animation`,
-`/props`, `/lighting`, `/particles`, `/post` (+ `/post/webgpu`, `/post/webgl`),
-`/procedural`, `/voxels`, `/architecture`, `/jsx`, `/types`.
+The package exports three main, tree-shakeable public entry points:
+- `@tuomashatakka/threejs-scenes` (WebGL core, scaffolding, cameras, animations, lighting, materials, geometry, instancing, loaders, and state management)
+- `@tuomashatakka/threejs-scenes/webgpu` (Dedicated WebGPU post-processing and TSL effects)
+- `@tuomashatakka/threejs-scenes/jsx` (Declarative, reactive JSX layer)
 
 ### hooks (`/jsx`)
 
@@ -114,134 +114,9 @@ render(<Spinner />, { canvas })
 Generated from the built `.d.ts` files by `bun run docs` — full declarations, doc comments,
 runnable examples and live previews on the [API reference page](https://tuomashatakka.github.io/threejs-scenes-skill/api.html).
 
-#### `@tuomashatakka/threejs-scenes/scaffold`
+#### `@tuomashatakka/threejs-scenes`
 
-Genre-level wiring in one call (1.6): isometric scenes (iso camera + pan/zoom + infinite ground), orbit product viewers (turntable stage + fit-to-object), third-person follow, on-rails segment streaming, and first-person pointer-lock movement. Every scaffold wraps createApp and accepts a plain object, a store, or any { get, subscribe } controller as its state source.
-
-- **`createApp`** *(function)*
-
-  ```ts
-  function createApp<S extends object = Record<string, unknown>, A = Partial<S>>({ canvas, state, reducer, seed, clock, renderer: rendererOptions, camera: cameraOptions, background, lighting, orbit, modules, onFrame, onResize, render, }: AppOptions<S, A>): App<S, A>;
-  ```
-- **`createIsoScaffold`** *(function)*
-
-  ```ts
-  function createIsoScaffold<S extends object = Record<string, unknown>>({ state, viewSize, flavor, near, far, pan, zoom, ground: groundOptions, ...appOptions }: IsoScaffoldOptions<S>): IsoScaffold<S>;
-  ```
-- **`createOrbitScaffold`** *(function)*
-
-  ```ts
-  function createOrbitScaffold<S extends object = Record<string, unknown>>({ state, autoRotate, ...appOptions }: OrbitScaffoldOptions<S>): OrbitScaffold<S>;
-  ```
-- **`createTppScaffold`** *(function)*
-
-  ```ts
-  function createTppScaffold<S extends object = Record<string, unknown>>({ state, target, offset, lookAhead, stiffness, rotationStiffness, ...appOptions }: TppScaffoldOptions<S>): TppScaffold<S>;
-  ```
-- **`createRailsScaffold`** *(function)*
-
-  ```ts
-  function createRailsScaffold<S extends object = Record<string, unknown>>({ state, segment, prefetchDistance, maxActive, lift, tension, yawRange, pitchRange, smoothing, speed, ...appOptions }: RailsScaffoldOptions<S>): RailsScaffold<S>;
-  ```
-- **`createFpsScaffold`** *(function)*
-
-  ```ts
-  function createFpsScaffold<S extends object = Record<string, unknown>>({ state, speed, lookSpeed, eyeHeight, pointerLock, collide, groundHeight, ...appOptions }: FpsScaffoldOptions<S>): FpsScaffold<S>;
-  ```
-- **`AppModule`** *(interface)* — A scene feature in the unidirectional flow.
-- **`AppCameraOptions`** *(interface)*
-- **`AppOptions`** *(interface)*
-- **`App`** *(interface)*
-- **`IsoScaffoldOptions`** *(interface)*
-- **`IsoScaffold`** *(interface)*
-- **`OrbitScaffoldOptions`** *(interface)*
-- **`OrbitScaffold`** *(interface)*
-- **`TppScaffoldOptions`** *(interface)*
-- **`TppScaffold`** *(interface)*
-- **`RailsScaffoldOptions`** *(interface)*
-- **`RailsScaffold`** *(interface)*
-- **`FpsScaffoldOptions`** *(interface)*
-- **`FpsScaffold`** *(interface)*
-
-  <details><summary>Example</summary>
-
-  ```ts
-  import { createIsoScaffold } from '@tuomashatakka/threejs-scenes/scaffold/iso'
-  
-  const iso = createIsoScaffold({
-    canvas,
-    seed:     7,
-    viewSize: 24,
-    ground:   { tileSize: 24, displace: (x, z) => noise.fbm(x / 40, 0, z / 40) * 3 },
-    modules:  [worldModule],
-  })
-  iso.app.start()
-  ```
-  </details>
-
-#### `@tuomashatakka/threejs-scenes/state`
-
-Unidirectional data flow as a layer (1.6): the serializable store, the { get, subscribe } controller protocol (plain objects are wrapped, external controllers stay bound), and tweened/lerpOnChange transition helpers that ease numeric state changes over frames — timed easing or exp-damped chase.
-
-- **`createStore`** *(function)*
-
-  ```ts
-  function createStore<S extends object, A = Partial<S>>(initial: S, reducer?: Reducer<S, A>): Store<S, A>;
-  ```
-- **`isStateController`** *(function)*
-
-  ```ts
-  function isStateController<S extends object>(source: StateSource<S> | undefined): source is StateController<S>;
-  ```
-- **`toController`** *(function)* — Normalize any state source to a controller.
-
-  ```ts
-  function toController<S extends object>(source: StateSource<S>): StateController<S>;
-  ```
-- **`resolveInitialState`** *(function)* — Mirror an external controller into an app: seed with `resolveInitialState`,.
-
-  ```ts
-  function resolveInitialState<S extends object>(source: StateSource<S> | undefined, fallback: S): S;
-  ```
-- **`bindStateSource`** *(function)*
-
-  ```ts
-  function bindStateSource<S extends object>(target: {
-  ```
-- **`tweened`** *(function)* — Follow a numeric selection of controller state, easing every change.
-
-  ```ts
-  function tweened<S extends object, V extends TweenValue>(source: StateController<S>, select: (state: S) => V, { duration, easing, stiffness }?: TweenOptions): Tweened<V>;
-  ```
-- **`lerpOnChange`** *(function)* — Apply-on-animate: like {@link tweened}, but pushes each interpolated value.
-
-  ```ts
-  function lerpOnChange<S extends object, V extends TweenValue>(source: StateController<S>, select: (state: S) => V, apply: (value: V) => void, options?: TweenOptions): Disposable & {
-  ```
-- **`EASINGS`** *(const)*
-- **`Reducer`** *(type)*
-- **`StoreListener`** *(type)*
-- **`Store`** *(interface)*
-- **`StateController`** *(interface)* — Read side of a store: the minimal contract scaffolds consume state through.
-- **`StateSource`** *(type)* — What a scaffold accepts as its state input.
-- **`Easing`** *(type)*
-- **`TweenValue`** *(type)* — Scalars and fixed-length numeric tuples — positions, scales, rgb colors.
-- **`TweenOptions`** *(interface)*
-- **`Tweened`** *(interface)*
-
-  <details><summary>Example</summary>
-
-  ```ts
-  const zoom = tweened(store, s => s.zoom, { duration: 0.3, easing: EASINGS.easeInOut })
-  loop.onFrame(ctx => { zoom.tick(ctx); camera.zoom = zoom.value(); camera.updateProjectionMatrix() })
-  store.set({ zoom: 2 })   // eases instead of snapping
-  ```
-  </details>
-
-#### `@tuomashatakka/threejs-scenes/core`
-
-Scene scaffolding: renderer factory, the canvas-loop-framecapper-backed frame loop, unidirectional app shell, injectable clocks, stores, overlays, pointer gestures, disposal and device-tier quality presets.
-Live demo: [`bootstrap.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/bootstrap.html)
+The unified core WebGL API: scaffolding, rendering loops, camera controls, materials, programmatic geometry, instancing, loaders, and state management.
 
 - **`createRenderer`** *(function)*
 
@@ -318,48 +193,6 @@ Live demo: [`bootstrap.html`](https://tuomashatakka.github.io/threejs-scenes-ski
   ```ts
   function getQualitySettings(tier?: QualityTier): QualitySettings;
   ```
-- **`QUALITY_PRESETS`** *(const)*
-- **`RendererOptions`** *(interface)*
-- **`ResizeHandler`** *(type)*
-- **`FrameLoopOptions`** *(interface)*
-- **`ClockMode`** *(type)*
-- **`ClockOptions`** *(interface)*
-- **`Clock`** *(interface)* — A simulation time source.
-- **`Reducer`** *(type)*
-- **`StoreListener`** *(type)*
-- **`Store`** *(interface)*
-- **`AppModule`** *(interface)* — A scene feature in the unidirectional flow.
-- **`AppCameraOptions`** *(interface)*
-- **`AppOptions`** *(interface)*
-- **`App`** *(interface)*
-- **`OverlayHandle`** *(interface)*
-- **`ScreenProjection`** *(interface)*
-- **`BootstrapSetupContext`** *(interface)*
-- **`BootstrapSetup`** *(type)*
-- **`BootstrapOptions`** *(interface)*
-- **`BootstrappedScene`** *(interface)*
-
-  <details><summary>Example</summary>
-
-  ```ts
-  import { createApp, createClock } from '@tuomashatakka/threejs-scenes'
-  
-  const app = createApp({
-    canvas,
-    seed:  7,
-    clock: createClock({ mode: 'fixed' }),   // deterministic sim steps
-    state: { hue: 0.52 },
-    modules: [{ id: 'spin', update: ({ scene }, { delta }) => { /* project state -> scene */ } }],
-  })
-  app.start()
-  ```
-  </details>
-
-#### `@tuomashatakka/threejs-scenes/camera`
-
-Camera factories: multi-mode controller (free / flyTo / follow / cockpit) with serializable tuple targets, orthographic isometric rig, framerate-independent third-person follow camera.
-Live demo: [`follow-camera.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/follow-camera.html)
-
 - **`createIsoCamera`** *(function)*
 
   ```ts
@@ -373,7 +206,7 @@ Live demo: [`follow-camera.html`](https://tuomashatakka.github.io/threejs-scenes
 - **`createFollowCamera`** *(function)*
 
   ```ts
-  function createFollowCamera(camera: THREE.Camera, target: THREE.Object3D, { offset, lookAhead, stiffness, rotationStiffness, }: FollowCameraOptions): (ctx: FrameContext) => void;
+  function createFollowCamera(camera: THREE.Camera, target: THREE.Object3D, { offset, lookAhead, stiffness, rotationStiffness, }: FollowCameraOptions): CameraController;
   ```
 - **`tupleToVector3`** *(function)*
 
@@ -400,34 +233,6 @@ Live demo: [`follow-camera.html`](https://tuomashatakka.github.io/threejs-scenes
   ```ts
   function createPathCamera(camera: THREE.PerspectiveCamera, path: PathCameraSource, element: HTMLElement, { yawRange, pitchRange, smoothing, speed }?: PathCameraOptions): PathCamera;
   ```
-- **`IsoFlavor`** *(type)*
-- **`IsoCameraOptions`** *(interface)*
-- **`FollowCameraOptions`** *(interface)*
-- **`Vec3Tuple`** *(type)*
-- **`CameraTarget`** *(interface)* — A serializable camera intent: where to stand and what to look at.
-- **`CameraMode`** *(type)*
-- **`CameraBounds`** *(interface)*
-- **`CameraControllerOptions`** *(interface)*
-- **`FlyToOptions`** *(interface)*
-- **`CameraController`** *(interface)*
-- **`PathCameraOptions`** *(interface)*
-- **`PathCameraSource`** *(interface)*
-- **`PathCamera`** *(interface)*
-
-  <details><summary>Example</summary>
-
-  ```ts
-  const cam = createCameraController(camera, { bounds: null })
-  cam.flyTo([0, 8, 24], [0, 0, 0], { fov: 40, onArrive: () => cam.follow(ship) })
-  loop.onFrame(ctx => cam.update(ctx))
-  ```
-  </details>
-
-#### `@tuomashatakka/threejs-scenes/instancing`
-
-Draw-call reduction: seeded InstancedMesh scatter fields and BatchedMesh building batches.
-Live demo: [`instanced-field.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/instanced-field.html)
-
 - **`createInstancedField`** *(function)*
 
   ```ts
@@ -438,83 +243,6 @@ Live demo: [`instanced-field.html`](https://tuomashatakka.github.io/threejs-scen
   ```ts
   function createBatchedBuildings({ geometries, material, transforms, sortObjects, perObjectFrustumCulled, }: BatchedBuildingsOptions): THREE.BatchedMesh;
   ```
-- **`InstancePlacement`** *(interface)*
-- **`PlaceFn`** *(type)*
-- **`InstancedFieldOptions`** *(interface)*
-- **`BatchedBuildingsOptions`** *(interface)*
-
-  <details><summary>Example</summary>
-
-  ```ts
-  const field = createInstancedField(geometry, material, {
-    count: 5000, radius: 40, seed: 7, hueRange: [0.5, 0.65],
-  })
-  scene.add(field.mesh)
-  ```
-  </details>
-
-#### `@tuomashatakka/threejs-scenes/materials`
-
-Material factories and presets: standard PBR, toon and holographic (fresnel + scanlines) materials with a userData.tick(elapsed) animation convention.
-Live demo: [`materials.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/materials.html)
-
-- **`createStandardMaterial`** *(function)* — Build a PBR material from a preset name (or raw params), merged with optional.
-
-  ```ts
-  function createStandardMaterial(presetOrParams?: StandardPresetName | THREE.MeshStandardMaterialParameters, overrides?: THREE.MeshStandardMaterialParameters): THREE.MeshStandardMaterial;
-  ```
-- **`createGradientToonMap`** *(function)* — Quantized gradient ramp for cel shading — NearestFilter keeps the bands hard.
-
-  ```ts
-  function createGradientToonMap(steps?: number): THREE.DataTexture;
-  ```
-- **`createToonMaterial`** *(function)*
-
-  ```ts
-  function createToonMaterial(options?: ToonOptions): THREE.MeshToonMaterial;
-  ```
-- **`createMatcapMaterial`** *(function)* — Matcap material.
-
-  ```ts
-  function createMatcapMaterial(matcap?: THREE.Texture | string): THREE.MeshMatcapMaterial;
-  ```
-- **`createHolographicMaterial`** *(function)*
-
-  ```ts
-  function createHolographicMaterial({ baseColor, fresnelStrength, scanlineDensity, opacity, }?: HolographicMaterialOptions): TickableMaterial;
-  ```
-- **`createTriplanarMaterial`** *(function)*
-
-  ```ts
-  function createTriplanarMaterial({ palette, tileScale, fogDistance, side, }?: TriplanarMaterialOptions): THREE.ShaderMaterial;
-  ```
-- **`createShaderQuad`** *(function)*
-
-  ```ts
-  function createShaderQuad({ fragmentShader, uniforms, pointerElement }: ShaderQuadOptions): ShaderQuad;
-  ```
-- **`MATERIAL_PRESETS`** *(const)*
-- **`StandardPresetName`** *(type)*
-- **`ToonOptions`** *(interface)*
-- **`HolographicMaterialOptions`** *(interface)*
-- **`TickableMaterial`** *(interface)*
-- **`TriplanarMaterialOptions`** *(interface)*
-- **`ShaderQuadOptions`** *(interface)*
-- **`ShaderQuad`** *(interface)*
-
-  <details><summary>Example</summary>
-
-  ```ts
-  const holo = createHolographicMaterial({ color: '#79f7ff', fresnelStrength: 2 })
-  loop.onFrame(({ elapsed }) => holo.userData.tick?.(elapsed))
-  ```
-  </details>
-
-#### `@tuomashatakka/threejs-scenes/geometry`
-
-Programmatic mesh generation: 2D shape builders, extrusion/lathe, in-place vertex deformers, mesh merging, layout helpers, kNN connection graphs and recentering infinite ground tiles.
-Live demo: [`geometry.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/geometry.html)
-
 - **`roundedRectShape`** *(function)*
 
   ```ts
@@ -655,33 +383,41 @@ Live demo: [`geometry.html`](https://tuomashatakka.github.io/threejs-scenes-skil
   ```ts
   function createPathTube(points: THREE.Vector3[], { radius, radialSegments, inward, vRepeat }?: PathTubeOptions): THREE.BufferGeometry;
   ```
-- **`ExtrudeOptions`** *(interface)*
-- **`ExtrudeAlongPathOptions`** *(interface)*
-- **`LatheOptions`** *(interface)*
-- **`Axis`** *(type)*
-- **`NoiseDisplaceOptions`** *(interface)*
-- **`Transform`** *(interface)*
-- **`GridLayout`** *(interface)*
-- **`RadialLayout`** *(interface)*
-- **`ConnectionGraphOptions`** *(interface)*
-- **`ConnectionGraph`** *(interface)*
-- **`InfiniteGroundOptions`** *(interface)*
-- **`InfiniteGround`** *(interface)*
-- **`TransportFrames`** *(interface)*
-- **`PathTubeOptions`** *(interface)*
-
-  <details><summary>Example</summary>
+- **`createStandardMaterial`** *(function)* — Build a PBR material from a preset name (or raw params), merged with optional.
 
   ```ts
-  const gear = createExtrudedMesh(gearShape({ teeth: 12, radius: 1 }), material, { depth: 0.3 })
-  applyTwist(gear.geometry, { angle: Math.PI / 6 })
+  function createStandardMaterial(presetOrParams?: StandardPresetName | THREE.MeshStandardMaterialParameters, overrides?: THREE.MeshStandardMaterialParameters): THREE.MeshStandardMaterial;
   ```
-  </details>
+- **`createGradientToonMap`** *(function)* — Quantized gradient ramp for cel shading — NearestFilter keeps the bands hard.
 
-#### `@tuomashatakka/threejs-scenes/loaders`
+  ```ts
+  function createGradientToonMap(steps?: number): THREE.DataTexture;
+  ```
+- **`createToonMaterial`** *(function)*
 
-Asset loading with progress aggregation, draco/ktx2 wiring and dispose-safe caches.
+  ```ts
+  function createToonMaterial(options?: ToonOptions): THREE.MeshToonMaterial;
+  ```
+- **`createMatcapMaterial`** *(function)* — Matcap material.
 
+  ```ts
+  function createMatcapMaterial(matcap?: THREE.Texture | string): THREE.MeshMatcapMaterial;
+  ```
+- **`createHolographicMaterial`** *(function)*
+
+  ```ts
+  function createHolographicMaterial({ baseColor, fresnelStrength, scanlineDensity, opacity, }?: HolographicMaterialOptions): TickableMaterial;
+  ```
+- **`createTriplanarMaterial`** *(function)*
+
+  ```ts
+  function createTriplanarMaterial({ palette, tileScale, fogDistance, side, }?: TriplanarMaterialOptions): THREE.ShaderMaterial;
+  ```
+- **`createShaderQuad`** *(function)*
+
+  ```ts
+  function createShaderQuad({ fragmentShader, uniforms, pointerElement }: ShaderQuadOptions): ShaderQuad;
+  ```
 - **`createGLTFLoader`** *(function)*
 
   ```ts
@@ -707,16 +443,6 @@ Asset loading with progress aggregation, draco/ktx2 wiring and dispose-safe cach
   ```ts
   function clearModelCache(): void;
   ```
-- **`FORMAT_LOADERS`** *(const)*
-- **`GLTFLoaderOptions`** *(interface)*
-- **`ModelLoader`** *(type)*
-- **`ModelCache`** *(interface)*
-
-#### `@tuomashatakka/threejs-scenes/animation`
-
-Animation controllers: clip playback with crossfades, tweens, easing curves and per-frame drivers registered on the frame loop.
-Live demo: [`animation.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/animation.html)
-
 - **`numberTrack`** *(function)*
 
   ```ts
@@ -767,13 +493,6 @@ Live demo: [`animation.html`](https://tuomashatakka.github.io/threejs-scenes-ski
   ```ts
   function createAnimationController(root: THREE.Object3D, clips?: THREE.AnimationClip[], loop?: FrameLoop): AnimationController;
   ```
-- **`TrackSpec`** *(interface)*
-
-#### `@tuomashatakka/threejs-scenes/props`
-
-Declarative prop definitions: seed-deterministic factories that build, place and dispose themed objects.
-Live demo: [`props.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/props.html)
-
 - **`defineProp`** *(function)* — Validate + tag a prop definition.
 
   ```ts
@@ -814,18 +533,6 @@ Live demo: [`props.html`](https://tuomashatakka.github.io/threejs-scenes-skill/d
   ```ts
   function resolveProp(src: PropFactory | string, ctx?: PropContext): Promise<PropInstance>;
   ```
-- **`CreatePropOptions`** *(interface)*
-- **`InstancedPropOptions`** *(interface)*
-- **`InstancedPropResult`** *(interface)*
-- **`CompositePart`** *(interface)*
-- **`PropComposite`** *(interface)*
-- **`PropRegistry`** *(interface)*
-
-#### `@tuomashatakka/threejs-scenes/lighting`
-
-Lighting rigs: IBL environment, shadow-tuned sun, hemisphere fill.
-Live demo: [`lighting.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/lighting.html)
-
 - **`applyEnvironment`** *(function)*
 
   ```ts
@@ -856,30 +563,6 @@ Live demo: [`lighting.html`](https://tuomashatakka.github.io/threejs-scenes-skil
   ```ts
   function createLightingRig(scene: THREE.Scene, renderer: THREE.WebGLRenderer, { preset, shadows, presets }?: LightingRigOptions): LightingRig;
   ```
-- **`LIGHTING_PRESETS`** *(const)*
-- **`EnvironmentOptions`** *(interface)*
-- **`SunOptions`** *(interface)*
-- **`HemisphereFillOptions`** *(interface)*
-- **`StandardLightingOptions`** *(interface)*
-- **`StandardLighting`** *(interface)*
-- **`LightConeOptions`** *(interface)*
-- **`LightingPresetName`** *(type)*
-- **`LightingConfig`** *(interface)*
-- **`LightingRigOptions`** *(interface)*
-- **`LightingRig`** *(interface)*
-
-  <details><summary>Example</summary>
-
-  ```ts
-  const rig = setupStandardLighting(scene, renderer, { environment: true, sun: true })
-  ```
-  </details>
-
-#### `@tuomashatakka/threejs-scenes/particles`
-
-Deterministic particle systems: CPU emitter with shapes, rates, bursts and curves over lifetime, plus a GPGPU emitter for 50k+ particles; curve bakers for shader-side sampling.
-Live demo: [`particles.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/particles.html)
-
 - **`sampleCurve`** *(function)* — Sample a scalar curve at t.
 
   ```ts
@@ -915,35 +598,6 @@ Live demo: [`particles.html`](https://tuomashatakka.github.io/threejs-scenes-ski
   ```ts
   function createParticleEmitter({ count, texture, bounds, seed, gravity, damping, }: ParticleEmitterOptions): ParticleEmitter;
   ```
-- **`ScalarCurve`** *(type)* — [t, value] stops, t in 0..1 ascending.
-- **`ColorCurve`** *(type)* — [t, color] stops; color as css string or [r,g,b] in 0..1.
-- **`EmitterShape`** *(type)*
-- **`EmitterOptions`** *(interface)*
-- **`Emitter`** *(interface)*
-- **`SpawnSample`** *(interface)*
-- **`GpuEmitterOptions`** *(type)*
-- **`ParticleEmitterOptions`** *(interface)*
-- **`ParticleEmitter`** *(interface)*
-
-  <details><summary>Example</summary>
-
-  ```ts
-  const emitter = createEmitter({
-    shape: { type: 'cone', angle: 0.4 }, rate: 200,
-    velocity: [0, 3, 0], lifetime: [0.8, 1.4],
-    size: { curve: [[0, 0.1], [0.2, 0.35], [1, 0]] },
-    seed: 7,
-  })
-  scene.add(emitter.points)
-  loop.onFrame(ctx => emitter.update(ctx))
-  ```
-  </details>
-
-#### `@tuomashatakka/threejs-scenes/post`
-
-WebGL EffectComposer post-processing: reorderable named pipeline plus individual passes — colour grade, god rays, depth-of-field with chromatic aberration, film grain, CRT, glitch stack, lensing, HUD beams, stereo.
-Live demo: [`post-processing.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/post-processing.html)
-
 - **`createComposer`** *(function)*
 
   ```ts
@@ -1004,7 +658,302 @@ Live demo: [`post-processing.html`](https://tuomashatakka.github.io/threejs-scen
   ```ts
   function createCinematicLUT(size?: number, { contrast, splitTone, saturation }?: CinematicLutOptions): THREE.Data3DTexture;
   ```
+- **`mulberry32`** *(function)*
+
+  ```ts
+  function mulberry32(seed: number): () => number;
+  ```
+- **`hash2`** *(function)*
+
+  ```ts
+  function hash2(x: number, y: number): number;
+  ```
+- **`hash3`** *(function)*
+
+  ```ts
+  function hash3(x: number, y: number, z: number): number;
+  ```
+- **`lerp`** *(function)*
+
+  ```ts
+  function lerp(a: number, b: number, t: number): number;
+  ```
+- **`smoothstep`** *(function)*
+
+  ```ts
+  function smoothstep(edge0: number, edge1: number, x: number): number;
+  ```
+- **`createSeededRng`** *(function)*
+
+  ```ts
+  function createSeededRng(seed: number): SeededRng;
+  ```
+- **`poissonDisk`** *(function)*
+
+  ```ts
+  function poissonDisk({ width, height, minDist, rng, k, }: PoissonDiskOptions): Point2[];
+  ```
+- **`createNoiseTexture`** *(function)*
+
+  ```ts
+  function createNoiseTexture({ size, frequency, octaves, seed, channels, }?: NoiseTextureOptions): THREE.DataTexture | null;
+  ```
+- **`createNoise3D`** *(function)*
+
+  ```ts
+  function createNoise3D(seed?: number): Noise3D;
+  ```
+- **`createProceduralBody`** *(function)*
+
+  ```ts
+  function createProceduralBody({ radius, detail, seed, type, displacement, frequency, octaves, ridged, palette, water, clouds, rings, }?: ProceduralBodySpec): ProceduralBody;
+  ```
+- **`createSegmentStream`** *(function)*
+
+  ```ts
+  function createSegmentStream(scene: THREE.Scene, { maxActive, lift, tension }?: SegmentStreamOptions): SegmentStream;
+  ```
+- **`VoxelChunk`** *(class)*
+- **`greedyMesh`** *(function)*
+
+  ```ts
+  function greedyMesh(chunk: VoxelChunk): THREE.BufferGeometry;
+  ```
+- **`createChunkManager`** *(function)*
+
+  ```ts
+  function createChunkManager({ chunkSize, viewRadius, rebaseThreshold, build, }: ChunkManagerOptions): ChunkManager;
+  ```
+- **`createSceneModule`** *(function)*
+
+  ```ts
+  function createSceneModule(def: SceneModuleDefinition): SceneModule;
+  ```
+- **`MaterialPool`** *(class)*
+- **`createTextureCache`** *(function)*
+
+  ```ts
+  function createTextureCache(): TextureCache;
+  ```
+- **`createProceduralTexture`** *(function)*
+
+  ```ts
+  function createProceduralTexture(key: string, paint: PaintFn, size?: number): THREE.CanvasTexture | null;
+  ```
+- **`EditStack`** *(class)*
+- **`resolveParam`** *(function)*
+
+  ```ts
+  function resolveParam(spec: ParamSpec, given: unknown): ParamValue;
+  ```
+- **`resolveParams`** *(function)*
+
+  ```ts
+  function resolveParams(specs: ParamSpecMap, given?: Record<string, unknown>): Record<string, ParamValue>;
+  ```
+- **`pickTopLevel`** *(function)*
+
+  ```ts
+  function pickTopLevel(scene: THREE.Scene, camera: THREE.Camera, ndcX: number, ndcY: number, isPickable?: PickFilter): PickResult | null;
+  ```
+- **`pick`** *(function)* — pickTopLevel with a distortion hook + object scoping.
+
+  ```ts
+  function pick(scene: THREE.Scene, camera: THREE.Camera, ndcX: number, ndcY: number, { isPickable, distortion, objects }?: PickOptions): PickResult | null;
+  ```
+- **`createClickGuard`** *(function)*
+
+  ```ts
+  function createClickGuard(thresholdPx?: number): CreateClickGuardReturnType;
+  ```
+- **`createViewRegistry`** *(function)*
+
+  ```ts
+  function createViewRegistry<S = unknown>({ create, limit }: ViewRegistryOptions<S>): ViewRegistry<S>;
+  ```
+- **`createSkybox`** *(function)*
+
+  ```ts
+  function createSkybox(scene: THREE.Scene, { color, gradient, equirect, cube, environment, radius, }: SkyboxOptions): Skybox;
+  ```
+- **`bindSceneEvents`** *(function)*
+
+  ```ts
+  function bindSceneEvents({ element, camera, bindings, correctPointer, }: SceneEventsOptions): SceneEvents;
+  ```
+- **`isStateController`** *(function)*
+
+  ```ts
+  function isStateController<S extends object>(source: StateSource<S> | undefined): source is StateController<S>;
+  ```
+- **`toController`** *(function)* — Normalize any state source to a controller.
+
+  ```ts
+  function toController<S extends object>(source: StateSource<S>): StateController<S>;
+  ```
+- **`resolveInitialState`** *(function)* — Mirror an external controller into an app: seed with `resolveInitialState`,.
+
+  ```ts
+  function resolveInitialState<S extends object>(source: StateSource<S> | undefined, fallback: S): S;
+  ```
+- **`bindStateSource`** *(function)*
+
+  ```ts
+  function bindStateSource<S extends object>(target: TargetType<S>, source: StateSource<S> | undefined): () => void;
+  ```
+- **`tweened`** *(function)* — Follow a numeric selection of controller state, easing every change.
+
+  ```ts
+  function tweened<S extends object, V extends TweenValue>(source: StateController<S>, select: (state: S) => V, { duration, easing, stiffness }?: TweenOptions): Tweened<V>;
+  ```
+- **`lerpOnChange`** *(function)* — Apply-on-animate: like {@link tweened}, but pushes each interpolated value.
+
+  ```ts
+  function lerpOnChange<S extends object, V extends TweenValue>(source: StateController<S>, select: (state: S) => V, apply: (value: V) => void, options?: TweenOptions): Disposable & {
+  ```
+- **`createIsoScaffold`** *(function)*
+
+  ```ts
+  function createIsoScaffold<S extends object = Record<string, unknown>>({ state, viewSize, flavor, near, far, pan, zoom, ground: groundOptions, ...appOptions }: IsoScaffoldOptions<S>): IsoScaffold<S>;
+  ```
+- **`createOrbitScaffold`** *(function)*
+
+  ```ts
+  function createOrbitScaffold<S extends object = Record<string, unknown>>({ state, autoRotate, ...appOptions }: OrbitScaffoldOptions<S>): OrbitScaffold<S>;
+  ```
+- **`createTppScaffold`** *(function)*
+
+  ```ts
+  function createTppScaffold<S extends object = Record<string, unknown>>({ state, target, offset, lookAhead, stiffness, rotationStiffness, ...appOptions }: TppScaffoldOptions<S>): TppScaffold<S>;
+  ```
+- **`createRailsScaffold`** *(function)*
+
+  ```ts
+  function createRailsScaffold<S extends object = Record<string, unknown>>({ state, segment, prefetchDistance, maxActive, lift, tension, yawRange, pitchRange, smoothing, speed, ...appOptions }: RailsScaffoldOptions<S>): RailsScaffold<S>;
+  ```
+- **`createFpsScaffold`** *(function)*
+
+  ```ts
+  function createFpsScaffold<S extends object = Record<string, unknown>>({ state, speed, lookSpeed, eyeHeight, pointerLock, collide, groundHeight, ...appOptions }: FpsScaffoldOptions<S>): FpsScaffold<S>;
+  ```
+- **`QUALITY_PRESETS`** *(const)*
+- **`MATERIAL_PRESETS`** *(const)*
+- **`FORMAT_LOADERS`** *(const)*
+- **`LIGHTING_PRESETS`** *(const)*
 - **`GradeShader`** *(const)*
+- **`proceduralTextureCache`** *(const)*
+- **`EASINGS`** *(const)*
+- **`Disposable`** *(interface)* — Anything that owns GPU or DOM resources and must be torn down explicitly.
+- **`FrameContext`** *(interface)* — Per-frame context handed to every animated subsystem by the frame loop.
+- **`FrameCallback`** *(type)*
+- **`FrameLoop`** *(interface)* — Self-contained Clock-driven frame loop.
+- **`PointerGestureCallbacks`** *(interface)* — Unified pointer gesture callbacks.
+- **`PointerGestureOptions`** *(interface)*
+- **`QualityTier`** *(type)*
+- **`PostEffectName`** *(type)*
+- **`QualityPreset`** *(interface)*
+- **`QualitySettings`** *(interface)*
+- **`SeededRng`** *(interface)* — Seeded pseudo-random stream.
+- **`SceneContext`** *(interface)* — Context injected into every scene module.
+- **`SceneModule`** *(interface)* — A self-contained scene feature.
+- **`MaterialPoolLike`** *(interface)* — Minimal structural type for a material pool, so {@link SceneContext} can.
+- **`ParamSpec`** *(type)* — A parameter specification used to coerce config- or LLM-driven content.
+- **`ParamValue`** *(type)*
+- **`ParamSpecMap`** *(type)*
+- **`LoadedModel`** *(interface)* — Normalized result of loading a model file (glTF and friends).
+- **`PlayOptions`** *(interface)*
+- **`AnimationController`** *(interface)* — Wraps an AnimationMixer + its actions.
+- **`PropContext`** *(interface)* — Minimal context a prop needs to build + animate itself.
+- **`InstancePlaceFn`** *(type)*
+- **`PropDefinition`** *(interface)* — Declarative description of a reusable prop: how to build its Object3D, plus.
+- **`PropFactory`** *(type)*
+- **`PropInstance`** *(interface)* — A live, mounted prop.
+- **`RendererOptions`** *(interface)*
+- **`ResizeHandler`** *(type)*
+- **`FrameLoopOptions`** *(interface)*
+- **`ClockMode`** *(type)*
+- **`ClockOptions`** *(interface)*
+- **`Clock`** *(interface)* — A simulation time source.
+- **`Reducer`** *(type)*
+- **`StoreListener`** *(type)*
+- **`Store`** *(interface)*
+- **`AppModule`** *(interface)* — A scene feature in the unidirectional flow.
+- **`AppCameraOptions`** *(interface)*
+- **`AppOptions`** *(interface)*
+- **`App`** *(interface)*
+- **`OverlayHandle`** *(interface)*
+- **`ScreenProjection`** *(interface)*
+- **`BootstrapSetupContext`** *(interface)*
+- **`BootstrapSetup`** *(type)*
+- **`BootstrapOptions`** *(interface)*
+- **`BootstrappedScene`** *(interface)*
+- **`IsoFlavor`** *(type)*
+- **`IsoCameraOptions`** *(interface)*
+- **`FollowCameraOptions`** *(interface)*
+- **`Vec3Tuple`** *(type)*
+- **`CameraTarget`** *(interface)* — A serializable camera intent: where to stand and what to look at.
+- **`CameraMode`** *(type)*
+- **`CameraBounds`** *(interface)*
+- **`CameraControllerOptions`** *(interface)*
+- **`FlyToOptions`** *(interface)*
+- **`CameraController`** *(interface)*
+- **`PathCameraOptions`** *(interface)*
+- **`PathCameraSource`** *(interface)*
+- **`PathCamera`** *(interface)*
+- **`InstancePlacement`** *(interface)*
+- **`PlaceFn`** *(type)*
+- **`InstancedFieldOptions`** *(interface)*
+- **`BatchedBuildingsOptions`** *(interface)*
+- **`ExtrudeOptions`** *(interface)*
+- **`ExtrudeAlongPathOptions`** *(interface)*
+- **`LatheOptions`** *(interface)*
+- **`Axis`** *(type)*
+- **`NoiseDisplaceOptions`** *(interface)*
+- **`Transform`** *(interface)*
+- **`GridLayout`** *(interface)*
+- **`RadialLayout`** *(interface)*
+- **`ConnectionGraphOptions`** *(interface)*
+- **`ConnectionGraph`** *(interface)*
+- **`InfiniteGroundOptions`** *(interface)*
+- **`InfiniteGround`** *(interface)*
+- **`TransportFrames`** *(interface)*
+- **`PathTubeOptions`** *(interface)*
+- **`StandardPresetName`** *(type)*
+- **`ToonOptions`** *(interface)*
+- **`HolographicMaterialOptions`** *(interface)*
+- **`TickableMaterial`** *(interface)*
+- **`TriplanarMaterialOptions`** *(interface)*
+- **`ShaderQuadOptions`** *(interface)*
+- **`ShaderQuad`** *(interface)*
+- **`GLTFLoaderOptions`** *(interface)*
+- **`ModelLoader`** *(type)*
+- **`ModelCache`** *(interface)*
+- **`TrackSpec`** *(interface)*
+- **`CreatePropOptions`** *(interface)*
+- **`InstancedPropOptions`** *(interface)*
+- **`InstancedPropResult`** *(interface)*
+- **`CompositePart`** *(interface)*
+- **`PropComposite`** *(interface)*
+- **`PropRegistry`** *(interface)*
+- **`EnvironmentOptions`** *(interface)*
+- **`SunOptions`** *(interface)*
+- **`HemisphereFillOptions`** *(interface)*
+- **`StandardLightingOptions`** *(interface)*
+- **`StandardLighting`** *(interface)*
+- **`LightConeOptions`** *(interface)*
+- **`LightingPresetName`** *(type)*
+- **`LightingConfig`** *(interface)*
+- **`LightingRigOptions`** *(interface)*
+- **`LightingRig`** *(interface)*
+- **`ScalarCurve`** *(type)* — [t, value] stops, t in 0..1 ascending.
+- **`ColorCurve`** *(type)* — [t, color] stops; color as css string or [r,g,b] in 0..1.
+- **`EmitterShape`** *(type)*
+- **`EmitterOptions`** *(interface)*
+- **`Emitter`** *(interface)*
+- **`SpawnSample`** *(interface)*
+- **`GpuEmitterOptions`** *(type)*
+- **`ParticleEmitterOptions`** *(interface)*
+- **`ParticleEmitter`** *(interface)*
 - **`ComposerOptions`** *(interface)*
 - **`ComposerHandle`** *(interface)*
 - **`PostPipelineOptions`** *(interface)*
@@ -1021,22 +970,63 @@ Live demo: [`post-processing.html`](https://tuomashatakka.github.io/threejs-scen
 - **`StereoRenderer`** *(interface)*
 - **`StereoSizeOptions`** *(interface)*
 - **`CinematicLutOptions`** *(interface)*
+- **`Point2`** *(type)*
+- **`PoissonDiskOptions`** *(interface)*
+- **`NoiseTextureOptions`** *(interface)*
+- **`Noise3D`** *(interface)*
+- **`ProceduralBodySpec`** *(interface)*
+- **`ProceduralBody`** *(interface)*
+- **`StreamSegmentInput`** *(interface)*
+- **`StreamSegment`** *(interface)*
+- **`SegmentStreamOptions`** *(interface)*
+- **`SegmentStream`** *(interface)*
+- **`VoxelVisitor`** *(type)*
+- **`ChunkBuilder`** *(type)*
+- **`ChunkManagerOptions`** *(interface)*
+- **`ChunkManager`** *(interface)*
+- **`SceneModuleDefinition`** *(interface)*
+- **`PaintFn`** *(type)*
+- **`TextureCache`** *(interface)*
+- **`PickFilter`** *(type)*
+- **`PickResult`** *(interface)*
+- **`PickOptions`** *(interface)*
+- **`ViewRenderer`** *(interface)* — One "view" of the app (a whole sub-scene).
+- **`ViewRegistryOptions`** *(interface)*
+- **`ViewRegistry`** *(interface)*
+- **`GradientSkyOptions`** *(interface)*
+- **`SkyboxOptions`** *(interface)*
+- **`Skybox`** *(interface)*
+- **`SceneEventHandlers`** *(interface)*
+- **`SceneEventBinding`** *(interface)*
+- **`SceneEventsOptions`** *(interface)*
+- **`SceneEvents`** *(interface)*
+- **`StateController`** *(interface)* — Read side of a store: the minimal contract scaffolds consume state through.
+- **`StateSource`** *(type)* — What a scaffold accepts as its state input.
+- **`Easing`** *(type)*
+- **`TweenValue`** *(type)* — Scalars and fixed-length numeric tuples — positions, scales, rgb colors.
+- **`TweenOptions`** *(interface)*
+- **`Tweened`** *(interface)*
+- **`IsoScaffoldOptions`** *(interface)*
+- **`IsoScaffold`** *(interface)*
+- **`OrbitScaffoldOptions`** *(interface)*
+- **`OrbitScaffold`** *(interface)*
+- **`TppScaffoldOptions`** *(interface)*
+- **`TppScaffold`** *(interface)*
+- **`RailsScaffoldOptions`** *(interface)*
+- **`RailsScaffold`** *(interface)*
+- **`FpsScaffoldOptions`** *(interface)*
+- **`FpsScaffold`** *(interface)*
 
   <details><summary>Example</summary>
 
   ```ts
-  const post = createPostPipeline(renderer, scene, camera, [
-    ['bloom', { strength: 0.7 }],
-    ['grade', { saturation: 1.1, lift: [0, 0, 0.02] }],
-  ])
-  loop.onFrame(({ delta }) => post.render(delta))
+  import { createApp, createIsoScaffold, createToonMaterial } from '@tuomashatakka/threejs-scenes'
   ```
   </details>
 
-#### `@tuomashatakka/threejs-scenes/post/webgpu`
+#### `@tuomashatakka/threejs-scenes/webgpu`
 
-WebGPU/TSL node-based effects mirroring the three.js WebGPU postprocessing examples: AO/GTAO, bloom (incl. selective + emissive), DOF, god rays, SSR, SSGI, SSS, TRAA, motion blur, outline, LUT, SMAA/FXAA/SSAA and more. Requires WebGPURenderer.
-Live demo: [`effects.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/effects.html)
+WebGPU post-processing and node-based effects.
 
 - **`createBloom`** *(function)*
 
@@ -1240,409 +1230,13 @@ Live demo: [`effects.html`](https://tuomashatakka.github.io/threejs-scenes-skill
   <details><summary>Example</summary>
 
   ```ts
-  import * as webgpuPost from '@tuomashatakka/threejs-scenes/post/webgpu'
-  
-  const { color, viewZ } = webgpuPost.createScenePass(scene, camera)
-  const bloom  = webgpuPost.createBloom(color, { strength: 0.8 })
-  const graded = webgpuPost.createDof(color.add(bloom), viewZ, { bokehScale: 2 })
-  const post   = webgpuPost.createPostProcessing(renderer, graded)
-  ```
-  </details>
-
-#### `@tuomashatakka/threejs-scenes/post/webgl`
-
-ShaderPass ports of the WebGPU effect set for plain WebGLRenderer + EffectComposer chains.
-Live demo: [`effects.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/effects.html)
-
-- **`Pass`** *(class)*
-- **`createBloom`** *(function)*
-
-  ```ts
-  function createBloom(options?: BloomOptions): Pass;
-  ```
-- **`createSelectiveBloom`** *(function)*
-
-  ```ts
-  function createSelectiveBloom(ctx: WebGlPassContext, options?: SelectiveBloomOptions): SelectiveBloomHandle;
-  ```
-- **`createEmissiveBloom`** *(function)*
-
-  ```ts
-  function createEmissiveBloom(ctx: WebGlPassContext, options?: EmissiveBloomOptions): SelectiveBloomHandle;
-  ```
-- **`createDof`** *(function)*
-
-  ```ts
-  function createDof(ctx: WebGlPassContext, options?: DofOptions): Pass;
-  ```
-- **`createAo`** *(function)*
-
-  ```ts
-  function createAo(ctx: WebGlPassContext, options?: AoOptions): Pass;
-  ```
-- **`createOutline`** *(function)*
-
-  ```ts
-  function createOutline(ctx: WebGlPassContext, options?: OutlineOptions): Pass;
-  ```
-- **`createSsr`** *(function)*
-
-  ```ts
-  function createSsr(ctx: WebGlPassContext, options?: SsrOptions): Pass;
-  ```
-- **`createLUT`** *(function)*
-
-  ```ts
-  function createLUT(options?: LUTOptions): Pass;
-  ```
-- **`createAfterimage`** *(function)*
-
-  ```ts
-  function createAfterimage(options?: AfterimageOptions): Pass;
-  ```
-- **`createAnamorphic`** *(function)*
-
-  ```ts
-  function createAnamorphic(options?: AnamorphicOptions): AnamorphicPass;
-  ```
-- **`createChromaticAberration`** *(function)*
-
-  ```ts
-  function createChromaticAberration(options?: ChromaticAberrationOptions): Pass;
-  ```
-- **`createDifference`** *(function)*
-
-  ```ts
-  function createDifference(options?: DifferenceOptions): DifferencePass;
-  ```
-- **`createRadialBlur`** *(function)*
-
-  ```ts
-  function createRadialBlur(options?: RadialBlurOptions): Pass;
-  ```
-- **`createGodRaysPass`** *(function)*
-
-  ```ts
-  function createGodRaysPass(): GodRaysPass;
-  ```
-- **`createMotionBlur`** *(function)*
-
-  ```ts
-  function createMotionBlur(options?: MotionBlurOptions): MotionBlurPass;
-  ```
-- **`createRetroPass`** *(function)*
-
-  ```ts
-  function createRetroPass(options?: RetroOptions): RetroPass;
-  ```
-- **`createFXAA`** *(function)*
-
-  ```ts
-  function createFXAA(_options?: FXAAOptions): Pass;
-  ```
-- **`createSMAA`** *(function)*
-
-  ```ts
-  function createSMAA(_options?: SMAAOptions): Pass;
-  ```
-- **`createSobel`** *(function)*
-
-  ```ts
-  function createSobel(options?: SobelOptions): Pass;
-  ```
-- **`createSsaa`** *(function)*
-
-  ```ts
-  function createSsaa(ctx: WebGlPassContext, options?: SsaaOptions): Pass;
-  ```
-- **`createTraa`** *(function)*
-
-  ```ts
-  function createTraa(ctx: WebGlPassContext, options?: TraaOptions): Pass;
-  ```
-- **`createCrtPass`** *(function)*
-
-  ```ts
-  function createCrtPass({ curvature, vignette, glitch }?: CrtOptions): CrtPass;
-  ```
-- **`crtCorrectPointer`** *(function)*
-
-  ```ts
-  function crtCorrectPointer(ndcX: number, ndcY: number, curvature: number): CrtCorrectPointerReturnType;
-  ```
-- **`ShaderPass`** *(class)*
-- **`createLensingPass`** *(function)*
-
-  ```ts
-  function createLensingPass({ radius, strength, coreSize }?: LensingOptions): LensingPass;
-  ```
-- **`createBurnInPass`** *(function)*
-
-  ```ts
-  function createBurnInPass({ decay }?: BurnInOptions): BurnInPass;
-  ```
-- **`BurnInPass`** *(class)*
-- **`createPixel`** *(function)*
-
-  ```ts
-  function createPixel(ctx: WebGlPassContext, options?: PixelOptions): Pass;
-  ```
-- **`createTransition`** *(function)*
-
-  ```ts
-  function createTransition(sceneA: THREE.Scene, cameraA: THREE.Camera, sceneB: THREE.Scene, cameraB: THREE.Camera, options?: TransitionOptions): Pass;
-  ```
-- **`createMaskPasses`** *(function)*
-
-  ```ts
-  function createMaskPasses(maskScene: THREE.Scene, maskCamera: THREE.Camera, options?: {
-  ```
-- **`createLensflare`** *(function)*
-
-  ```ts
-  function createLensflare(options?: LensflareOptions): Lensflare;
-  ```
-- **`createSsgi`** *(function)*
-
-  ```ts
-  function createSsgi(_options?: SsgiOptions): never;
-  ```
-- **`createSss`** *(function)*
-
-  ```ts
-  function createSss(_options?: SssOptions): never;
-  ```
-- **`BLOOM_LAYER`** *(const)*
-- **`WebGlPassContext`** *(interface)*
-- **`WebGlEffect`** *(type)*
-- **`Resizable`** *(interface)*
-- **`BloomOptions`** *(interface)*
-- **`SelectiveBloomOptions`** *(interface)*
-- **`SelectiveBloomHandle`** *(interface)*
-- **`EmissiveBloomOptions`** *(interface)*
-- **`DofOptions`** *(interface)*
-- **`AoOptions`** *(interface)*
-- **`OutlineOptions`** *(interface)*
-- **`SsrOptions`** *(interface)*
-- **`LUTOptions`** *(interface)*
-- **`AfterimageOptions`** *(interface)*
-- **`AnamorphicOptions`** *(interface)*
-- **`AnamorphicPass`** *(interface)*
-- **`ChromaticAberrationOptions`** *(interface)*
-- **`DifferenceOptions`** *(interface)*
-- **`DifferencePass`** *(interface)*
-- **`RadialBlurOptions`** *(interface)*
-- **`GodRaysPass`** *(interface)*
-- **`MotionBlurOptions`** *(interface)*
-- **`MotionBlurPass`** *(interface)*
-- **`RetroOptions`** *(interface)*
-- **`RetroPass`** *(interface)*
-- **`FXAAOptions`** *(type)*
-- **`SMAAOptions`** *(type)*
-- **`SobelOptions`** *(interface)*
-- **`SsaaOptions`** *(interface)*
-- **`TraaOptions`** *(interface)*
-- **`CrtOptions`** *(interface)*
-- **`CrtPass`** *(interface)*
-- **`LensingOptions`** *(interface)*
-- **`LensingPass`** *(interface)*
-- **`BurnInOptions`** *(interface)*
-- **`PixelOptions`** *(interface)*
-- **`TransitionOptions`** *(interface)*
-- **`MaskLayer`** *(interface)*
-- **`LensflareElementSpec`** *(interface)*
-- **`LensflareOptions`** *(interface)*
-- **`SsgiOptions`** *(interface)*
-- **`SssOptions`** *(interface)*
-
-#### `@tuomashatakka/threejs-scenes/procedural`
-
-Deterministic procedural generation: seeded mulberry32 RNG with per-consumer forking, Poisson-disk sampling, seamless noise textures, 3D simplex noise with fbm/ridged sums, procedural planets.
-Live demo: [`procedural.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/procedural.html)
-
-- **`mulberry32`** *(function)*
-
-  ```ts
-  function mulberry32(seed: number): () => number;
-  ```
-- **`hash2`** *(function)*
-
-  ```ts
-  function hash2(x: number, y: number): number;
-  ```
-- **`hash3`** *(function)*
-
-  ```ts
-  function hash3(x: number, y: number, z: number): number;
-  ```
-- **`lerp`** *(function)*
-
-  ```ts
-  function lerp(a: number, b: number, t: number): number;
-  ```
-- **`smoothstep`** *(function)*
-
-  ```ts
-  function smoothstep(edge0: number, edge1: number, x: number): number;
-  ```
-- **`createSeededRng`** *(function)*
-
-  ```ts
-  function createSeededRng(seed: number): SeededRng;
-  ```
-- **`poissonDisk`** *(function)*
-
-  ```ts
-  function poissonDisk({ width, height, minDist, rng, k, }: PoissonDiskOptions): Point2[];
-  ```
-- **`createNoiseTexture`** *(function)*
-
-  ```ts
-  function createNoiseTexture({ size, frequency, octaves, seed, channels, }?: NoiseTextureOptions): THREE.DataTexture | null;
-  ```
-- **`createNoise3D`** *(function)*
-
-  ```ts
-  function createNoise3D(seed?: number): Noise3D;
-  ```
-- **`createProceduralBody`** *(function)*
-
-  ```ts
-  function createProceduralBody({ radius, detail, seed, type, displacement, frequency, octaves, ridged, palette, water, clouds, rings, }?: ProceduralBodySpec): ProceduralBody;
-  ```
-- **`createSegmentStream`** *(function)*
-
-  ```ts
-  function createSegmentStream(scene: THREE.Scene, { maxActive, lift, tension }?: SegmentStreamOptions): SegmentStream;
-  ```
-- **`Point2`** *(type)*
-- **`PoissonDiskOptions`** *(interface)*
-- **`NoiseTextureOptions`** *(interface)*
-- **`Noise3D`** *(interface)*
-- **`ProceduralBodySpec`** *(interface)*
-- **`ProceduralBody`** *(interface)*
-- **`StreamSegmentInput`** *(interface)*
-- **`StreamSegment`** *(interface)*
-- **`SegmentStreamOptions`** *(interface)*
-- **`SegmentStream`** *(interface)*
-
-  <details><summary>Example</summary>
-
-  ```ts
-  const rng = createSeededRng(42)
-  const planet = createProceduralBody({ seed: rng.int(1e9), radius: 2, type: 'terrestrial' })
-  scene.add(planet.object)
-  ```
-  </details>
-
-#### `@tuomashatakka/threejs-scenes/voxels`
-
-Chunked voxel storage, greedy meshing and a streaming chunk manager for infinite worlds.
-Live demo: [`voxels.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/voxels.html)
-
-- **`VoxelChunk`** *(class)*
-- **`greedyMesh`** *(function)*
-
-  ```ts
-  function greedyMesh(chunk: VoxelChunk): THREE.BufferGeometry;
-  ```
-- **`createChunkManager`** *(function)*
-
-  ```ts
-  function createChunkManager({ chunkSize, viewRadius, rebaseThreshold, build, }: ChunkManagerOptions): ChunkManager;
-  ```
-- **`VoxelVisitor`** *(type)*
-- **`ChunkBuilder`** *(type)*
-- **`ChunkManagerOptions`** *(interface)*
-- **`ChunkManager`** *(interface)*
-
-  <details><summary>Example</summary>
-
-  ```ts
-  const chunk = new VoxelChunk(32)
-  chunk.fill((x, y, z) => noise.fbm(x / 16, y / 16, z / 16) > 0.1 ? 1 : 0)
-  scene.add(greedyMesh(chunk, material))
-  ```
-  </details>
-
-#### `@tuomashatakka/threejs-scenes/architecture`
-
-The context-injection module architecture from a shipping project: scene modules, LRU view registries, pooled materials, procedural texture caches, undo stacks, param resolution and distortion-aware picking.
-Live demo: [`architecture.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/architecture.html)
-
-- **`createSceneModule`** *(function)*
-
-  ```ts
-  function createSceneModule(def: SceneModuleDefinition): SceneModule;
-  ```
-- **`MaterialPool`** *(class)*
-- **`createTextureCache`** *(function)*
-
-  ```ts
-  function createTextureCache(): TextureCache;
-  ```
-- **`createProceduralTexture`** *(function)*
-
-  ```ts
-  function createProceduralTexture(key: string, paint: PaintFn, size?: number): THREE.CanvasTexture | null;
-  ```
-- **`EditStack`** *(class)*
-- **`resolveParam`** *(function)*
-
-  ```ts
-  function resolveParam(spec: ParamSpec, given: unknown): ParamValue;
-  ```
-- **`resolveParams`** *(function)*
-
-  ```ts
-  function resolveParams(specs: ParamSpecMap, given?: Record<string, unknown>): Record<string, ParamValue>;
-  ```
-- **`pickTopLevel`** *(function)*
-
-  ```ts
-  function pickTopLevel(scene: THREE.Scene, camera: THREE.Camera, ndcX: number, ndcY: number, isPickable?: PickFilter): PickResult | null;
-  ```
-- **`pick`** *(function)* — pickTopLevel with a distortion hook + object scoping.
-
-  ```ts
-  function pick(scene: THREE.Scene, camera: THREE.Camera, ndcX: number, ndcY: number, { isPickable, distortion, objects }?: PickOptions): PickResult | null;
-  ```
-- **`createClickGuard`** *(function)*
-
-  ```ts
-  function createClickGuard(thresholdPx?: number): CreateClickGuardReturnType;
-  ```
-- **`createViewRegistry`** *(function)*
-
-  ```ts
-  function createViewRegistry<S = unknown>({ create, limit }: ViewRegistryOptions<S>): ViewRegistry<S>;
-  ```
-- **`proceduralTextureCache`** *(const)*
-- **`SceneModuleDefinition`** *(interface)*
-- **`PaintFn`** *(type)*
-- **`TextureCache`** *(interface)*
-- **`PickFilter`** *(type)*
-- **`PickResult`** *(interface)*
-- **`PickOptions`** *(interface)*
-- **`ViewRenderer`** *(interface)* — One "view" of the app (a whole sub-scene).
-- **`ViewRegistryOptions`** *(interface)*
-- **`ViewRegistry`** *(interface)*
-
-  <details><summary>Example</summary>
-
-  ```ts
-  const module = createSceneModule({
-    id: 'rocks',
-    setup: ctx => { /* build once */ },
-    update: (ctx, frame) => { /* per tick */ },
-  })
+  import * as webgpuPost from '@tuomashatakka/threejs-scenes/webgpu'
   ```
   </details>
 
 #### `@tuomashatakka/threejs-scenes/jsx`
 
 Reactive JSX layer (no React): author scenes as elements, render() mounts them, signals re-apply reactive props every frame. Component hooks (useScene, useFrame, …) expose the library’s main interfaces inside function components; useFrameLoop works anywhere.
-Live demo: [`jsx-scene.html`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/jsx-scene.html)
 
 - **`useRuntime`** *(function)* — The mounting runtime: scene, renderer, loop, rng, camera accessors, ….
 
@@ -1774,36 +1368,6 @@ Live demo: [`jsx-scene.html`](https://tuomashatakka.github.io/threejs-scenes-ski
   ```
   </details>
 
-#### `@tuomashatakka/threejs-scenes/types`
-
-Shared contracts: SceneContext, SceneModule, FrameLoop/FrameContext, PropDefinition, AnimationController, QualityPreset, SeededRng.
-
-- **`Disposable`** *(interface)* — Anything that owns GPU or DOM resources and must be torn down explicitly.
-- **`FrameContext`** *(interface)* — Per-frame context handed to every animated subsystem by the frame loop.
-- **`FrameCallback`** *(type)*
-- **`FrameLoop`** *(interface)* — Self-contained Clock-driven frame loop.
-- **`PointerGestureCallbacks`** *(interface)* — Unified pointer gesture callbacks.
-- **`PointerGestureOptions`** *(interface)*
-- **`QualityTier`** *(type)*
-- **`PostEffectName`** *(type)*
-- **`QualityPreset`** *(interface)*
-- **`QualitySettings`** *(interface)*
-- **`SeededRng`** *(interface)* — Seeded pseudo-random stream.
-- **`SceneContext`** *(interface)* — Context injected into every scene module.
-- **`SceneModule`** *(interface)* — A self-contained scene feature.
-- **`MaterialPoolLike`** *(interface)* — Minimal structural type for a material pool, so {@link SceneContext} can.
-- **`ParamSpec`** *(type)* — A parameter specification used to coerce config- or LLM-driven content.
-- **`ParamValue`** *(type)*
-- **`ParamSpecMap`** *(type)*
-- **`LoadedModel`** *(interface)* — Normalized result of loading a model file (glTF and friends).
-- **`PlayOptions`** *(interface)*
-- **`AnimationController`** *(interface)* — Wraps an AnimationMixer + its actions.
-- **`PropContext`** *(interface)* — Minimal context a prop needs to build + animate itself.
-- **`InstancePlaceFn`** *(type)*
-- **`PropDefinition`** *(interface)* — Declarative description of a reusable prop: how to build its Object3D, plus.
-- **`PropFactory`** *(type)*
-- **`PropInstance`** *(interface)* — A live, mounted prop.
-
 <!-- api:end -->
 
 ### at a glance
@@ -1845,8 +1409,7 @@ not `ShaderPass` chains. To avoid name clashes they are exported under a
 namespace, or via the `./post/webgpu` subpath:
 
 ```ts
-import { webgpuPost } from 'threejs-scenes'
-// or: import * as webgpuPost from 'threejs-scenes/post/webgpu'
+import * as webgpuPost from '@tuomashatakka/threejs-scenes/webgpu'
 
 const { color, viewZ } = webgpuPost.createScenePass(scene, camera)
 const bloom = webgpuPost.createBloom(color, { strength: 0.8 })

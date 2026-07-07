@@ -5,8 +5,8 @@ A convenience layer over three's `AnimationMixer` / `AnimationClip` / `Animation
 and the API pages [AnimationMixer](https://threejs.org/docs/pages/AnimationMixer.html.md),
 [AnimationClip](https://threejs.org/docs/pages/AnimationClip.html.md),
 [AnimationAction](https://threejs.org/docs/pages/AnimationAction.html.md)).
-From the `animation` module
-(`@tuomashatakka/threejs-scenes/animation`, or `@scenes`).
+From the core package
+(`@tuomashatakka/threejs-scenes`, or `@scenes`).
 
 ## Controller
 

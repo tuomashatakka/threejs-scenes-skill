@@ -59,8 +59,8 @@ export function tweened<S extends object, V extends TweenValue> (
   const isScalar = typeof initial === 'number'
   const toArray  = (v: V): number[] => isScalar ? [ v as number ] : [ ...v as readonly number[] ]
 
-  let from    = toArray(initial)
-  let to      = toArray(initial)
+  let from = toArray(initial)
+  let to   = toArray(initial)
   const now   = toArray(initial)
   let t       = 1
   let resting = true

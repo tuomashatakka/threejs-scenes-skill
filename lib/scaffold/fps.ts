@@ -65,9 +65,10 @@ export function createFpsScaffold<S extends object = Record<string, unknown>> ({
 
   const camera          = app.ctx.camera
   camera.rotation.order = 'YXZ'
-  let yaw               = camera.rotation.y
-  let pitch             = camera.rotation.x
-  let dragging          = false
+
+  let yaw      = camera.rotation.y
+  let pitch    = camera.rotation.x
+  let dragging = false
   const pressed         = new Set<string>()
 
   const isLocked = (): boolean =>

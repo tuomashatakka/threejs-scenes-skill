@@ -17,7 +17,9 @@ export declare function toController<S extends object>(source: StateSource<S>): 
  * Data flows controller -> app only; the returned function detaches.
  */
 export declare function resolveInitialState<S extends object>(source: StateSource<S> | undefined, fallback: S): S;
-export declare function bindStateSource<S extends object>(target: {
+type TargetType<S extends object> = {
     setState(patch: Partial<S>): void;
-}, source: StateSource<S> | undefined): () => void;
+};
+export declare function bindStateSource<S extends object>(target: TargetType<S>, source: StateSource<S> | undefined): () => void;
+export {};
 //# sourceMappingURL=controller.d.ts.map

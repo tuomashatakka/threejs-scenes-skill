@@ -24,161 +24,18 @@ interface ModuleMeta {
 // Subpath modules, in exports-map order. desc/example/demo are hand-curated;
 // export lists and signatures come from the .d.ts files.
 const MODULES: Record<string, ModuleMeta> = {
-  scaffold: {
-    entry: 'dist/scaffold/index.d.ts',
-    desc:  'Genre-level wiring in one call (1.6): isometric scenes (iso camera + pan/zoom + infinite ground), orbit product viewers (turntable stage + fit-to-object), third-person follow, on-rails segment streaming, and first-person pointer-lock movement. Every scaffold wraps createApp and accepts a plain object, a store, or any { get, subscribe } controller as its state source.',
-    example: `import { createIsoScaffold } from '@tuomashatakka/threejs-scenes/scaffold/iso'
-
-const iso = createIsoScaffold({
-  canvas,
-  seed:     7,
-  viewSize: 24,
-  ground:   { tileSize: 24, displace: (x, z) => noise.fbm(x / 40, 0, z / 40) * 3 },
-  modules:  [worldModule],
-})
-iso.app.start()`,
-  },
-  state: {
-    entry: 'dist/state/index.d.ts',
-    desc:  'Unidirectional data flow as a layer (1.6): the serializable store, the { get, subscribe } controller protocol (plain objects are wrapped, external controllers stay bound), and tweened/lerpOnChange transition helpers that ease numeric state changes over frames — timed easing or exp-damped chase.',
-    example: `const zoom = tweened(store, s => s.zoom, { duration: 0.3, easing: EASINGS.easeInOut })
-loop.onFrame(ctx => { zoom.tick(ctx); camera.zoom = zoom.value(); camera.updateProjectionMatrix() })
-store.set({ zoom: 2 })   // eases instead of snapping`,
-  },
   core: {
-    entry: 'dist/core/index.d.ts',
-    demo:  'bootstrap',
-    desc:  'Scene scaffolding: renderer factory, the canvas-loop-framecapper-backed frame loop, unidirectional app shell, injectable clocks, stores, overlays, pointer gestures, disposal and device-tier quality presets.',
-    example: `import { createApp, createClock } from '@tuomashatakka/threejs-scenes'
-
-const app = createApp({
-  canvas,
-  seed:  7,
-  clock: createClock({ mode: 'fixed' }),   // deterministic sim steps
-  state: { hue: 0.52 },
-  modules: [{ id: 'spin', update: ({ scene }, { delta }) => { /* project state -> scene */ } }],
-})
-app.start()`,
+    entry: 'dist/index.d.ts',
+    desc:  'The unified core WebGL API: scaffolding, rendering loops, camera controls, materials, programmatic geometry, instancing, loaders, and state management.',
+    example: `import { createApp, createIsoScaffold, createToonMaterial } from '@tuomashatakka/threejs-scenes'`,
   },
-  camera: {
-    entry: 'dist/camera/index.d.ts',
-    demo:  'follow-camera',
-    desc:  'Camera factories: multi-mode controller (free / flyTo / follow / cockpit) with serializable tuple targets, orthographic isometric rig, framerate-independent third-person follow camera.',
-    example: `const cam = createCameraController(camera, { bounds: null })
-cam.flyTo([0, 8, 24], [0, 0, 0], { fov: 40, onArrive: () => cam.follow(ship) })
-loop.onFrame(ctx => cam.update(ctx))`,
-  },
-  instancing: {
-    entry: 'dist/instancing/index.d.ts',
-    demo:  'instanced-field',
-    desc:  'Draw-call reduction: seeded InstancedMesh scatter fields and BatchedMesh building batches.',
-    example: `const field = createInstancedField(geometry, material, {
-  count: 5000, radius: 40, seed: 7, hueRange: [0.5, 0.65],
-})
-scene.add(field.mesh)`,
-  },
-  materials: {
-    entry: 'dist/materials/index.d.ts',
-    demo:  'materials',
-    desc:  'Material factories and presets: standard PBR, toon and holographic (fresnel + scanlines) materials with a userData.tick(elapsed) animation convention.',
-    example: `const holo = createHolographicMaterial({ color: '#79f7ff', fresnelStrength: 2 })
-loop.onFrame(({ elapsed }) => holo.userData.tick?.(elapsed))`,
-  },
-  geometry: {
-    entry: 'dist/geometry/index.d.ts',
-    demo:  'geometry',
-    desc:  'Programmatic mesh generation: 2D shape builders, extrusion/lathe, in-place vertex deformers, mesh merging, layout helpers, kNN connection graphs and recentering infinite ground tiles.',
-    example: `const gear = createExtrudedMesh(gearShape({ teeth: 12, radius: 1 }), material, { depth: 0.3 })
-applyTwist(gear.geometry, { angle: Math.PI / 6 })`,
-  },
-  loaders: {
-    entry: 'dist/loaders/index.d.ts',
-    desc:  'Asset loading with progress aggregation, draco/ktx2 wiring and dispose-safe caches.',
-  },
-  animation: {
-    entry: 'dist/animation/index.d.ts',
-    demo:  'animation',
-    desc:  'Animation controllers: clip playback with crossfades, tweens, easing curves and per-frame drivers registered on the frame loop.',
-  },
-  props: {
-    entry: 'dist/props/index.d.ts',
-    demo:  'props',
-    desc:  'Declarative prop definitions: seed-deterministic factories that build, place and dispose themed objects.',
-  },
-  lighting: {
-    entry: 'dist/lighting/index.d.ts',
-    demo:  'lighting',
-    desc:  'Lighting rigs: IBL environment, shadow-tuned sun, hemisphere fill.',
-    example: `const rig = setupStandardLighting(scene, renderer, { environment: true, sun: true })`,
-  },
-  particles: {
-    entry: 'dist/particles/index.d.ts',
-    demo:  'particles',
-    desc:  'Deterministic particle systems: CPU emitter with shapes, rates, bursts and curves over lifetime, plus a GPGPU emitter for 50k+ particles; curve bakers for shader-side sampling.',
-    example: `const emitter = createEmitter({
-  shape: { type: 'cone', angle: 0.4 }, rate: 200,
-  velocity: [0, 3, 0], lifetime: [0.8, 1.4],
-  size: { curve: [[0, 0.1], [0.2, 0.35], [1, 0]] },
-  seed: 7,
-})
-scene.add(emitter.points)
-loop.onFrame(ctx => emitter.update(ctx))`,
-  },
-  post: {
-    entry: 'dist/post/index.d.ts',
-    demo:  'post-processing',
-    desc:  'WebGL EffectComposer post-processing: reorderable named pipeline plus individual passes — colour grade, god rays, depth-of-field with chromatic aberration, film grain, CRT, glitch stack, lensing, HUD beams, stereo.',
-    example: `const post = createPostPipeline(renderer, scene, camera, [
-  ['bloom', { strength: 0.7 }],
-  ['grade', { saturation: 1.1, lift: [0, 0, 0.02] }],
-])
-loop.onFrame(({ delta }) => post.render(delta))`,
-  },
-  'post/webgpu': {
+  webgpu: {
     entry: 'dist/post/webgpu/index.d.ts',
-    demo:  'effects',
-    desc:  'WebGPU/TSL node-based effects mirroring the three.js WebGPU postprocessing examples: AO/GTAO, bloom (incl. selective + emissive), DOF, god rays, SSR, SSGI, SSS, TRAA, motion blur, outline, LUT, SMAA/FXAA/SSAA and more. Requires WebGPURenderer.',
-    example: `import * as webgpuPost from '@tuomashatakka/threejs-scenes/post/webgpu'
-
-const { color, viewZ } = webgpuPost.createScenePass(scene, camera)
-const bloom  = webgpuPost.createBloom(color, { strength: 0.8 })
-const graded = webgpuPost.createDof(color.add(bloom), viewZ, { bokehScale: 2 })
-const post   = webgpuPost.createPostProcessing(renderer, graded)`,
-  },
-  'post/webgl': {
-    entry: 'dist/post/webgl/index.d.ts',
-    demo:  'effects',
-    desc:  'ShaderPass ports of the WebGPU effect set for plain WebGLRenderer + EffectComposer chains.',
-  },
-  procedural: {
-    entry: 'dist/procedural/index.d.ts',
-    demo:  'procedural',
-    desc:  'Deterministic procedural generation: seeded mulberry32 RNG with per-consumer forking, Poisson-disk sampling, seamless noise textures, 3D simplex noise with fbm/ridged sums, procedural planets.',
-    example: `const rng = createSeededRng(42)
-const planet = createProceduralBody({ seed: rng.int(1e9), radius: 2, type: 'terrestrial' })
-scene.add(planet.object)`,
-  },
-  voxels: {
-    entry: 'dist/voxels/index.d.ts',
-    demo:  'voxels',
-    desc:  'Chunked voxel storage, greedy meshing and a streaming chunk manager for infinite worlds.',
-    example: `const chunk = new VoxelChunk(32)
-chunk.fill((x, y, z) => noise.fbm(x / 16, y / 16, z / 16) > 0.1 ? 1 : 0)
-scene.add(greedyMesh(chunk, material))`,
-  },
-  architecture: {
-    entry: 'dist/architecture/index.d.ts',
-    demo:  'architecture',
-    desc:  'The context-injection module architecture from a shipping project: scene modules, LRU view registries, pooled materials, procedural texture caches, undo stacks, param resolution and distortion-aware picking.',
-    example: `const module = createSceneModule({
-  id: 'rocks',
-  setup: ctx => { /* build once */ },
-  update: (ctx, frame) => { /* per tick */ },
-})`,
+    desc:  'WebGPU post-processing and node-based effects.',
+    example: `import * as webgpuPost from '@tuomashatakka/threejs-scenes/webgpu'`,
   },
   jsx: {
     entry: 'dist/jsx/index.d.ts',
-    demo:  'jsx-scene',
     desc:  'Reactive JSX layer (no React): author scenes as elements, render() mounts them, signals re-apply reactive props every frame. Component hooks (useScene, useFrame, …) expose the library’s main interfaces inside function components; useFrameLoop works anywhere.',
     example: `import { render, h, useSignal, useFrame, useScene } from '@tuomashatakka/threejs-scenes/jsx'
 
@@ -189,10 +46,6 @@ function Spinner () {
   return h('mesh', { geometry: 'box', rotationY: hue })
 }
 render(h(Spinner, {}), { canvas })`,
-  },
-  types: {
-    entry: 'dist/types.d.ts',
-    desc:  'Shared contracts: SceneContext, SceneModule, FrameLoop/FrameContext, PropDefinition, AnimationController, QualityPreset, SeededRng.',
   },
 }
 
@@ -811,8 +664,8 @@ function renderPlayRuntime (): string {
   const runtime = String.raw`  <script>
     (() => {
       const baseHref = new URL('.', window.location.href).href
-      const moduleSpecifier = (moduleName) => ` + "`@tuomashatakka/threejs-scenes/${moduleName}`" + `
-      const moduleUrl = (moduleName) => ` + "`./lib/dist/${moduleName}/index.js`" + `
+      const moduleSpecifier = (moduleName) => moduleName === 'core' ? '@tuomashatakka/threejs-scenes' : ` + "`@tuomashatakka/threejs-scenes/${moduleName}`" + `
+      const moduleUrl = (moduleName) => moduleName === 'core' ? './lib/dist/index.js' : (moduleName === 'webgpu' ? './lib/dist/post/webgpu/index.js' : ` + "`./lib/dist/${moduleName}/index.js`" + `)
       const escapeHtml = (value) => String(value)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -1327,7 +1180,7 @@ function renderReadme (api: Record<string, DocExport[]>): string {
   lines.push('')
   for (const [ mod, exports ] of Object.entries(api)) {
     const meta = MODULES[mod]
-    lines.push(`#### \`${mod === 'types' ? '@tuomashatakka/threejs-scenes/types' : '@tuomashatakka/threejs-scenes/' + mod}\``)
+    lines.push(`#### \`${mod === 'core' ? '@tuomashatakka/threejs-scenes' : '@tuomashatakka/threejs-scenes/' + mod}\``)
     lines.push('')
     lines.push(meta.desc)
     if (meta.demo)
@@ -1388,7 +1241,7 @@ ${play}
       </article>`
     }).join('\n')
     return `    <section id="${id}" aria-labelledby="${id}-h">
-      <h2 id="${id}-h"><code>@tuomashatakka/threejs-scenes/${mod}</code></h2>
+      <h2 id="${id}-h"><code>${mod === 'core' ? '@tuomashatakka/threejs-scenes' : '@tuomashatakka/threejs-scenes/' + mod}</code></h2>
       <p>${escapeHtml(meta.desc)}</p>
 ${example}
 ${demo}

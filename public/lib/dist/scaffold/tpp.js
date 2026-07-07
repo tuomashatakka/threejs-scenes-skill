@@ -27,7 +27,7 @@ export function createTppScaffold({ state, target = undefined, offset = [0, 3, -
     }
     if (target)
         setTarget(target);
-    app.ctx.loop.onFrame(ctx => follow?.(ctx));
+    app.ctx.loop.onFrame(ctx => follow?.update(ctx));
     return {
         app,
         setTarget,

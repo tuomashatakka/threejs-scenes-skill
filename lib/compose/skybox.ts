@@ -72,8 +72,8 @@ export function createSkybox (scene: THREE.Scene, {
   environment = false,
   radius = 400,
 }: SkyboxOptions): Skybox {
-  const previousBackground  = scene.background
-  const previousEnvironment = scene.environment
+  const previousBackground            = scene.background
+  const previousEnvironment           = scene.environment
   const owned: { dispose (): void }[] = []
   let object: THREE.Object3D | null   = null
 
@@ -89,27 +89,27 @@ export function createSkybox (scene: THREE.Scene, {
     const material = new THREE.ShaderMaterial({
       vertexShader:   GRADIENT_VERTEX,
       fragmentShader: GRADIENT_FRAGMENT,
-      uniforms: {
+      uniforms:       {
         uTop:      { value: new THREE.Color(gradient.top) },
         uBottom:   { value: new THREE.Color(gradient.bottom) },
         uExponent: { value: gradient.exponent ?? 1.5 },
       },
-      side:        THREE.BackSide,
-      depthWrite:  false,
-      fog:         false,
+      side:       THREE.BackSide,
+      depthWrite: false,
+      fog:        false,
     })
-    const geometry = new THREE.SphereGeometry(radius, 32, 16)
-    const dome     = new THREE.Mesh(geometry, material)
-    dome.frustumCulled  = false
-    dome.renderOrder    = -1
+    const geometry     = new THREE.SphereGeometry(radius, 32, 16)
+    const dome         = new THREE.Mesh(geometry, material)
+    dome.frustumCulled = false
+    dome.renderOrder   = -1
     object              = dome
     scene.add(dome)
     owned.push(geometry, material)
   }
   else if (color !== undefined)
     scene.background = new THREE.Color(color)
-  else if (equirect) {
-    if (typeof equirect === 'string') {
+  else if (equirect)
+    if (typeof equirect === 'string')
       if (typeof document === 'undefined')
         console.warn('createSkybox: equirect URL needs a DOM; skipped')
       else
@@ -118,14 +118,12 @@ export function createSkybox (scene: THREE.Scene, {
           texture.colorSpace = THREE.SRGBColorSpace
           setTexture(texture, true)
         })
-    }
     else {
       equirect.mapping = THREE.EquirectangularReflectionMapping
       setTexture(equirect, false)
     }
-  }
   else if (cube)
-    if (Array.isArray(cube)) {
+    if (Array.isArray(cube))
       if (typeof document === 'undefined')
         console.warn('createSkybox: cube URLs need a DOM; skipped')
       else
@@ -133,7 +131,6 @@ export function createSkybox (scene: THREE.Scene, {
           texture.colorSpace = THREE.SRGBColorSpace
           setTexture(texture, true)
         })
-    }
     else
       setTexture(cube, false)
 

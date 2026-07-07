@@ -12,6 +12,7 @@ import { resolveInitialState, bindStateSource } from '../state/controller.js'
 import type { App, AppOptions } from '../core/app.js'
 import type { StateSource } from '../state/controller.js'
 import type { Vec3Tuple } from '../camera/targets.js'
+import type { CameraController } from '../camera/camera-controller.js'
 import type { Disposable, FrameContext } from '../types.js'
 
 
@@ -51,7 +52,7 @@ export function createTppScaffold<S extends object = Record<string, unknown>> ({
   })
   const detachState = bindStateSource(app, state)
 
-  let follow: ((ctx: FrameContext) => void) | null = null
+  let follow: CameraController | null = null
 
   function setTarget (next: THREE.Object3D | null): void {
     follow = next
@@ -66,7 +67,7 @@ export function createTppScaffold<S extends object = Record<string, unknown>> ({
   if (target)
     setTarget(target)
 
-  app.ctx.loop.onFrame(ctx => follow?.(ctx))
+  app.ctx.loop.onFrame(ctx => follow?.update(ctx))
 
   return {
     app,

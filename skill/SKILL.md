@@ -160,19 +160,12 @@ through an importmap so artifacts stay self-contained:
 </script>
 ```
 
-Subpath entry points: `@tuomashatakka/threejs-scenes/{core,camera,geometry,
-materials,loaders,animation,props,instancing,lighting,particles,post,post/webgpu,
-procedural,voxels,architecture,jsx}`. **New in 1.6 — domain subpaths**: the same
-library grouped by concern as `/{primitives,raster,compose,view,state,scaffold}`
-plus the curated `/main` barrel; `/scaffold/{iso,orbit,tpp,rails,fps}` wire whole
-genres (iso builder, product viewer, third-person, on-rails, first-person) around
-`createApp`, and `/state` adds the controller protocol + `tweened`/`lerpOnChange`
-transitions. New in 1.1: **geometry** (extrusion, vertex
-modifiers, merge/layout), **materials** presets (PBR/toon/matcap), **loaders**
-(GLTF + DRACO/KTX2/meshopt), **animation** (AnimationMixer controller + programmatic
-clips), **props** (`defineProp` / composites / instancing), and the reactive **jsx**
-layer. See `references/library-local.md`, `geometry.md`, `materials.md`,
-`props-and-factories.md`, `animation-system.md`, and `jsx-layer.md`.
+The library is structured into three main, tree-shakeable public entry points:
+- `@tuomashatakka/threejs-scenes` (WebGL core, scaffolding, cameras, animations, lighting, materials, geometry, instancing, loaders, and state management)
+- `@tuomashatakka/threejs-scenes/webgpu` (Dedicated WebGPU post-processing and TSL effects)
+- `@tuomashatakka/threejs-scenes/jsx` (Declarative, reactive JSX layer)
+
+See `references/library-local.md` for local integration details.
 
 ### JSX layer (declarative, reactive)
 

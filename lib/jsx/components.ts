@@ -127,9 +127,9 @@ function cameraHost (props: Record<string, unknown>, rt: Runtime): Host {
   rt.setCamera(camera, props.makeDefault !== false)
 
   if (type === 'follow' && props.target) {
-    const offset = new THREE.Vector3().fromArray((props.offset as number[]) ?? [ 0, 3, 6 ])
-    const update = createFollowCamera(camera, props.target as THREE.Object3D, { offset })
-    rt.addDisposer(rt.loop.registerUpdate(update))
+    const offset     = new THREE.Vector3().fromArray((props.offset as number[]) ?? [ 0, 3, 6 ])
+    const controller = createFollowCamera(camera, props.target as THREE.Object3D, { offset })
+    rt.addDisposer(rt.loop.registerUpdate(ctx => controller.update(ctx)))
     rt.disableOrbit()
   }
 

@@ -44,8 +44,10 @@ export function resolveInitialState<S extends object> (source: StateSource<S> | 
   return isStateController(source) ? source.get() : source
 }
 
+type TargetType<S extends object> = { setState (patch: Partial<S>): void }
+
 export function bindStateSource<S extends object> (
-  target: { setState (patch: Partial<S>): void },
+  target: TargetType<S>,
   source: StateSource<S> | undefined,
 ): () => void {
   if (!isStateController(source))

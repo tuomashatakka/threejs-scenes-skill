@@ -26,8 +26,8 @@ export interface SceneEventBinding extends SceneEventHandlers {
 }
 
 export interface SceneEventsOptions {
-  element: HTMLElement
-  camera:  THREE.Camera
+  element:   HTMLElement
+  camera:    THREE.Camera
   bindings?: SceneEventBinding[]
 
   /** Invert screen-space distortion (e.g. CRT warp) before raycasting. */
@@ -59,8 +59,10 @@ export function bindSceneEvents ({
       (event.clientX - rect.left) / rect.width * 2 - 1,
       -((event.clientY - rect.top) / rect.height) * 2 + 1,
     )
+
     const ndc = correctPointer ? correctPointer(scratchNdc) : scratchNdc
     raycaster.setFromCamera(ndc, camera)
+
     const hits = raycaster.intersectObject(binding.object, binding.recursive ?? true)
     return hits[0] ?? null
   }
@@ -74,6 +76,7 @@ export function bindSceneEvents ({
     for (const binding of active) {
       if (!has(binding))
         continue
+
       const hit = hitFor(event, binding)
       if (hit && (!best || hit.distance < best.hit.distance))
         best = { binding, hit }
@@ -83,6 +86,7 @@ export function bindSceneEvents ({
 
   const onDown = (event: PointerEvent): void => {
     guard.down(event.clientX, event.clientY)
+
     const found = nearest(event, b => !!b.onPointerDown)
     found?.binding.onPointerDown?.(found.hit, event)
   }
@@ -92,6 +96,7 @@ export function bindSceneEvents ({
     upTarget?.binding.onPointerUp?.(upTarget.hit, event)
     if (!guard.isClick(event.clientX, event.clientY))
       return
+
     const tapped = nearest(event, b => !!b.onTap)
     tapped?.binding.onTap?.(tapped.hit, event)
   }
@@ -105,6 +110,7 @@ export function bindSceneEvents ({
       }
     if (!anyHover)
       return
+
     const found = nearest(event, b => !!b.onEnter || !!b.onLeave)
     const next  = found?.binding ?? null
     if (next === hovered)

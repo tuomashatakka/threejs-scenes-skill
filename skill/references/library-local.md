@@ -33,20 +33,6 @@ which the importmap resolves to esm.sh — so there is exactly one three.js inst
 Adjust the `../lib/dist/` prefix to your file's depth (templates and demos both sit one
 directory above `lib/`, so `../lib/dist/` is correct in both).
 
-## Subpath entry points
-
-The barrel `@scenes` re-exports everything. For tree-shaking in a bundled project,
-import from a subpath of `@tuomashatakka/threejs-scenes`:
-
-`core`, `camera`, `geometry`, `materials`, `loaders`, `animation`, `props`,
-`instancing`, `lighting`, `particles`, `post`, `post/webgpu`, `procedural`, `voxels`,
-`architecture`, `jsx`.
-
-```js
-import { createExtrudedMesh } from '@tuomashatakka/threejs-scenes/geometry'
-import { render } from '@tuomashatakka/threejs-scenes/jsx'
-```
-
 ## Why local, not the npm package
 
 The package publishes to the **GitHub Packages registry** (`@tuomashatakka/threejs-scenes`),
@@ -60,23 +46,17 @@ it from a public CDN. A bundled local copy keeps every generated scene:
 Working references: every file in `skill/templates/*.html` imports the local lib this
 way. The public showcase (`public/`) uses the same pattern against `public/lib/dist/`.
 
-## Domain subpaths (1.6)
+## Consolidated Public Entry Points
 
-The same library is also grouped by concern — prefer these in new code:
+Instead of exposing dozens of subpaths, the library simplifies integration into three clean, tree-shakeable public entry points:
 
-| Subpath | Contains |
-| --- | --- |
-| `/primitives` | geometry construction + deformers, materials, procedural textures/noise/rng, instancing, voxel storage + meshing |
-| `/raster` | lighting rigs, cameras, color grading + every WebGL post pass, particle emitters (`/raster/webgpu` = the TSL node effects) |
-| `/compose` | scene modules, view registry, props, loaders, animation, group/layout, chunk manager, `createSkybox`, `bindSceneEvents` |
-| `/view` | renderer, frame loop, clocks, pointer gestures, overlay, projection, dispose, quality tiers |
-| `/state` | store + `{ get, subscribe }` controller protocol (`toController`, `bindStateSource`) + `tweened`/`lerpOnChange` transitions |
-| `/scaffold` | `createApp` + genre scaffolds; also `/scaffold/{iso,orbit,tpp,rails,fps}` individually |
-| `/main` | curated barrel: the six namespaces + the everyday twenty symbols |
+- `@tuomashatakka/threejs-scenes`: Unified core containing WebGL scaffolding, cameras, animations, lighting, materials, geometry, instancing, loaders, and state management.
+- `@tuomashatakka/threejs-scenes/webgpu`: WebGPU post-processing and node-based effects (isolated to prevent standard WebGL scenes from needing to resolve `three/webgpu` + `three/tsl`).
+- `@tuomashatakka/threejs-scenes/jsx`: Declarative, reactive JSX layer.
 
 ```js
-import { createIsoScaffold } from '@tuomashatakka/threejs-scenes/scaffold/iso'
-import { tweened, EASINGS } from '@tuomashatakka/threejs-scenes/state'
+import { createIsoScaffold, tweened, EASINGS } from '@tuomashatakka/threejs-scenes'
+import { render, h } from '@tuomashatakka/threejs-scenes/jsx'
 ```
 
 Every scaffold accepts `state` as a plain object, a store, or any

@@ -51,6 +51,16 @@ import {
   createViewRegistry,
   createModelCache,
   createPropRegistry,
+  // 1.6 state & scaffolds
+  toController,
+  isStateController,
+  resolveInitialState,
+  tweened,
+  lerpOnChange,
+  bindStateSource,
+  EASINGS,
+  // 1.6 skybox & compose
+  createSkybox,
 } from './index.js'
 import type { SceneContext } from './index.js'
 import { h, signal, Fragment } from './jsx/index.js'
@@ -294,29 +304,13 @@ const propsReg = createPropRegistry()
 propsReg.register('x', { name: 'x', build: () => new THREE.Object3D() })
 assert(propsReg.get('x') !== undefined && createPropRegistry().get('x') === undefined, 'prop registries are isolated instances')
 
-// 22. domain barrels (1.6) — namespaces resolve and carry their factories
-import * as primitives from './primitives/index.js'
-import * as raster from './raster/index.js'
-import * as compose from './compose/index.js'
-import * as view from './view/index.js'
-import * as stateNs from './state/index.js'
-import * as scaffold from './scaffold/index.js'
-import * as main from './main.js'
-
-assert(typeof primitives.createExtrudedMesh === 'function' && typeof primitives.greedyMesh === 'function', 'primitives barrel resolves')
-assert(typeof raster.setupStandardLighting === 'function' && typeof raster.createEmitter === 'function' && typeof raster.createIsoCamera === 'function', 'raster barrel resolves')
-assert(typeof compose.defineProp === 'function' && typeof compose.createSkybox === 'function' && typeof compose.bindSceneEvents === 'function', 'compose barrel resolves')
-assert(typeof view.createFrameLoop === 'function' && typeof view.disposeScene === 'function', 'view barrel resolves')
-assert(typeof scaffold.createIsoScaffold === 'function' && typeof scaffold.createFpsScaffold === 'function' && typeof scaffold.createApp === 'function', 'scaffold barrel resolves')
-assert(typeof main.createApp === 'function' && typeof main.primitives.createSeededRng === 'function', 'curated main barrel resolves')
-
-// 23. state layer — controller protocol + tween transitions
-const src = stateNs.toController({ zoom: 1 })
-assert(stateNs.isStateController(src) && !stateNs.isStateController({ zoom: 1 }), 'controller detection')
-assert(stateNs.resolveInitialState({ n: 2 }, { n: 0 }).n === 2, 'plain object is the initial state')
+// 22. state layer — controller protocol + tween transitions
+const src = toController({ zoom: 1 })
+assert(isStateController(src) && !isStateController({ zoom: 1 }), 'controller detection')
+assert(resolveInitialState({ n: 2 }, { n: 0 }).n === 2, 'plain object is the initial state')
 
 const zoomStore = createStore({ zoom: 1 })
-const tw        = stateNs.tweened(zoomStore, s => s.zoom, { duration: 0.2, easing: stateNs.EASINGS.linear })
+const tw        = tweened(zoomStore, s => s.zoom, { duration: 0.2, easing: EASINGS.linear })
 zoomStore.set({ zoom: 3 })
 tw.tick({ delta: 0.1, elapsed: 0.1, frame: 1 })
 assert(Math.abs((tw.value() as number) - 2) < 1e-6, 'tween walks halfway at half duration')
@@ -326,7 +320,7 @@ tw.dispose()
 
 const posStore = createStore({ pos: [ 0, 0, 0 ] as readonly number[] })
 let applied: readonly number[] = []
-const lerped = stateNs.lerpOnChange(posStore, s => s.pos, v => {
+const lerped = lerpOnChange(posStore, s => s.pos, v => {
   applied = [ ...v as readonly number[] ]
 }, { stiffness: 1000 })
 posStore.set({ pos: [ 1, 2, 3 ]})
@@ -336,16 +330,16 @@ lerped.dispose()
 
 const mirror = createStore({ n: 1 })
 let mirrored = 0
-const detach = stateNs.bindStateSource({ setState: (p: Partial<{ n: number }>) => {
+const detach = bindStateSource({ setState: (p: Partial<{ n: number }>) => {
   mirrored = p.n ?? mirrored
 } }, mirror)
 mirror.set({ n: 7 })
 assert(mirrored === 7, 'bindStateSource mirrors controller commits')
 detach()
 
-// 24. skybox — gradient dome is GL-free; dispose restores the background
+// 23. skybox — gradient dome is GL-free; dispose restores the background
 const skyScene = new THREE.Scene()
-const sky      = compose.createSkybox(skyScene, { gradient: { top: '#79f7ff', bottom: '#0a0a14' }})
+const sky      = createSkybox(skyScene, { gradient: { top: '#79f7ff', bottom: '#0a0a14' }})
 assert(sky.object !== null && skyScene.children.includes(sky.object), 'gradient dome added')
 sky.dispose()
 assert(skyScene.children.length === 0 && skyScene.background === null, 'skybox dispose restores scene')

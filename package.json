@@ -14,121 +14,9 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./main": {
-      "types": "./dist/main.d.ts",
-      "import": "./dist/main.js"
-    },
-    "./primitives": {
-      "types": "./dist/primitives/index.d.ts",
-      "import": "./dist/primitives/index.js"
-    },
-    "./raster": {
-      "types": "./dist/raster/index.d.ts",
-      "import": "./dist/raster/index.js"
-    },
-    "./raster/webgpu": {
+    "./webgpu": {
       "types": "./dist/post/webgpu/index.d.ts",
       "import": "./dist/post/webgpu/index.js"
-    },
-    "./compose": {
-      "types": "./dist/compose/index.d.ts",
-      "import": "./dist/compose/index.js"
-    },
-    "./view": {
-      "types": "./dist/view/index.d.ts",
-      "import": "./dist/view/index.js"
-    },
-    "./state": {
-      "types": "./dist/state/index.d.ts",
-      "import": "./dist/state/index.js"
-    },
-    "./scaffold": {
-      "types": "./dist/scaffold/index.d.ts",
-      "import": "./dist/scaffold/index.js"
-    },
-    "./scaffold/iso": {
-      "types": "./dist/scaffold/iso.d.ts",
-      "import": "./dist/scaffold/iso.js"
-    },
-    "./scaffold/orbit": {
-      "types": "./dist/scaffold/orbit.d.ts",
-      "import": "./dist/scaffold/orbit.js"
-    },
-    "./scaffold/tpp": {
-      "types": "./dist/scaffold/tpp.d.ts",
-      "import": "./dist/scaffold/tpp.js"
-    },
-    "./scaffold/rails": {
-      "types": "./dist/scaffold/rails.d.ts",
-      "import": "./dist/scaffold/rails.js"
-    },
-    "./scaffold/fps": {
-      "types": "./dist/scaffold/fps.d.ts",
-      "import": "./dist/scaffold/fps.js"
-    },
-    "./core": {
-      "types": "./dist/core/index.d.ts",
-      "import": "./dist/core/index.js"
-    },
-    "./camera": {
-      "types": "./dist/camera/index.d.ts",
-      "import": "./dist/camera/index.js"
-    },
-    "./instancing": {
-      "types": "./dist/instancing/index.d.ts",
-      "import": "./dist/instancing/index.js"
-    },
-    "./materials": {
-      "types": "./dist/materials/index.d.ts",
-      "import": "./dist/materials/index.js"
-    },
-    "./geometry": {
-      "types": "./dist/geometry/index.d.ts",
-      "import": "./dist/geometry/index.js"
-    },
-    "./loaders": {
-      "types": "./dist/loaders/index.d.ts",
-      "import": "./dist/loaders/index.js"
-    },
-    "./animation": {
-      "types": "./dist/animation/index.d.ts",
-      "import": "./dist/animation/index.js"
-    },
-    "./props": {
-      "types": "./dist/props/index.d.ts",
-      "import": "./dist/props/index.js"
-    },
-    "./lighting": {
-      "types": "./dist/lighting/index.d.ts",
-      "import": "./dist/lighting/index.js"
-    },
-    "./particles": {
-      "types": "./dist/particles/index.d.ts",
-      "import": "./dist/particles/index.js"
-    },
-    "./post": {
-      "types": "./dist/post/index.d.ts",
-      "import": "./dist/post/index.js"
-    },
-    "./post/webgpu": {
-      "types": "./dist/post/webgpu/index.d.ts",
-      "import": "./dist/post/webgpu/index.js"
-    },
-    "./post/webgl": {
-      "types": "./dist/post/webgl/index.d.ts",
-      "import": "./dist/post/webgl/index.js"
-    },
-    "./procedural": {
-      "types": "./dist/procedural/index.d.ts",
-      "import": "./dist/procedural/index.js"
-    },
-    "./voxels": {
-      "types": "./dist/voxels/index.d.ts",
-      "import": "./dist/voxels/index.js"
-    },
-    "./architecture": {
-      "types": "./dist/architecture/index.d.ts",
-      "import": "./dist/architecture/index.js"
     },
     "./jsx": {
       "types": "./dist/jsx/index.d.ts",
@@ -137,10 +25,6 @@
     "./jsx/jsx-runtime": {
       "types": "./dist/jsx/jsx-runtime.d.ts",
       "import": "./dist/jsx/jsx-runtime.js"
-    },
-    "./types": {
-      "types": "./dist/types.d.ts",
-      "import": "./dist/types.js"
     }
   },
   "files": [

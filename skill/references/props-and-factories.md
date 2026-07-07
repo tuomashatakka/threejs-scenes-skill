@@ -2,7 +2,7 @@
 
 A **prop** bundles an `Object3D` with optional animation clips, embedded light
 sources, and an instancing hint behind one declarative definition. From the `props`
-module (`@tuomashatakka/threejs-scenes/props`, or `@scenes`). See
+package (`@tuomashatakka/threejs-scenes`, or `@scenes`). See
 [library-local.md](./library-local.md) for the importmap.
 
 ## defineProp + createProp

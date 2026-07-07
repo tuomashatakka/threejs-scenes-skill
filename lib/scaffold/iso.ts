@@ -89,6 +89,7 @@ export function createIsoScaffold<S extends object = Record<string, unknown>> ({
       onDrag (dx, dy) {
         if (!pan)
           return
+
         const worldPerPixel = (camera.userData.viewSize as number) / (canvas.clientHeight || 1)
         focus.addScaledVector(right, -dx * worldPerPixel)
         focus.addScaledVector(forward, dy * worldPerPixel)
