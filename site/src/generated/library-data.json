@@ -1,7 +1,7 @@
 {
-  "version": "1.7.1",
+  "version": "1.7.2",
   "packageName": "@tuomashatakka/threejs-scenes",
-  "generatedAt": "package 1.7.1",
+  "generatedAt": "package 1.7.2",
   "totals": {
     "exports": 439,
     "modules": 4,

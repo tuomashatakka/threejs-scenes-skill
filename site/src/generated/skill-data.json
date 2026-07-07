@@ -1,6 +1,6 @@
 {
-  "version": "1.7.1",
-  "generatedAt": "package 1.7.1",
+  "version": "1.7.2",
+  "generatedAt": "package 1.7.2",
   "skill": {
     "name": "threejs-scenes",
     "description": "Build production-quality three.js WebGL scenes with vanilla three.js (no R3F). Use this skill whenever the user mentions three.js, WebGL, 3D scenes in the browser, isometric games, voxel worlds, infinite/endless scrollable 3D, procedural geometry, instancing/BatchedMesh, billboards, particle systems, shader effects, glitch effects, bloom, lens flares, god rays, depth of field, chromatic aberration, stereoscopy, anaglyph, film grain, HUD transitions, camera controls (orbit/follow/pan-zoom), touch-friendly 3D controls, three.js performance optimization, draw-call reduction, LOD, post-processing chains, EffectComposer, GLSL ShaderMaterial, or LLM-driven programmatic generation of three.js content. Also trigger when the user wants to build a 3D web experience, mounts a `canvas` for three.js, asks \"how do I make this run smooth\", needs frame-rate capping, or wants to generate 3D assets from text prompts via Gemini / ai-sdk function tools."
