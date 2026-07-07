@@ -1,135 +1,57 @@
 // scripts/generate-docs.ts
-// Generates the API reference from the built dist/ .d.ts files:
-//   1. readme.md         — comprehensive per-module reference between
-//                          <!-- api:begin --> / <!-- api:end --> markers
-//   2. public/api.html   — full reference page: every export with its exact
-//                          declaration, doc comment, per-module example code
-//                          and a live demo preview iframe
-// Run after `bun run build` (needs fresh dist/). Wired into `bun run docs`.
+// Generates readme API docs plus vite-consumed site data from the built dist/
+// declaration files, skill references, and skill script index.
 
 import ts from 'typescript'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 
 const root = fileURLToPath(new URL('..', import.meta.url))
+const siteGenerated = `${root}site/src/generated`
+
+interface PackageJson {
+  name:    string
+  version: string
+  exports: Record<string, { types: string, import: string }>
+}
 
 interface ModuleMeta {
-  entry:    string
-  desc:     string
-  demo?:    string
-  example?: string
-}
-
-// Subpath modules, in exports-map order. desc/example/demo are hand-curated;
-// export lists and signatures come from the .d.ts files.
-const MODULES: Record<string, ModuleMeta> = {
-  core: {
-    entry:   'dist/index.d.ts',
-    desc:    'The unified core WebGL API: scaffolding, rendering loops, camera controls, materials, programmatic geometry, instancing, loaders, and state management.',
-    example: `import { createApp, createIsoScaffold, createToonMaterial } from '@tuomashatakka/threejs-scenes'`,
-  },
-  webgpu: {
-    entry:   'dist/post/webgpu/index.d.ts',
-    desc:    'WebGPU post-processing and node-based effects.',
-    example: `import * as webgpuPost from '@tuomashatakka/threejs-scenes/webgpu'`,
-  },
-  jsx: {
-    entry:   'dist/jsx/index.d.ts',
-    desc:    'Reactive JSX layer (no React): author scenes as elements, render() mounts them, signals re-apply reactive props every frame. Component hooks (useScene, useFrame, …) expose the library’s main interfaces inside function components; useFrameLoop works anywhere.',
-    example: `import { render, h, useSignal, useFrame, useScene } from '@tuomashatakka/threejs-scenes/jsx'
-
-const [hue, setHue] = useSignal(0.5)
-function Spinner () {
-  const scene = useScene()
-  useFrame(({ delta }) => { /* per-frame */ })
-  return h('mesh', { geometry: 'box', rotationY: hue })
-}
-render(h(Spinner, {}), { canvas })`,
-  },
+  id:        string
+  subpath:   string
+  specifier: string
+  title:     string
+  desc:      string
+  entry:     string
+  importUrl: string
+  example?:  string
 }
 
 interface DocExport {
-  name:      string
-  kind:      string
-  doc:       string
-  signature: string
+  name:         string
+  kind:         string
+  doc:          string
+  summary:      string
+  signature:    string
+  coverage:     'playground' | 'type-reference'
+  sample:       string
+  relatedDemos: string[]
+  playSeed?:    PlaySeed
 }
 
-const KIND: Partial<Record<ts.SyntaxKind, string>> = {
-  [ts.SyntaxKind.FunctionDeclaration]:  'function',
-  [ts.SyntaxKind.ClassDeclaration]:     'class',
-  [ts.SyntaxKind.InterfaceDeclaration]: 'interface',
-  [ts.SyntaxKind.TypeAliasDeclaration]: 'type',
-  [ts.SyntaxKind.VariableDeclaration]:  'const',
-  [ts.SyntaxKind.EnumDeclaration]:      'enum',
-}
-
-function clean (text: string): string {
-  return text
-    .replace(/^export\s+/gm, '')
-    .replace(/^declare\s+/gm, '')
-    .replace(/\bexport\s+declare\s+/g, '')
-    .trim()
-}
-
-function extract (): Record<string, DocExport[]> {
-  const entries                          = Object.values(MODULES).map(m => root + m.entry)
-  const program                          = ts.createProgram(entries, { target: ts.ScriptTarget.ES2022, moduleResolution: ts.ModuleResolutionKind.Bundler })
-  const checker                          = program.getTypeChecker()
-  const out: Record<string, DocExport[]> = {}
-
-  for (const [ name, meta ] of Object.entries(MODULES)) {
-    const sf = program.getSourceFile(root + meta.entry)
-    if (!sf) {
-      console.warn(`docs: missing ${meta.entry}`)
-      continue
-    }
-
-    const moduleSymbol = checker.getSymbolAtLocation(sf)
-    if (!moduleSymbol)
-      continue
-
-    const exports: DocExport[] = []
-    for (const sym of checker.getExportsOfModule(moduleSymbol)) {
-      const resolved = sym.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(sym) : sym
-      const decls    = (resolved.declarations ?? []).filter(d => KIND[d.kind])
-      if (!decls.length)
-        continue
-
-      const doc = ts.displayPartsToString(resolved.getDocumentationComment(checker)) ||
-        ts.displayPartsToString(sym.getDocumentationComment(checker))
-      exports.push({
-        name:      sym.getName(),
-        kind:      KIND[decls[0].kind] ?? 'value',
-        doc:       doc.trim(),
-        signature: decls.map(d => clean(d.kind === ts.SyntaxKind.VariableDeclaration ? d.parent.parent.getText() : d.getText())).join('\n'),
-      })
-    }
-
-    // stable, declaration-agnostic ordering: functions/classes first, then consts, then types
-    const rank = (k: string): number => k === 'function' || k === 'class' ? 0 : k === 'const' || k === 'enum' ? 1 : 2
-    exports.sort((a, b) => rank(a.kind) - rank(b.kind))
-    out[name] = exports
+interface LibraryData {
+  version:     string
+  packageName: string
+  generatedAt: string
+  totals: {
+    exports: number
+    modules: number
+    playable: number
+    typeReferences: number
   }
-  return out
+  modules: Array<ModuleMeta & { exports: DocExport[] }>
 }
-
-function summary (doc: string): string {
-  const first = doc.split(/\.\s|\n/)[0].trim()
-  return first ? first.replace(/\.?$/, '.') : ''
-}
-
-function escapeHtml (s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-}
-
-function slugify (name: string): string {
-  return 'api-' + name.replace(/\//g, '-')
-}
-
-// ------------------------------------------------------------- api play demos
 
 interface ParsedParam {
   raw:                 string
@@ -152,22 +74,299 @@ interface ParsedSignature {
   isClass:    boolean
 }
 
-type HarnessFlavor = 'standard' | 'post' | 'jsx'
+type HarnessFlavor = 'standard' | 'post' | 'jsx' | 'webgpu'
 type WiringKind = 'object3d' | 'material' | 'camera' | 'pass' | 'value'
 
 interface PlaySeed {
-  module:     string
-  exportName: string
-  flavor:     HarnessFlavor
-  kind:       WiringKind
-  code:       string
+  moduleId:       string
+  exportName:     string
+  flavor:         HarnessFlavor
+  kind:           WiringKind
+  code:           string
+  requiresWebGpu: boolean
 }
 
-const PLAY_EXCLUDED_MODULES = new Set([ 'post/webgpu', 'types', 'scaffold', 'state' ])
-const HARNESS_VARIABLES     = new Set([ 'scene', 'camera', 'renderer', 'canvas', 'loop' ])
+interface SkillScript {
+  file:      string
+  category:  string
+  purpose:   string
+  reference: string
+  exists:    boolean
+}
 
-function escapeJsonForHtml (value: unknown): string {
-  return JSON.stringify(value).replace(/</g, '\\u003c')
+interface SkillReference {
+  file:    string
+  title:   string
+  summary: string
+}
+
+interface SkillCase {
+  id:        string
+  title:     string
+  summary:   string
+  demoMode:  'live' | 'schema' | 'guide'
+  tags:      string[]
+  demos:     string[]
+  refs:      string[]
+  scripts:   string[]
+  checklist: string[]
+}
+
+interface SkillData {
+  version:    string
+  generatedAt: string
+  skill: {
+    name:        string
+    description: string
+  }
+  references: SkillReference[]
+  scripts:    SkillScript[]
+  cases:      SkillCase[]
+  coverage: {
+    references: { total: number, covered: number }
+    scripts:    { total: number, covered: number }
+  }
+}
+
+const KIND: Partial<Record<ts.SyntaxKind, string>> = {
+  [ts.SyntaxKind.FunctionDeclaration]:  'function',
+  [ts.SyntaxKind.ClassDeclaration]:     'class',
+  [ts.SyntaxKind.InterfaceDeclaration]: 'interface',
+  [ts.SyntaxKind.TypeAliasDeclaration]: 'type',
+  [ts.SyntaxKind.VariableDeclaration]:  'const',
+  [ts.SyntaxKind.EnumDeclaration]:      'enum',
+}
+
+const DESCRIPTIONS: Record<string, { title: string, desc: string, example?: string }> = {
+  '.': {
+    title:   'core library',
+    desc:    'The unified WebGL API: app scaffolding, renderer loops, cameras, materials, geometry, instancing, loaders, animation, props, lighting, particles, post-processing, voxels, procedural helpers, state, and architecture utilities.',
+    example: `import { createApp, createIsoScaffold, createToonMaterial } from '@tuomashatakka/threejs-scenes'`,
+  },
+  './webgpu': {
+    title:   'webgpu effects',
+    desc:    'Experimental WebGPU/TSL node post-processing helpers isolated from the WebGL barrel so standard scenes never need to resolve three/webgpu.',
+    example: `import * as webgpuPost from '@tuomashatakka/threejs-scenes/webgpu'`,
+  },
+  './jsx': {
+    title:   'jsx scene layer',
+    desc:    'Reactive JSX-style scene authoring without React: render() mounts real three.js objects and function props are re-read on the frame loop.',
+    example: `import { render, h, signal } from '@tuomashatakka/threejs-scenes/jsx'`,
+  },
+  './jsx/jsx-runtime': {
+    title:   'jsx runtime',
+    desc:    'The jsx/jsxs/Fragment runtime target for tsconfig jsxImportSource plus the hyperscript helper used by no-build demos.',
+    example: `import { jsx, jsxs, Fragment } from '@tuomashatakka/threejs-scenes/jsx/jsx-runtime'`,
+  },
+}
+
+const DEMO_CATALOG = [
+  { slug: 'bootstrap', label: 'Bootstrap', caption: 'createApp state flow, fixed-step clock, seeded emitter, and click-to-reseed interaction.' },
+  { slug: 'minimal-scene', label: 'Minimal', caption: 'Renderer, frame loop, pointer orbit, resize observer, and explicit disposal.' },
+  { slug: 'geometry', label: 'Geometry', caption: 'Extruded shapes, lathe surfaces, deformers, static merging, and layout helpers.' },
+  { slug: 'materials', label: 'Materials', caption: 'PBR presets, toon ramps, matcap material, and material comparisons.' },
+  { slug: 'props', label: 'Props', caption: 'Reusable prop factories, composites, animation clips, and instanced props.' },
+  { slug: 'animation', label: 'Animation', caption: 'Programmatic clips and createAnimationController crossfades.' },
+  { slug: 'jsx-scene', label: 'JSX layer', caption: 'Hyperscript tree rendered by the reactive scene layer.' },
+  { slug: 'instanced-field', label: 'Instancing', caption: 'One-geometry InstancedMesh field with seeded placement.' },
+  { slug: 'batched-buildings', label: 'Batched', caption: 'Varied geometries sharing one material through BatchedMesh.' },
+  { slug: 'procedural', label: 'Procedural', caption: 'Seeded forest scatter with Poisson disk sampling and noise terrain.' },
+  { slug: 'shader-material', label: 'Shader', caption: 'Holographic ShaderMaterial with fresnel, scanlines, and animated opacity.' },
+  { slug: 'lighting', label: 'Lighting', caption: 'Environment, sun, and hemisphere fill toggles.' },
+  { slug: 'particles', label: 'Particles', caption: 'Emitter shapes, lifetime curves, bursts, and gpu-emitter fallback.' },
+  { slug: 'isometric', label: 'Isometric', caption: 'Orthographic isometric camera and instanced props.' },
+  { slug: 'isometric-infinite', label: 'Infinite iso', caption: 'Endless heightmap terrain under an isometric camera.' },
+  { slug: 'follow-camera', label: 'Follow cam', caption: 'Framerate-independent third-person camera damping.' },
+  { slug: 'post-processing', label: 'Post FX', caption: 'Composer chain with bloom, grade, and depth-sampling passes.' },
+  { slug: 'glitch', label: 'Glitch', caption: 'RGB shift, block displacement, and scan corruption passes.' },
+  { slug: 'god-rays', label: 'God rays', caption: 'Screen-space light shafts from a projected light position.' },
+  { slug: 'dof', label: 'DOF + CA', caption: 'Depth of field with chromatic aberration from a depth texture.' },
+  { slug: 'effects', label: 'Effects FX', caption: 'Interactive WebGL composer and WebGPU/TSL effect playground.' },
+  { slug: 'voxels', label: 'Voxels', caption: 'VoxelChunk storage and greedy meshing terrain.' },
+  { slug: 'architecture', label: 'Architecture', caption: 'Scene modules, material pools, pick introspection, and cleanup ownership.' },
+  { slug: 'icaras-foundry', label: 'Icaras Foundry', caption: 'A complete stylized ship-forge scene with bloom, beams, particles, and blueprint mode.' },
+] as const
+
+const SKILL_CASES: SkillCase[] = [
+  {
+    id: 'foundation',
+    title: 'minimal production scene',
+    summary: 'start with renderer, one loop, resize observer, pointer gestures, quality tiers, and explicit cleanup.',
+    demoMode: 'live',
+    tags: [ 'core', 'renderer', 'lifecycle' ],
+    demos: [ 'minimal-scene', 'bootstrap' ],
+    refs: [ 'core-principles.md', 'project-architecture.md', 'fundamentals.md', 'library-local.md', 'production-lessons.md', 'code-style.md', 'anti-patterns.md' ],
+    scripts: [ 'frame-loop.js', 'renderer-setup.js', 'scene-bootstrap.js', 'pointer-gesture.js', 'dispose-scene.js', 'quality-tier.js' ],
+    checklist: [ 'single loop', 'pixel ratio <= 2', 'resize observer on parent', 'dispose all owned resources' ],
+  },
+  {
+    id: 'camera-touch',
+    title: 'camera and touch controls',
+    summary: 'orbit, iso, follow, path, pointer capture, pinch zoom, and raycast-safe pointer coordinates.',
+    demoMode: 'live',
+    tags: [ 'camera', 'input', 'mobile' ],
+    demos: [ 'isometric', 'follow-camera' ],
+    refs: [ 'camera-handling.md', 'isometric-and-infinite-scenes.md' ],
+    scripts: [ 'iso-camera.js', 'follow-camera.js', 'pointer-gesture.js' ],
+    checklist: [ 'pointer events only', 'setPointerCapture on down', 'wheel listener passive false', 'damped movement' ],
+  },
+  {
+    id: 'instancing-infinite',
+    title: 'instancing, billboards, and infinite scenes',
+    summary: 'choose InstancedMesh, BatchedMesh, billboards, chunk managers, and origin rebasing for large worlds.',
+    demoMode: 'live',
+    tags: [ 'instancing', 'billboards', 'infinite' ],
+    demos: [ 'instanced-field', 'batched-buildings', 'isometric-infinite' ],
+    refs: [ 'instancing.md', 'billboards.md', 'isometric-and-infinite-scenes.md', 'performance.md' ],
+    scripts: [ 'instancing-grass.js', 'batched-buildings.js', 'sprite-batch.js', 'chunk-manager.js', 'iso-camera.js' ],
+    checklist: [ 'one geometry repeated -> InstancedMesh', 'varied geometry same material -> BatchedMesh', 'rebase open worlds' ],
+  },
+  {
+    id: 'geometry-procedural',
+    title: 'geometry and procedural generation',
+    summary: 'build shapes, extrusions, tubes, lattices, seeded scatter, noise textures, and runtime geometry factories.',
+    demoMode: 'live',
+    tags: [ 'geometry', 'procedural', 'textures' ],
+    demos: [ 'geometry', 'procedural' ],
+    refs: [ 'geometry.md', 'programmatic-generation.md', 'textures-and-maps.md' ],
+    scripts: [ 'procedural-crystal-geometry.js', 'extruded-mesh.js', 'geometry-modifiers.js', 'poisson-disk.js', 'rng.js', 'noise-texture.js', 'glyph-atlas.js' ],
+    checklist: [ 'seeded factories over static arrays', 'compute bounds after deformation', 'reuse scratch vectors' ],
+  },
+  {
+    id: 'materials-shaders',
+    title: 'materials and shaders',
+    summary: 'combine pbr presets, toon ramps, matcaps, triplanar mapping, and shader-material recipes without raw string chaos.',
+    demoMode: 'live',
+    tags: [ 'materials', 'shader', 'glsl' ],
+    demos: [ 'materials', 'shader-material' ],
+    refs: [ 'materials.md', 'shaders.md', 'textures-and-maps.md' ],
+    scripts: [ 'material-presets.js', 'holographic-material.js', 'noise-texture.js' ],
+    checklist: [ 'wrap glsl in tagged templates', 'share materials', 'dispose generated textures' ],
+  },
+  {
+    id: 'lighting',
+    title: 'lighting setup',
+    summary: 'compose image-based environment, shadow-tuned sun, hemisphere fill, and visible light cones.',
+    demoMode: 'live',
+    tags: [ 'lighting', 'shadows', 'environment' ],
+    demos: [ 'lighting' ],
+    refs: [ 'lighting.md' ],
+    scripts: [ 'lighting-setup.js' ],
+    checklist: [ 'hemisphere fill before ambient-only lighting', 'tight shadow frustum', 'mobile shadow budget' ],
+  },
+  {
+    id: 'particles',
+    title: 'particles and billboards',
+    summary: 'use cpu instanced particles, gpu-emitter paths, baked curves, and camera-facing sprite batches.',
+    demoMode: 'live',
+    tags: [ 'particles', 'billboards', 'curves' ],
+    demos: [ 'particles' ],
+    refs: [ 'particles.md', 'billboards.md', 'performance.md' ],
+    scripts: [ 'cpu-particles.js', 'sprite-batch.js', 'rng.js' ],
+    checklist: [ 'no Sprite per particle', 'depthWrite false for transparent particles', 'curves baked to buffers/textures' ],
+  },
+  {
+    id: 'post-processing',
+    title: 'post-processing effects',
+    summary: 'wire composer chains, bloom, glitch, god rays, dof, film grain, hud beam transitions, and stereoscopy.',
+    demoMode: 'live',
+    tags: [ 'post', 'composer', 'effects' ],
+    demos: [ 'effects', 'post-processing', 'glitch', 'god-rays', 'dof' ],
+    refs: [ 'post-processing.md', 'cinematic-and-streaming.md', 'shaders.md' ],
+    scripts: [ 'composer-setup.js', 'glitch-passes.js', 'god-rays-pass.js', 'dof-chromatic-pass.js', 'film-grain-pass.js', 'hud-beam-transition.js', 'stereoscopy.js' ],
+    checklist: [ 'output pass last', 'depth texture for depth effects', 'disable expensive passes on touch devices' ],
+  },
+  {
+    id: 'voxels',
+    title: 'voxel worlds',
+    summary: 'store voxel chunks compactly, greedy-mesh exposed faces, and update only affected chunks.',
+    demoMode: 'live',
+    tags: [ 'voxels', 'terrain', 'meshing' ],
+    demos: [ 'voxels' ],
+    refs: [ 'voxel-geometry.md', 'performance.md' ],
+    scripts: [ 'voxel-data.js', 'greedy-mesh.js', 'chunk-manager.js' ],
+    checklist: [ 'never mesh per voxel', 'greedy merge same-id faces', 'remesh affected chunk boundaries' ],
+  },
+  {
+    id: 'props-animation-jsx',
+    title: 'props, animation, and jsx',
+    summary: 'compose props, load gltf fallbacks, author programmatic clips, and mount reactive jsx scenes without react.',
+    demoMode: 'live',
+    tags: [ 'props', 'animation', 'jsx' ],
+    demos: [ 'props', 'animation', 'jsx-scene' ],
+    refs: [ 'props-and-factories.md', 'animation-system.md', 'jsx-layer.md' ],
+    scripts: [ 'prop-factory.js', 'prop-composite.js', 'animation-controller.js', 'gltf-prop.js', 'jsx-scene.js' ],
+    checklist: [ 'prop owns its dispose path', 'mixer uncacheRoot on teardown', 'function props are reactive accessors' ],
+  },
+  {
+    id: 'performance-debug',
+    title: 'performance and debug workflow',
+    summary: 'diagnose draw calls, fragments, gc pressure, shader stalls, and scene ownership before optimizing.',
+    demoMode: 'guide',
+    tags: [ 'performance', 'debug', 'cleanup' ],
+    demos: [ 'architecture', 'minimal-scene' ],
+    refs: [ 'performance.md', 'anti-patterns.md', 'production-lessons.md' ],
+    scripts: [ 'dispose-scene.js', 'quality-tier.js', 'frame-loop.js' ],
+    checklist: [ 'renderer.info before guessing', 'compile before first frame', 'avoid per-frame allocations' ],
+  },
+  {
+    id: 'llm-codegen',
+    title: 'llm-driven scene generation',
+    summary: 'route prompts through structured function tools, zod validation, deterministic seeds, and auditable generated files.',
+    demoMode: 'schema',
+    tags: [ 'llm', 'codegen', 'schemas' ],
+    demos: [],
+    refs: [ 'prompt-handling-flow.md', 'llm-function-definitions.md', 'threejs-docs-lookup.md' ],
+    scripts: [ 'llm-functions.js', 'codegen-runner.js', 'query-threejs-docs.js' ],
+    checklist: [ 'schemas before free-form code', 'embed prompt/model/seed metadata', 'cap tool roundtrips' ],
+  },
+]
+
+const packageJson = JSON.parse(readFileSync(`${root}package.json`, 'utf8')) as PackageJson
+const generatedAt = `package ${packageJson.version}`
+
+function moduleId (subpath: string): string {
+  return subpath === '.' ? 'root' : subpath.slice(2).replace(/\//g, '-')
+}
+
+function publicImportUrl (importPath: string): string {
+  return '/lib/' + importPath.replace(/^\.\//, '')
+}
+
+function moduleSpecifier (subpath: string): string {
+  return subpath === '.' ? packageJson.name : packageJson.name + subpath.slice(1)
+}
+
+function modulesFromPackage (): ModuleMeta[] {
+  return Object.entries(packageJson.exports).map(([ subpath, config ]) => {
+    const meta = DESCRIPTIONS[subpath] ?? {
+      title: subpath,
+      desc:  `Generated documentation for ${moduleSpecifier(subpath)}.`,
+    }
+    return {
+      id:        moduleId(subpath),
+      subpath,
+      specifier: moduleSpecifier(subpath),
+      title:     meta.title,
+      desc:      meta.desc,
+      entry:     config.types.replace(/^\.\//, ''),
+      importUrl: publicImportUrl(config.import),
+      example:   meta.example,
+    }
+  })
+}
+
+function clean (text: string): string {
+  return text
+    .replace(/^export\s+/gm, '')
+    .replace(/^declare\s+/gm, '')
+    .replace(/\bexport\s+declare\s+/g, '')
+    .trim()
+}
+
+function summary (doc: string): string {
+  const first = doc.split(/\.\s|\n/)[0].trim()
+  return first ? first.replace(/\.?$/, '.') : ''
 }
 
 function findMatching (text: string, openIndex: number, openChar = '(', closeChar = ')'): number {
@@ -368,33 +567,30 @@ function parseSignature (entry: DocExport): ParsedSignature | null {
 
 function unwrapReturnType (type: string): string {
   const promise = type.match(/^Promise<(.+)>$/s)
-  return promise ? promise[1].trim() : type
+  return promise ? promise[1]!.trim() : type
 }
 
-function harnessFlavor (moduleName: string): HarnessFlavor {
-  if (moduleName === 'jsx')
-    return 'jsx'
-  if (moduleName === 'post' || moduleName === 'post/webgl')
-    return 'post'
-  return 'standard'
-}
-
-function classifyReturn (moduleName: string, entry: DocExport, parsed: ParsedSignature): WiringKind {
-  if (moduleName === 'loaders')
-    return 'value'
-
+function classifyReturn (entry: DocExport, parsed: ParsedSignature): WiringKind {
   const type = unwrapReturnType(parsed.isClass ? entry.name : parsed.returnType)
-  if (moduleName === 'post' || moduleName === 'post/webgl') {
-    if ((/\b(Pass|ShaderPass|ComposerHandle|PostPipeline|StereoRenderer|SelectiveBloomHandle|HudBeamTransition)\b/).test(type))
-      return 'pass'
-  }
+  if ((/\b(Pass|ShaderPass|ComposerHandle|PostPipeline|StereoRenderer|SelectiveBloomHandle|HudBeamTransition|BurnInPass|CrtPass|RetroPass|MotionBlurPass|DifferencePass|AnamorphicPass)\b/).test(type))
+    return 'pass'
   if ((/\b(Camera|PerspectiveCamera|OrthographicCamera)\b/).test(type))
     return 'camera'
   if ((/Material\b|TickableMaterial\b/).test(type))
     return 'material'
-  if ((/\b(Object3D|Mesh|Group|LineSegments|Points|Light|InstancedMesh|BatchedMesh|BufferGeometry|Shape|ProceduralBody|InfiniteGround|ConnectionGraph|PropInstance|PropComposite|InstancedPropResult|ChunkManager)\b/).test(type))
+  if ((/\b(Object3D|Mesh|Group|LineSegments|Points|Light|InstancedMesh|BatchedMesh|BufferGeometry|Shape|ProceduralBody|InfiniteGround|ConnectionGraph|PropInstance|PropComposite|InstancedPropResult|ChunkManager|SkyboxHandle)\b/).test(type))
     return 'object3d'
   return 'value'
+}
+
+function flavorFor (module: ModuleMeta, entry: DocExport, kind: WiringKind): HarnessFlavor {
+  if (module.id === 'webgpu')
+    return 'webgpu'
+  if (module.id === 'jsx' || module.id === 'jsx-jsx-runtime')
+    return 'jsx'
+  if (kind === 'pass' || (/Pass|Composer|Pipeline|Bloom|Dof|Rays|Glitch|Crt|Lensing|BurnIn|FilmGrain|HudBeam|Stereo/i).test(entry.name))
+    return 'post'
+  return 'standard'
 }
 
 function nameAwareNumber (name: string): string {
@@ -453,7 +649,7 @@ function objectLiteralFromFieldValue (field: DestructuredField): string | null {
 
   if (localLower.endsWith('options'))
     return '{}'
-  if (HARNESS_VARIABLES.has(name))
+  if ([ 'scene', 'camera', 'renderer', 'canvas', 'loop' ].includes(name))
     return name
   if (lower === 'geometry')
     return 'demoGeometry.clone()'
@@ -477,28 +673,20 @@ function objectLiteralFromFieldValue (field: DestructuredField): string | null {
     return '() => ({ dispose () {} })'
   if (lower === 'paint')
     return 'paintDemoTexture'
-  if (lower === 'displace')
-    return '(x, z) => Math.sin(x * 0.7) * Math.cos(z * 0.7) * 0.2'
-  if (lower === 'place')
-    return null
-  if (lower === 'onframe')
-    return '() => {}'
-  if (lower === 'oncomplete')
+  if (lower === 'onframe' || lower === 'onresize' || lower === 'oncomplete' || lower === 'callback' || lower === 'cb')
     return '() => {}'
   if (lower === 'state')
     return '{ hue: 0.55 }'
   if (lower === 'modules')
     return '[]'
-  if (lower === 'clock')
-    return null
-  if (lower === 'reducer')
+  if (lower === 'clock' || lower === 'reducer' || lower === 'place')
     return null
   if (lower === 'background')
-    return '\'#0a0a14\''
+    return '\'#10131a\''
   if (lower.includes('color') || lower.includes('tint'))
-    return '\'#79f7ff\''
+    return '\'#6fe7d2\''
   if (lower === 'palette')
-    return '[\'#14213d\', \'#79f7ff\', \'#ff7ad9\']'
+    return '[\'#10131a\', \'#6fe7d2\', \'#ff7ab6\', \'#ffd166\']'
   if (lower === 'position' || lower === 'offset' || lower === 'lookat' || lower === 'gravity' || lower === 'velocity')
     return '[0, 1, 0]'
   if (lower === 'lifetime')
@@ -511,9 +699,7 @@ function objectLiteralFromFieldValue (field: DestructuredField): string | null {
     return 'demoFragmentShader'
   if (lower === 'uniforms')
     return '{}'
-  if (lower === 'pointerelement')
-    return 'canvas'
-  if (lower === 'element')
+  if (lower === 'pointerelement' || lower === 'element')
     return 'canvas'
   if (lower === 'type')
     return '\'terrestrial\''
@@ -521,10 +707,6 @@ function objectLiteralFromFieldValue (field: DestructuredField): string | null {
     return '\'demo\''
   if (lower === 'src' || lower === 'url')
     return '\'./replace-with-your-model.glb\''
-  if (lower.includes('width'))
-    return 'canvas.clientWidth'
-  if (lower.includes('height'))
-    return 'canvas.clientHeight'
   if (lower.includes('shadow') || lower.includes('enabled') || lower.includes('antialias') || lower.includes('orbit') || lower.includes('lighting'))
     return 'true'
   if (lower.includes('seed'))
@@ -551,8 +733,7 @@ function objectLiteralFromFieldValue (field: DestructuredField): string | null {
 }
 
 function synthesizeDestructuredParam (param: ParsedParam): string {
-  const fields = param.destructuredFields ?? []
-  const props  = fields
+  const props = (param.destructuredFields ?? [])
     .map(field => {
       const value = objectLiteralFromFieldValue(field)
       return value ? `  ${field.name}: ${value}` : ''
@@ -561,7 +742,7 @@ function synthesizeDestructuredParam (param: ParsedParam): string {
   return props.length ? `{\n${props.join(',\n')}\n}` : '{}'
 }
 
-function synthesizeObjectByType (type: string, name: string, moduleName: string): string {
+function synthesizeObjectByType (type: string, name: string): string {
   if ((/ExtrudeOptions\b/).test(type))
     return '{ shape: demoShape, depth: 0.35, material: demoMaterial.clone() }'
   if ((/TrackSpec\b/).test(type))
@@ -573,29 +754,29 @@ function synthesizeObjectByType (type: string, name: string, moduleName: string)
   if ((/InstancedPropOptions\b/).test(type))
     return '{ count: 12, radius: 2, seed: 7 }'
   if ((/SceneModuleDefinition\b/).test(type))
-    return '{ id: \'demo\', setup: () => {}, update: () => {} }'
+    return '{ name: \'demo\', build: () => {}, dispose: () => {} }'
   if ((/ParamSpecMap\b/).test(type))
-    return '{ speed: { type: \'number\', default: 1 } }'
+    return '{ speed: { kind: \'number\', default: 1 } }'
   if ((/ParamSpec\b/).test(type))
-    return '{ type: \'number\', default: 1 }'
+    return '{ kind: \'number\', default: 1 }'
   if ((/PoissonDiskOptions\b/).test(type))
     return '{ width: 4, height: 4, minDist: 0.5, rng: Math.random }'
   if ((/GpuEmitterOptions\b/).test(type))
-    return '{ count: 256, seed: 7 }'
+    return '{ capacity: 256, seed: 7 }'
   if ((/EmitterOptions\b/).test(type))
-    return '{ capacity: 256, seed: 7, color: [[0, \'#79f7ff\'], [1, \'#ff7ad9\']] }'
+    return '{ capacity: 256, seed: 7, color: [[0, \'#6fe7d2\'], [1, \'#ff7ab6\']] }'
   if ((/ParticleEmitterOptions\b/).test(type))
     return '{ count: 256, seed: 7 }'
   if ((/RenderOptions\b/).test(type))
-    return '{ canvas, background: \'#0a0a14\' }'
+    return '{ canvas, background: \'#10131a\' }'
   if ((/Record<string, unknown>/).test(type))
     return '{}'
-  if (moduleName === 'loaders' && (name === 'options' || (/GLTFLoaderOptions\b/).test(type)))
+  if ((/GLTFLoaderOptions\b/).test(type) || name.toLowerCase() === 'options')
     return '{}'
   return '{}'
 }
 
-function synthesizeParamValue (param: ParsedParam, moduleName: string): string {
+function synthesizeParamValue (param: ParsedParam): string {
   if (param.destructuredFields)
     return synthesizeDestructuredParam(param)
 
@@ -603,6 +784,8 @@ function synthesizeParamValue (param: ParsedParam, moduleName: string): string {
   const lower = name.toLowerCase()
   const type  = param.type
 
+  if ((/FrameCallback\b|\(\s*.*FrameContext.*\)\s*=>|callback|cb/i).test(type) || lower === 'cb' || lower.includes('callback'))
+    return '() => {}'
   if ((/THREE\.Object3D\[\]|Object3D\[\]/).test(type))
     return '[demoMesh]'
   if ((/THREE\.Mesh\[\]|Mesh\[\]/).test(type))
@@ -618,7 +801,7 @@ function synthesizeParamValue (param: ParsedParam, moduleName: string): string {
   if ((/ScalarCurve\b/).test(type))
     return '[[0, 0], [0.5, 1], [1, 0]]'
   if ((/ColorCurve\b/).test(type))
-    return '[[0, \'#79f7ff\'], [1, \'#ff7ad9\']]'
+    return '[[0, \'#6fe7d2\'], [1, \'#ff7ab6\']]'
   if ((/ReadonlyArray<readonly \[number, number, number\]>/).test(type))
     return 'demoPoints'
   if ((/ReadonlyArray<readonly \[number, number\]/).test(type))
@@ -630,7 +813,7 @@ function synthesizeParamValue (param: ParsedParam, moduleName: string): string {
   if ((/MaskLayer\[\]/).test(type))
     return '[]'
 
-  if (HARNESS_VARIABLES.has(name))
+  if ([ 'scene', 'camera', 'renderer', 'canvas', 'loop' ].includes(name))
     return name
   if ((/WebGlPassContext\b/).test(type))
     return 'postContext'
@@ -683,10 +866,10 @@ function synthesizeParamValue (param: ParsedParam, moduleName: string): string {
     return 'true'
   if ((/\bstring\b/).test(type)) {
     if (lower.includes('color') || lower.includes('tint'))
-      return '\'#79f7ff\''
+      return '\'#6fe7d2\''
     if (lower.includes('path'))
       return '\'.rotation[y]\''
-    if (moduleName === 'loaders' && (lower === 'url' || lower === 'src'))
+    if (lower === 'url' || lower === 'src')
       return '\'./replace-with-your-model.glb\''
     return stringLiteralFromUnion(type) ?? '\'demo\''
   }
@@ -695,48 +878,26 @@ function synthesizeParamValue (param: ParsedParam, moduleName: string): string {
   if (literal)
     return literal
 
-  return synthesizeObjectByType(type, name, moduleName)
+  return synthesizeObjectByType(type, name)
 }
 
-function synthesizeArgs (parsed: ParsedSignature, moduleName: string): string[] {
+function synthesizeArgs (parsed: ParsedSignature): string[] {
   return parsed.params
     .filter(param => !param.optional)
-    .map(param => synthesizeParamValue(param, moduleName))
+    .map(synthesizeParamValue)
 }
 
-function synthesizeLoaderStarter (parsed: ParsedSignature, kind: WiringKind): string {
-  const hasAssetParam = parsed.params.some(param => (/url|src/i).test(param.name) || (/url|src/i).test(param.raw))
-  if (!hasAssetParam) {
-    const args = synthesizeArgs(parsed, 'loaders')
-    const call = `${parsed.isClass ? `new ${parsed.name}` : parsed.name}(${args.join(', ')})`
+function synthesizeStarter (entry: DocExport, parsed: ParsedSignature, kind: WiringKind): string {
+  if ((/load(GLTF|Model)|createGLTFLoader|createModelCache/i).test(entry.name)) {
     return [
-      '// loader helpers are shown through the value fallback unless you add an asset url.',
-      `const result = ${call}`,
+      '// replace the url with a real asset when you want to load a model.',
+      `const result = ${entry.name === 'createGLTFLoader' || entry.name === 'createModelCache' ? `${entry.name}()` : JSON.stringify(`ready to call ${entry.name}('./model.glb')`)}`,
       `presentResult(result, '${kind}')`,
     ].join('\n')
   }
 
-  const args = synthesizeArgs(parsed, 'loaders')
-  const call = `${parsed.name}(${args.join(', ')})`
-  return [
-    '// no bundled model asset ships with the generated api page.',
-    '// replace the url below with a real gltf/glb asset, then run again.',
-    'const url = \'\'',
-    'if (url) {',
-    `  const result = await ${parsed.name}(url)`,
-    `  presentResult(result, '${kind}')`,
-    '} else {',
-    `  presentResult(${JSON.stringify(`ready to call ${call} once you provide an asset url`)}, 'value')`,
-    '}',
-  ].join('\n')
-}
-
-function synthesizeStandardStarter (parsed: ParsedSignature, moduleName: string, kind: WiringKind): string {
-  if (moduleName === 'loaders')
-    return synthesizeLoaderStarter(parsed, kind)
-
-  const args         = synthesizeArgs(parsed, moduleName)
-  const call         = `${parsed.isClass ? `new ${parsed.name}` : parsed.name}(${args.join(', ')})`
+  const args         = synthesizeArgs(parsed)
+  const call         = `${parsed.isClass ? `new ${entry.name}` : entry.name}(${args.join(', ')})`
   const awaitKeyword = (/^Promise</).test(parsed.returnType) ? 'await ' : ''
   return [
     `const result = ${awaitKeyword}${call}`,
@@ -744,586 +905,165 @@ function synthesizeStandardStarter (parsed: ParsedSignature, moduleName: string,
   ].join('\n')
 }
 
-function synthesizeJsxStarter (parsed: ParsedSignature, kind: WiringKind): string {
-  if ((/^use[A-Z]/).test(parsed.name) && parsed.name !== 'useFrameLoop') {
-    const args = synthesizeArgs(parsed, 'jsx')
-    return [
-      'function DemoComponent () {',
-      `  const value = ${parsed.name}(${args.join(', ')})`,
-      '  reportValue(\'hook value\', value)',
-      '  return api.h(\'mesh\', {',
-      '    geometry: new THREE.TorusKnotGeometry(0.8, 0.22, 80, 12),',
-      '    material: new THREE.MeshStandardMaterial({ color: \'#79f7ff\', roughness: 0.35, metalness: 0.2 }),',
-      '    rotation: () => [0, performance.now() * 0.0004, 0],',
-      '  })',
-      '}',
-      'const result = api.render(api.h(DemoComponent, null), { canvas, background: \'#0a0a14\' })',
-      `presentResult(result, '${kind}')`,
-    ].join('\n')
+function createPlaySeed (module: ModuleMeta, entry: DocExport): PlaySeed | undefined {
+  if (entry.kind === 'const' || entry.kind === 'enum') {
+    return {
+      moduleId:       module.id,
+      exportName:     entry.name,
+      flavor:         flavorFor(module, entry, 'value'),
+      kind:           'value',
+      code:           `const result = ${entry.name}\npresentResult(result, 'value')`,
+      requiresWebGpu: module.id === 'webgpu',
+    }
   }
 
-  const args = synthesizeArgs(parsed, 'jsx')
-  const call = `${parsed.isClass ? `new ${parsed.name}` : parsed.name}(${args.join(', ')})`
-  return [
-    `const result = ${call}`,
-    `presentResult(result, '${kind}')`,
-  ].join('\n')
-}
-
-function createPlaySeed (moduleName: string, entry: DocExport): PlaySeed | null {
-  if (PLAY_EXCLUDED_MODULES.has(moduleName) || entry.kind !== 'function' && entry.kind !== 'class')
-    return null
+  if (entry.kind !== 'function' && entry.kind !== 'class')
+    return undefined
 
   const parsed = parseSignature(entry)
   if (!parsed)
-    return null
+    return undefined
 
-  const flavor = harnessFlavor(moduleName)
-  const kind   = classifyReturn(moduleName, entry, parsed)
-  const code   = flavor === 'jsx'
-    ? synthesizeJsxStarter(parsed, kind)
-    : synthesizeStandardStarter(parsed, moduleName, kind)
-
-  return { module: moduleName, exportName: entry.name, flavor, kind, code }
+  const kind = classifyReturn(entry, parsed)
+  return {
+    moduleId:       module.id,
+    exportName:     entry.name,
+    flavor:         flavorFor(module, entry, kind),
+    kind,
+    code:           synthesizeStarter(entry, parsed, kind),
+    requiresWebGpu: module.id === 'webgpu',
+  }
 }
 
-function renderPlayControls (moduleName: string, entry: DocExport): string {
-  const seed = createPlaySeed(moduleName, entry)
-  if (!seed)
-    return ''
-  return `        <button type="button" class="play-btn" aria-expanded="false" aria-label="play demo for ${escapeHtml(entry.name)}">▶ play</button>
-        <script type="application/json" class="play-seed">${escapeJsonForHtml(seed)}</script>`
+function relatedDemos (module: ModuleMeta, name: string, kind: string): string[] {
+  const lower = `${module.id} ${name} ${kind}`.toLowerCase()
+  const demos = new Set<string>()
+  const add = (...slugs: string[]) => slugs.forEach(slug => demos.add(slug))
+
+  if (module.id === 'webgpu')
+    add('effects')
+  if (module.id.startsWith('jsx'))
+    add('jsx-scene')
+  if (/app|clock|store|renderer|frame|resize|pointer|dispose|quality|overlay|projection|bootstrap/.test(lower))
+    add('bootstrap', 'minimal-scene')
+  if (/camera|iso|follow|target|path/.test(lower))
+    add('isometric', 'follow-camera')
+  if (/instance|batched|building/.test(lower))
+    add('instanced-field', 'batched-buildings')
+  if (/shape|extrude|lathe|geometry|mesh|graph|ground|tube|merge|layout|twist|bend|taper/.test(lower))
+    add('geometry', 'procedural')
+  if (/material|toon|matcap|holographic|shader|triplanar|quad/.test(lower))
+    add('materials', 'shader-material')
+  if (/light|sun|environment|hemisphere/.test(lower))
+    add('lighting')
+  if (/particle|emitter|curve/.test(lower))
+    add('particles')
+  if (/post|pass|composer|bloom|glitch|rays|dof|film|grain|stereo|lut|chromatic|radial|outline|ssr|smaa|fxaa|retro|crt|lensing|burn/.test(lower))
+    add('effects', 'post-processing')
+  if (/voxel|chunk|greedy/.test(lower))
+    add('voxels')
+  if (/prop|registry|gltf|model/.test(lower))
+    add('props')
+  if (/animation|clip|track|mixer|tween|easing/.test(lower))
+    add('animation')
+  if (/module|pool|param|pick|view|edit|event/.test(lower))
+    add('architecture')
+  if (/rng|noise|poisson|procedural|body|texture|segment/.test(lower))
+    add('procedural')
+
+  if (!demos.size)
+    add(module.id === 'webgpu' ? 'effects' : module.id.startsWith('jsx') ? 'jsx-scene' : 'minimal-scene')
+  return [ ...demos ]
 }
 
-function renderPlayRuntime (): string {
-  const helpersSource = JSON.stringify(sharedHarnessHelpers())
-  const runtime       = String.raw `  <script>
-    (() => {
-      const baseHref = new URL('.', window.location.href).href
-      const moduleSpecifier = (moduleName) => moduleName === 'core' ? '@tuomashatakka/threejs-scenes' : ` + '`@tuomashatakka/threejs-scenes/${moduleName}`' + `
-      const moduleUrl = (moduleName) => moduleName === 'core' ? './lib/dist/index.js' : (moduleName === 'webgpu' ? './lib/dist/post/webgpu/index.js' : ` + '`./lib/dist/${moduleName}/index.js`' + `)
-      const escapeHtml = (value) => String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-      const escapeScript = (value) => String(value).replace(new RegExp('<' + '/script', 'gi'), '<\\\\/script')
-      const importMap = (seed) => JSON.stringify({
-        imports: {
-          three: 'https://esm.sh/three@0.184.0',
-          'three/addons/': 'https://esm.sh/three@0.184.0/addons/',
-          'three/webgpu': 'https://esm.sh/three@0.184.0/webgpu',
-          'three/tsl': 'https://esm.sh/three@0.184.0/tsl',
-          '@tuomashatakka/canvas-loop-framecapper': './lib/vendor/canvas-loop-framecapper/index.js',
-          react: 'https://esm.sh/react@19',
-          [moduleSpecifier(seed.module)]: moduleUrl(seed.module),
-        },
-      }, null, 2)
-
-      const helpersScript = () => ${helpersSource}
-
-      function standardHarness (seed, code, mode = 'standard') {
-        const specifier = moduleSpecifier(seed.module)
-        const exportName = seed.exportName
-        const imports = importMap(seed)
-        const renderWithComposer = mode === 'post'
-        return ` + "`<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <base href=\"${baseHref}\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n  <style>\n    html, body { margin: 0; height: 100%; background: #0a0a14; overflow: hidden; font-family: ui-monospace, 'SF Mono', Menlo, monospace; color: #cfe0ff }\n    main { position: fixed; inset: 0 }\n    canvas { display: block; width: 100%; height: 100%; touch-action: none }\n    aside { position: fixed; left: 10px; top: 10px; right: 10px; display: flex; justify-content: space-between; gap: 10px; pointer-events: none; font-size: 11px; line-height: 1.4 }\n    aside span, pre { padding: 6px 8px; border: 1px solid #2a3346; border-radius: 6px; background: rgba(10, 12, 20, 0.72) }\n    pre { position: fixed; left: 10px; right: 10px; bottom: 10px; max-height: 34%; margin: 0; overflow: auto; white-space: pre-wrap; color: #ffb38a }\n    b { color: #79f7ff }\n  </style>\n  <script type=\"importmap\">${imports}<\\/script>\n</head>\n<body>\n  <main><canvas id=\"scene\"></canvas><aside><span>${escapeHtml(seed.module)} · <b>${escapeHtml(exportName)}</b></span><span id=\"stats\">starting</span></aside><pre id=\"report\" hidden></pre></main>\n  <script type=\"module\">\n    import * as THREE from 'three'\n    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'\n    ${renderWithComposer ? \"import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'\\n    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'\\n    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'\" : ''}\n    import * as api from '${specifier}'\n    const { ${exportName} } = api\n    const PLAY_MODE = '${mode}'\n    ${helpersScript(seed, code, mode)}\n    startDemoLoop({ composerEnabled: ${renderWithComposer} })\n    try {\n${escapeScript(code).split('\\n').map(line => `      ${line}`).join('\\n')}\n    } catch (error) {\n      showError(error)\n    }\n  <\\/script>\n</body>\n</html>`" + `
-      }
-
-      function jsxHarness (seed, code) {
-        const specifier = moduleSpecifier(seed.module)
-        const exportName = seed.exportName
-        const imports = importMap(seed)
-        return ` + "`<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <base href=\"${baseHref}\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n  <style>\n    html, body { margin: 0; height: 100%; background: #0a0a14; overflow: hidden; font-family: ui-monospace, 'SF Mono', Menlo, monospace; color: #cfe0ff }\n    canvas { display: block; width: 100%; height: 100%; touch-action: none }\n    aside { position: fixed; left: 10px; top: 10px; right: 10px; display: flex; justify-content: space-between; gap: 10px; pointer-events: none; font-size: 11px; line-height: 1.4 }\n    aside span, pre { padding: 6px 8px; border: 1px solid #2a3346; border-radius: 6px; background: rgba(10, 12, 20, 0.72) }\n    pre { position: fixed; left: 10px; right: 10px; bottom: 10px; max-height: 34%; margin: 0; overflow: auto; white-space: pre-wrap; color: #ffb38a }\n    b { color: #79f7ff }\n  </style>\n  <script type=\"importmap\">${imports}<\\/script>\n</head>\n<body>\n  <canvas id=\"scene\"></canvas><aside><span>${escapeHtml(seed.module)} · <b>${escapeHtml(exportName)}</b></span><span id=\"stats\">jsx runtime</span></aside><pre id=\"report\" hidden></pre>\n  <script type=\"module\">\n    import * as THREE from 'three'\n    import * as api from '${specifier}'\n    const { ${exportName} } = api\n    const canvas = document.querySelector('#scene')\n    const report = document.querySelector('#report')\n    const stats = document.querySelector('#stats')\n    const demoElement = api.h('scene', { background: '#0a0a14' },\n      api.h('camera', { type: 'perspective', position: [0, 2.5, 7], makeDefault: true }),\n      api.h('light', { type: 'hemisphere', intensity: 0.7 }),\n      api.h('light', { type: 'spot', position: [5, 8, 3], intensity: 55, penumbra: 0.45, castShadow: true }),\n      api.h('mesh', {\n        geometry: new THREE.TorusKnotGeometry(0.8, 0.22, 80, 12),\n        material: new THREE.MeshStandardMaterial({ color: '#79f7ff', roughness: 0.35, metalness: 0.2 }),\n        rotation: () => [0, performance.now() * 0.0004, 0],\n      }),\n    )\n    function reportValue (label, value) {\n      report.hidden = false\n      report.textContent = `${label}: ${formatValue(value)}`\n    }\n    function formatValue (value) {\n      if (value === undefined) return 'undefined'\n      if (value === null) return 'null'\n      if (typeof value === 'function') return value.toString().slice(0, 120)\n      try { return JSON.stringify(value, null, 2) ?? String(value) }\n      catch { return String(value) }\n    }\n    function presentResult (result) {\n      if (result?.type && result?.props && typeof api.render === 'function') {\n        const handle = api.render(result, { canvas, background: '#0a0a14' })\n        stats.textContent = 'rendered scene element'\n        window.__disposeScene = () => handle.dispose?.()\n        window.__SCENE_READY__ = true\n        return\n      }\n      if (result?.scene && result?.dispose) {\n        stats.textContent = 'render handle ready'\n        window.__disposeScene = () => result.dispose?.()\n        window.__SCENE_READY__ = true\n        return\n      }\n      reportValue('result', result)\n      if (typeof api.render === 'function') {\n        const handle = api.render(demoElement, { canvas, background: '#0a0a14' })\n        window.__disposeScene = () => handle.dispose?.()\n      }\n      window.__SCENE_READY__ = true\n    }\n    function showError (error) {\n      report.hidden = false\n      report.textContent = error?.stack || error?.message || String(error)\n      stats.textContent = 'error'\n      window.__SCENE_READY__ = true\n    }\n    try {\n${escapeScript(code).split('\\n').map(line => `      ${line}`).join('\\n')}\n    } catch (error) {\n      showError(error)\n    }\n  <\\/script>\n</body>\n</html>`" + `
-      }
-
-      function buildHarness (seed, code) {
-        if (seed.flavor === 'jsx')
-          return jsxHarness(seed, code)
-        if (seed.flavor === 'post')
-          return standardHarness(seed, code, 'post')
-        return standardHarness(seed, code, 'standard')
-      }
-
-      function createPanel (card, seed) {
-        const panel = document.createElement('div')
-        panel.className = 'api-playground'
-        const editor = document.createElement('textarea')
-        editor.className = 'play-editor'
-        editor.spellcheck = false
-        editor.value = seed.code
-        editor.setAttribute('aria-label', \`editable demo code for \${seed.exportName}\`)
-        const actions = document.createElement('div')
-        actions.className = 'play-actions'
-        const run = document.createElement('button')
-        run.type = 'button'
-        run.className = 'run-btn'
-        run.textContent = '▶ run'
-        const status = document.createElement('span')
-        status.className = 'play-status'
-        status.textContent = \`\${seed.flavor} harness\`
-        actions.append(run, status)
-        const preview = document.createElement('div')
-        preview.className = 'api-preview play-preview'
-        const iframe = document.createElement('iframe')
-        iframe.title = \`\${seed.exportName} generated demo\`
-        iframe.sandbox = 'allow-scripts allow-same-origin'
-        preview.append(iframe)
-        const execute = () => {
-          status.textContent = 'running'
-          iframe.srcdoc = buildHarness(seed, editor.value)
-          iframe.addEventListener('load', () => { status.textContent = 'running in iframe' }, { once: true })
-        }
-        run.addEventListener('click', execute)
-        panel.append(editor, actions, preview)
-        card.append(panel)
-        execute()
-        return panel
-      }
-
-      document.addEventListener('click', (event) => {
-        const button = event.target.closest?.('.play-btn')
-        if (!button)
-          return
-        const card = button.closest('.api-card')
-        const seedEl = card?.querySelector('.play-seed')
-        if (!card || !seedEl)
-          return
-        let panel = card.querySelector('.api-playground')
-        if (!panel) {
-          const seed = JSON.parse(seedEl.textContent)
-          panel = createPanel(card, seed)
-        } else {
-          panel.hidden = !panel.hidden
-        }
-        button.setAttribute('aria-expanded', String(!panel.hidden))
-      })
-    })()
-  </script>`
-  return runtime.replace(
-    'report.textContent = `${label}: ${formatValue(value)}`',
-    "report.textContent = label + ': ' + formatValue(value)",
-  )
+function sampleFor (entry: DocExport): string {
+  if (entry.kind === 'interface' || entry.kind === 'type')
+    return entry.signature.split('\n').slice(0, 12).join('\n')
+  if (entry.kind === 'const')
+    return `import { ${entry.name} } from '${packageJson.name}'\nconsole.log(${entry.name})`
+  return entry.signature
 }
 
-function sharedHarnessHelpers (): string {
-  return String.raw `
-    const canvas = document.querySelector('#scene')
-    const report = document.querySelector('#report')
-    const stats = document.querySelector('#stats')
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', stencil: false })
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    renderer.outputColorSpace = THREE.SRGBColorSpace
-    renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1
-    renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+function extractLibrary (): LibraryData {
+  const modules = modulesFromPackage()
+  const entries = modules.map(m => `${root}${m.entry}`)
+  const program = ts.createProgram(entries, { target: ts.ScriptTarget.ES2022, moduleResolution: ts.ModuleResolutionKind.Bundler })
+  const checker = program.getTypeChecker()
 
-    const scene = new THREE.Scene()
-    scene.background = new THREE.Color('#0a0a14')
-    const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200)
-    camera.position.set(4, 3, 6)
-    const altScene = new THREE.Scene()
-    const altCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 200)
-    altCamera.position.set(-4, 2.5, 5)
-    altCamera.lookAt(0, 0, 0)
+  const modulesWithExports = modules.map(module => {
+    const sf = program.getSourceFile(`${root}${module.entry}`)
+    if (!sf)
+      throw new Error(`docs: missing ${module.entry}`)
 
-    let theta = Math.atan2(camera.position.x, camera.position.z)
-    let phi = Math.atan2(camera.position.y, Math.hypot(camera.position.x, camera.position.z))
-    let radius = camera.position.length()
-    const updateCamera = () => {
-      const r = radius * Math.cos(phi)
-      camera.position.set(Math.sin(theta) * r, Math.sin(phi) * radius, Math.cos(theta) * r)
-      camera.lookAt(0, 0, 0)
-    }
-    updateCamera()
+    const moduleSymbol = checker.getSymbolAtLocation(sf)
+    if (!moduleSymbol)
+      throw new Error(`docs: missing module symbol for ${module.entry}`)
 
-    const pmrem = new THREE.PMREMGenerator(renderer)
-    const env = new RoomEnvironment()
-    scene.environment = pmrem.fromScene(env, 0.04).texture
-    scene.environmentIntensity = 0.6
-    pmrem.dispose()
-    env.traverse((object) => object.geometry?.dispose())
-    const keyLight = new THREE.DirectionalLight('#fff5e0', 2.4)
-    keyLight.position.set(8, 12, 6)
-    keyLight.castShadow = true
-    keyLight.shadow.mapSize.set(1024, 1024)
-    const hemi = new THREE.HemisphereLight('#a0c0ff', '#3a2a1a', 0.45)
-    scene.add(keyLight, keyLight.target, hemi)
+    const exports: DocExport[] = []
+    for (const sym of checker.getExportsOfModule(moduleSymbol)) {
+      const resolved = sym.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(sym) : sym
+      const decls    = (resolved.declarations ?? []).filter(d => KIND[d.kind])
+      if (!decls.length)
+        continue
 
-    const floor = new THREE.Mesh(
-      new THREE.CircleGeometry(7, 48),
-      new THREE.MeshStandardMaterial({ color: '#141a2a', roughness: 0.9 }),
-    )
-    floor.rotation.x = -Math.PI / 2
-    floor.position.y = -1.2
-    floor.receiveShadow = true
-    scene.add(floor)
-
-    const demoMaterial = new THREE.MeshStandardMaterial({ color: '#79f7ff', roughness: 0.42, metalness: 0.16, flatShading: true })
-    const demoGeometry = new THREE.IcosahedronGeometry(1, 1)
-    const demoMesh = new THREE.Mesh(demoGeometry.clone(), demoMaterial.clone())
-    const demoShape = new THREE.Shape()
-    demoShape.moveTo(-0.8, -0.5)
-    demoShape.lineTo(0.7, -0.55)
-    demoShape.lineTo(0.9, 0.35)
-    demoShape.quadraticCurveTo(0, 0.85, -0.85, 0.35)
-    demoShape.lineTo(-0.8, -0.5)
-    const demoCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-1.4, 0, 0),
-      new THREE.Vector3(-0.4, 0.7, 0.4),
-      new THREE.Vector3(0.5, -0.2, -0.4),
-      new THREE.Vector3(1.5, 0.4, 0),
-    ])
-    const demoPoints = [
-      [-1.4, 0, 0],
-      [-0.4, 0.9, 0.35],
-      [0.6, -0.2, -0.35],
-      [1.4, 0.5, 0.1],
-    ]
-    const demoVectorPoints = demoPoints.map(([x, y, z]) => new THREE.Vector3(x, y, z))
-    const demoProfile = [[0.25, -1], [0.75, -0.5], [0.45, 0.25], [0.9, 0.9]]
-    const demoTextureCanvas = document.createElement('canvas')
-    demoTextureCanvas.width = 64
-    demoTextureCanvas.height = 64
-    const paintDemoTexture = (ctx = demoTextureCanvas.getContext('2d')) => {
-      if (!ctx) return
-      const gradient = ctx.createLinearGradient(0, 0, 64, 64)
-      gradient.addColorStop(0, '#79f7ff')
-      gradient.addColorStop(1, '#ff7ad9')
-      ctx.fillStyle = gradient
-      ctx.fillRect(0, 0, 64, 64)
-      ctx.fillStyle = 'rgba(10, 10, 20, 0.35)'
-      for (let y = 0; y < 64; y += 8) ctx.fillRect(0, y, 64, 3)
-    }
-    paintDemoTexture()
-    const demoTexture = new THREE.CanvasTexture(demoTextureCanvas)
-    const demoFragmentShader = 'void mainImage(out vec4 fragColor, in vec2 fragCoord) { vec2 uv = fragCoord / iResolution.xy; fragColor = vec4(uv, 1.0, 1.0); }'
-    const postContext = { renderer, scene, camera, width: canvas.clientWidth || 1, height: canvas.clientHeight || 1 }
-    const loop = createLoop()
-    const tickers = new Set()
-    const mixers = []
-    let featuredObject = null
-    let composer = null
-    let outputPass = null
-    let customRender = null
-
-    function createLoop () {
-      const subs = new Set()
-      const clock = new THREE.Clock()
-      let frame = 0
-      let raf = 0
-      const tick = () => {
-        const delta = clock.getDelta()
-        const elapsed = clock.getElapsedTime()
-        frame += 1
-        for (const cb of subs) cb({ delta, elapsed, frame })
-        raf = requestAnimationFrame(tick)
+      const doc = ts.displayPartsToString(resolved.getDocumentationComment(checker)) ||
+        ts.displayPartsToString(sym.getDocumentationComment(checker))
+      const entry: DocExport = {
+        name:         sym.getName(),
+        kind:         KIND[decls[0]!.kind] ?? 'value',
+        doc:          doc.trim(),
+        summary:      summary(doc),
+        signature:    decls.map(d => clean(d.kind === ts.SyntaxKind.VariableDeclaration ? d.parent.parent.getText() : d.getText())).join('\n'),
+        coverage:     'type-reference',
+        sample:       '',
+        relatedDemos: [],
       }
-      raf = requestAnimationFrame(tick)
-      return {
-        onFrame (cb) { subs.add(cb); return () => subs.delete(cb) },
-        dispose () { cancelAnimationFrame(raf); subs.clear() },
-      }
+      const seed = createPlaySeed(module, entry)
+      entry.playSeed = seed
+      entry.coverage = seed ? 'playground' : 'type-reference'
+      entry.sample = sampleFor(entry)
+      entry.relatedDemos = relatedDemos(module, entry.name, entry.kind)
+      exports.push(entry)
     }
 
-    function attachResizeObserver () {
-      const ro = new ResizeObserver((entries) => {
-        const { width, height } = entries[0].contentRect
-        renderer.setSize(width, height, false)
-        camera.aspect = width / Math.max(1, height)
-        camera.updateProjectionMatrix()
-        altCamera.aspect = camera.aspect
-        altCamera.updateProjectionMatrix()
-        composer?.setSize(width, height)
-        customRender?.setSize?.(width, height)
-        postContext.width = width
-        postContext.height = height
-      })
-      ro.observe(canvas.parentElement ?? document.body)
-      return () => ro.disconnect()
-    }
+    const rank = (k: string): number => k === 'function' || k === 'class' ? 0 : k === 'const' || k === 'enum' ? 1 : 2
+    exports.sort((a, b) => rank(a.kind) - rank(b.kind) || a.name.localeCompare(b.name))
+    return { ...module, exports }
+  })
 
-    function attachPointerGesture (el) {
-      const pointers = new Map()
-      let lastPinch = 0
-      el.style.touchAction = 'none'
-      const onDown = (event) => {
-        el.setPointerCapture(event.pointerId)
-        pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
-        if (pointers.size === 2) {
-          const [a, b] = [...pointers.values()]
-          lastPinch = Math.hypot(a.x - b.x, a.y - b.y)
-        }
-      }
-      const onMove = (event) => {
-        const point = pointers.get(event.pointerId)
-        if (!point) return
-        const dx = event.clientX - point.x
-        const dy = event.clientY - point.y
-        point.x = event.clientX
-        point.y = event.clientY
-        if (pointers.size === 1) {
-          theta -= dx * 0.005
-          phi = Math.max(-1.3, Math.min(1.3, phi + dy * 0.005))
-          updateCamera()
-        } else if (pointers.size === 2) {
-          const [a, b] = [...pointers.values()]
-          const dist = Math.hypot(a.x - b.x, a.y - b.y)
-          if (lastPinch > 0)
-            radius = Math.max(2, Math.min(40, radius / (dist / lastPinch)))
-          lastPinch = dist
-          updateCamera()
-        }
-      }
-      const onUp = (event) => {
-        pointers.delete(event.pointerId)
-        if (pointers.size < 2) lastPinch = 0
-      }
-      const onWheel = (event) => {
-        event.preventDefault()
-        radius = Math.max(2, Math.min(40, radius * (1 + event.deltaY * 0.001)))
-        updateCamera()
-      }
-      el.addEventListener('pointerdown', onDown)
-      el.addEventListener('pointermove', onMove)
-      el.addEventListener('pointerup', onUp)
-      el.addEventListener('pointercancel', onUp)
-      el.addEventListener('wheel', onWheel, { passive: false })
-      return () => {
-        el.removeEventListener('pointerdown', onDown)
-        el.removeEventListener('pointermove', onMove)
-        el.removeEventListener('pointerup', onUp)
-        el.removeEventListener('pointercancel', onUp)
-        el.removeEventListener('wheel', onWheel)
-      }
-    }
+  const flat = modulesWithExports.flatMap(module => module.exports)
+  const missing = flat.filter(entry => !entry.playSeed && !entry.sample)
+  if (missing.length)
+    throw new Error(`docs: exports missing coverage: ${missing.map(e => e.name).join(', ')}`)
 
-    function disposeMaterial (material) {
-      for (const key in material) {
-        const value = material[key]
-        if (value && typeof value === 'object' && 'minFilter' in value)
-          value.dispose?.()
-      }
-      material.dispose?.()
-    }
-
-    function disposeScene (root) {
-      root.traverse((object) => {
-        object.geometry?.dispose?.()
-        const materials = Array.isArray(object.material) ? object.material : object.material ? [object.material] : []
-        for (const material of materials)
-          disposeMaterial(material)
-      })
-    }
-
-    function showError (error) {
-      report.hidden = false
-      report.textContent = error?.stack || error?.message || String(error)
-      stats.textContent = 'error'
-      window.__SCENE_READY__ = true
-    }
-
-    function formatValue (value) {
-      if (value === undefined) return 'undefined'
-      if (value === null) return 'null'
-      if (typeof value === 'string') return value
-      if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-      if (typeof value === 'function') return value.toString().slice(0, 160)
-      if (value?.constructor?.name) return '[' + value.constructor.name + ']'
-      try { return JSON.stringify(value, null, 2) ?? String(value) }
-      catch { return String(value) }
-    }
-
-    function showValue (value) {
-      report.hidden = false
-      report.textContent = 'value fallback:\n' + formatValue(value) + '\n\nedit the code and press run to wire it differently.'
-    }
-
-    function addVisibleObject (object) {
-      object.traverse?.((child) => {
-        child.castShadow = child.castShadow ?? true
-        child.receiveShadow = child.receiveShadow ?? true
-      })
-      scene.add(object)
-      featuredObject = object
-      stats.textContent = 'scene object'
-      return object
-    }
-
-    function previewMaterial (material) {
-      const mesh = new THREE.Mesh(new THREE.TorusKnotGeometry(0.8, 0.22, 96, 14), material)
-      addVisibleObject(mesh)
-      tickers.add(({ elapsed }) => {
-        material.userData?.tick?.({ delta: 0, elapsed, frame: 0 })
-      })
-    }
-
-    function previewGeometry (geometry) {
-      const mesh = new THREE.Mesh(geometry, demoMaterial.clone())
-      addVisibleObject(mesh)
-    }
-
-    function previewShape (shape) {
-      const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.28, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 2 })
-      previewGeometry(geometry)
-    }
-
-    function previewTexture (texture) {
-      const mesh = new THREE.Mesh(
-        new THREE.PlaneGeometry(2.4, 1.5),
-        new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }),
-      )
-      addVisibleObject(mesh)
-    }
-
-    function previewAnimation (result) {
-      const mesh = addVisibleObject(demoMesh.clone())
-      const clip = result.tracks ? result : new THREE.AnimationClip('generated-track', 2, [result])
-      const mixer = new THREE.AnimationMixer(mesh)
-      mixer.clipAction(clip).play()
-      mixers.push(mixer)
-      stats.textContent = 'animation clip'
-    }
-
-    function addPassBeforeOutput (pass) {
-      if (!composer || !outputPass)
-        return false
-      const outputIndex = composer.passes.indexOf(outputPass)
-      composer.passes.splice(Math.max(0, outputIndex), 0, pass)
-      stats.textContent = 'post pass'
-      return true
-    }
-
-    function presentResult (result, kind = 'value') {
-      if (kind === 'pass') {
-        if (result?.isPass && addPassBeforeOutput(result))
-          return
-        if (result?.render && (result?.setSize || result?.composer || result?.finalComposer)) {
-          customRender = result
-          stats.textContent = 'custom post renderer'
-          return
-        }
-        if (result?.composer) {
-          customRender = { render: (delta) => result.render?.(delta) ?? result.composer.render(delta), setSize: result.setSize?.bind(result) }
-          stats.textContent = 'composer handle'
-          return
-        }
-      }
-      if (!result) {
-        showValue(result)
-        return
-      }
-      if (kind === 'camera' || result.isCamera) {
-        scene.add(new THREE.CameraHelper(result))
-        stats.textContent = 'camera helper'
-        return
-      }
-      if (result.isObject3D) {
-        addVisibleObject(result)
-        return
-      }
-      for (const key of ['object', 'mesh', 'points', 'root']) {
-        if (result[key]?.isObject3D) {
-          addVisibleObject(result[key])
-          if (typeof result.tick === 'function')
-            tickers.add(ctx => result.tick(ctx))
-          if (typeof result.update === 'function')
-            tickers.add(ctx => result.update(ctx))
-          return
-        }
-      }
-      if (kind === 'material' || result.isMaterial || /Material$/.test(result.constructor?.name ?? '')) {
-        previewMaterial(result)
-        return
-      }
-      if (result.isBufferGeometry || result.attributes?.position) {
-        previewGeometry(result)
-        return
-      }
-      if (result instanceof THREE.Shape || Array.isArray(result.curves)) {
-        previewShape(result)
-        return
-      }
-      if (result.isTexture) {
-        previewTexture(result)
-        return
-      }
-      if (result.tracks || /KeyframeTrack$/.test(result.constructor?.name ?? '')) {
-        previewAnimation(result)
-        return
-      }
-      if (typeof result === 'function') {
-        tickers.add(result)
-        showValue('[registered frame callback]')
-        return
-      }
-      showValue(result)
-    }
-
-    function startDemoLoop ({ composerEnabled }) {
-      const detachResize = attachResizeObserver()
-      const detachGesture = attachPointerGesture(canvas)
-      if (composerEnabled) {
-        composer = new EffectComposer(renderer)
-        composer.addPass(new RenderPass(scene, camera))
-        outputPass = new OutputPass()
-        composer.addPass(outputPass)
-      }
-      renderer.compile(scene, camera)
-      let acc = 0
-      let frames = 0
-      loop.onFrame((ctx) => {
-        for (const ticker of tickers)
-          ticker(ctx)
-        for (const mixer of mixers)
-          mixer.update(ctx.delta)
-        if (featuredObject)
-          featuredObject.rotation.y += ctx.delta * 0.35
-        if (customRender)
-          customRender.render(ctx.delta)
-        else if (composer)
-          composer.render(ctx.delta)
-        else
-          renderer.render(scene, camera)
-        acc += ctx.delta
-        frames += 1
-        if (acc >= 0.5) {
-          stats.textContent = Math.round(frames / acc) + ' fps - ' + renderer.info.render.calls + ' calls'
-          acc = 0
-          frames = 0
-        }
-      })
-      window.__disposeScene = () => {
-        detachGesture()
-        detachResize()
-        loop.dispose()
-        customRender?.dispose?.()
-        composer?.dispose?.()
-        disposeScene(scene)
-        renderer.dispose()
-      }
-      window.__SCENE_READY__ = true
-    }
-`
+  return {
+    version:     packageJson.version,
+    packageName: packageJson.name,
+    generatedAt,
+    totals:      {
+      exports:        flat.length,
+      modules:        modulesWithExports.length,
+      playable:       flat.filter(entry => entry.playSeed).length,
+      typeReferences: flat.filter(entry => !entry.playSeed).length,
+    },
+    modules: modulesWithExports,
+  }
 }
 
-// ---------------------------------------------------------------- readme.md
-
-function renderReadme (api: Record<string, DocExport[]>): string {
+function renderReadme (library: LibraryData): string {
   const lines: string[] = []
-  lines.push('Generated from the built `.d.ts` files by `bun run docs` — full declarations, doc comments,')
-  lines.push('runnable examples and live previews on the [API reference page](https://tuomashatakka.github.io/threejs-scenes-skill/api.html).')
+  lines.push('Generated from the built `.d.ts` files by `bun run docs`.')
+  lines.push('The vite site renders the full searchable API with runnable playgrounds at')
+  lines.push('[the library page](https://tuomashatakka.github.io/threejs-scenes-skill/library/) and keeps the old')
+  lines.push('[`api.html`](https://tuomashatakka.github.io/threejs-scenes-skill/api.html) URL as a redirect.')
   lines.push('')
-  for (const [ mod, exports ] of Object.entries(api)) {
-    const meta = MODULES[mod]
-    lines.push(`#### \`${mod === 'core' ? '@tuomashatakka/threejs-scenes' : '@tuomashatakka/threejs-scenes/' + mod}\``)
+  for (const mod of library.modules) {
+    lines.push(`#### \`${mod.specifier}\``)
     lines.push('')
-    lines.push(meta.desc)
-    if (meta.demo)
-      lines.push(`Live demo: [\`${meta.demo}.html\`](https://tuomashatakka.github.io/threejs-scenes-skill/demos/${meta.demo}.html)`)
+    lines.push(mod.desc)
     lines.push('')
-    for (const e of exports) {
-      const head = `- **\`${e.name}\`** *(${e.kind})*${e.doc ? ' — ' + summary(e.doc) : ''}`
+    for (const e of mod.exports) {
+      const head = `- **\`${e.name}\`** *(${e.kind})*${e.summary ? ' — ' + e.summary : ''}`
       lines.push(head)
       if (e.kind === 'function') {
         const sig = e.signature.split('\n').filter(l => l.startsWith('function'))
@@ -1335,12 +1075,12 @@ function renderReadme (api: Record<string, DocExport[]>): string {
         lines.push('  ```')
       }
     }
-    if (meta.example) {
+    if (mod.example) {
       lines.push('')
       lines.push('  <details><summary>Example</summary>')
       lines.push('')
       lines.push('  ```ts')
-      for (const l of meta.example.split('\n'))
+      for (const l of mod.example.split('\n'))
         lines.push('  ' + l)
       lines.push('  ```')
       lines.push('  </details>')
@@ -1350,114 +1090,106 @@ function renderReadme (api: Record<string, DocExport[]>): string {
   return lines.join('\n')
 }
 
-// -------------------------------------------------------------- public/api.html
-
-function renderApiHtml (api: Record<string, DocExport[]>): string {
-  const version = JSON.parse(readFileSync(root + 'package.json', 'utf8')).version as string
-  const nav     = Object.keys(api).map(m => `        <li><a href="#${slugify(m)}">${m}</a></li>`)
-    .join('\n')
-
-  const sections = Object.entries(api).map(([ mod, exports ]) => {
-    const meta = MODULES[mod]
-    const id   = slugify(mod)
-    const demo = meta.demo
-      ? `      <div class="api-preview"><iframe loading="lazy" title="${mod} live demo" src="demos/${meta.demo}.html"></iframe></div>
-      <p class="demo-link"><a href="demos/${meta.demo}.html">Open demo — ${meta.demo}.html</a></p>`
-      : ''
-    const example = meta.example
-      ? `      <pre class="api-example"><code>${escapeHtml(meta.example)}</code></pre>`
-      : ''
-    const cards = exports.map(e => {
-      const play = renderPlayControls(mod, e)
-      return `      <article class="api-card" id="${id}-${e.name.toLowerCase()}">
-        <div class="api-card-head">
-          <h4><code>${e.name}</code> <span class="badge">${e.kind}</span></h4>
-${play}
-        </div>
-        ${e.doc ? `<p>${escapeHtml(e.doc)}</p>` : ''}
-        <pre><code>${escapeHtml(e.signature)}</code></pre>
-      </article>`
-    }).join('\n')
-    return `    <section id="${id}" aria-labelledby="${id}-h">
-      <h2 id="${id}-h"><code>${mod === 'core' ? '@tuomashatakka/threejs-scenes' : '@tuomashatakka/threejs-scenes/' + mod}</code></h2>
-      <p>${escapeHtml(meta.desc)}</p>
-${example}
-${demo}
-${cards}
-    </section>`
-  })
-    .join('\n\n')
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>API reference — threejs-scenes</title>
-  <meta name="description" content="Complete generated API reference for @tuomashatakka/threejs-scenes v${version}: every export, its exact declaration and doc comment, with runnable examples and live previews.">
-  <link rel="stylesheet" href="styles.css">
-  <style>
-    .api-card { border: 1px solid #2a3346; border-radius: 8px; padding: .2rem 1rem .8rem; margin: .8rem 0; background: #10141f; }
-    .api-card-head { display: flex; align-items: center; justify-content: space-between; gap: .8rem; margin: .45rem 0 .2rem; }
-    .api-card h4 { margin: 0; min-width: 0; }
-    .api-card pre { margin: .4rem 0 .2rem; max-height: 26em; overflow: auto; }
-    .api-preview { width: 100%; aspect-ratio: 16 / 9; border: 1px solid #2a3346; border-radius: 8px; background: #0a0a14; overflow: hidden; margin: .8rem 0 .4rem; }
-    .api-preview iframe { width: 100%; height: 100%; border: 0; display: block; }
-    .api-example { border-left: 3px solid #79f7ff; }
-    .play-seed { display: none; }
-    .play-btn, .run-btn { border: 1px solid #2a6b80; border-radius: 6px; background: #10202a; color: #bdf8ff; cursor: pointer; font: inherit; line-height: 1; white-space: nowrap; }
-    .play-btn { padding: .42rem .55rem; }
-    .run-btn { padding: .5rem .7rem; }
-    .play-btn:hover, .run-btn:hover, .play-btn:focus-visible, .run-btn:focus-visible { background: #173144; border-color: #79f7ff; outline: none; }
-    .api-playground { display: grid; gap: .55rem; margin-top: .7rem; }
-    .play-editor { box-sizing: border-box; width: 100%; min-height: 13rem; resize: vertical; border: 1px solid #2a3346; border-radius: 8px; padding: .75rem; background: #0a0e18; color: #dfe8ff; font: 0.86rem/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; tab-size: 2; }
-    .play-editor:focus { border-color: #79f7ff; outline: none; }
-    .play-actions { display: flex; align-items: center; gap: .7rem; }
-    .play-status { color: #8fa6cf; font-size: .85rem; }
-    .play-preview { margin-top: 0; }
-    @media (max-width: 640px) {
-      .api-card-head { align-items: flex-start; flex-direction: column; }
-      .play-btn { width: 100%; }
-    }
-  </style>
-</head>
-<body>
-  <a class="skip-link" href="#main">Skip to content</a>
-  <header>
-    <h1>API reference</h1>
-    <p><code>@tuomashatakka/threejs-scenes</code> v${version} — every export with its exact declaration, generated from the package's <code>.d.ts</code> files. See the <a href="index.html">showcase</a> for the guided tour.</p>
-  </header>
-  <main id="main">
-    <nav aria-label="Module table of contents">
-      <ul>
-${nav}
-      </ul>
-    </nav>
-${sections}
-  </main>
-${renderPlayRuntime()}
-</body>
-</html>
-`
+function referenceTitleAndSummary (file: string): SkillReference {
+  const text = readFileSync(`${root}skill/references/${file}`, 'utf8')
+  const title = text.match(/^#\s+(.+)$/m)?.[1] ?? file.replace(/\.md$/, '')
+  const summaryText = text
+    .split('\n')
+    .slice(1)
+    .find(line => line.trim() && !line.startsWith('#') && !line.startsWith('|'))
+    ?.trim() ?? ''
+  return { file, title, summary: summaryText }
 }
 
-// ------------------------------------------------------------------- write
+function parseScriptsIndex (): SkillScript[] {
+  const text = readFileSync(`${root}skill/scripts/INDEX.md`, 'utf8')
+  const existing = new Set(readdirSync(`${root}skill/scripts`).filter(file => file.endsWith('.js')))
+  const scripts: SkillScript[] = []
+  let category = 'uncategorized'
 
-const api = extract()
+  for (const line of text.split('\n')) {
+    const heading = line.match(/^##\s+(.+)$/)
+    if (heading)
+      category = heading[1]!
 
-const readmePath = root + 'readme.md'
+    const row = line.match(/^\|\s+`([^`]+\.js)`\s+\|\s+([^|]+?)\s+\|\s+`([^`]+\.md)`\s+\|/)
+    if (row) {
+      scripts.push({
+        file:      row[1]!,
+        category,
+        purpose:   row[2]!.trim(),
+        reference: row[3]!,
+        exists:    existing.has(row[1]!),
+      })
+    }
+  }
+  return scripts
+}
+
+function parseSkillFrontmatter (): { name: string, description: string } {
+  const text = readFileSync(`${root}skill/SKILL.md`, 'utf8')
+  const name = text.match(/^name:\s*(.+)$/m)?.[1]?.trim() ?? 'threejs-scenes'
+  const descBlock = text.match(/^description:\s*>\n([\s\S]*?)\n---/m)?.[1] ?? ''
+  return {
+    name,
+    description: descBlock.replace(/\n\s*/g, ' ').trim(),
+  }
+}
+
+function extractSkill (): SkillData {
+  const references = readdirSync(`${root}skill/references`)
+    .filter(file => file.endsWith('.md'))
+    .sort()
+    .map(referenceTitleAndSummary)
+  const scripts = parseScriptsIndex()
+
+  const assignedRefs = new Set(SKILL_CASES.flatMap(item => item.refs))
+  const missingRefs = references.filter(ref => !assignedRefs.has(ref.file))
+  if (missingRefs.length)
+    throw new Error(`docs: skill references missing case coverage: ${missingRefs.map(ref => ref.file).join(', ')}`)
+
+  const assignedScripts = new Set(SKILL_CASES.flatMap(item => item.scripts))
+  const missingScripts = scripts.filter(script => !assignedScripts.has(script.file))
+  if (missingScripts.length)
+    throw new Error(`docs: skill scripts missing case coverage: ${missingScripts.map(script => script.file).join(', ')}`)
+
+  return {
+    version:     packageJson.version,
+    generatedAt,
+    skill:       parseSkillFrontmatter(),
+    references,
+    scripts,
+    cases:       SKILL_CASES,
+    coverage:    {
+      references: { total: references.length, covered: references.length - missingRefs.length },
+      scripts:    { total: scripts.length, covered: scripts.length - missingScripts.length },
+    },
+  }
+}
+
+function writeJson (path: string, value: unknown): void {
+  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`)
+}
+
+const library = extractLibrary()
+const skill = extractSkill()
+
+const readmePath = `${root}readme.md`
 let readme = readFileSync(readmePath, 'utf8')
 const BEGIN = '<!-- api:begin -->'
 const END   = '<!-- api:end -->'
 if (!readme.includes(BEGIN))
   throw new Error('readme.md is missing the <!-- api:begin --> / <!-- api:end --> markers')
 readme = readme.slice(0, readme.indexOf(BEGIN) + BEGIN.length) +
-  '\n' + renderReadme(api) + '\n' +
+  '\n' + renderReadme(library) + '\n' +
   readme.slice(readme.indexOf(END))
 writeFileSync(readmePath, readme)
 
-writeFileSync(root + 'public/api.html', renderApiHtml(api))
+mkdirSync(siteGenerated, { recursive: true })
+writeJson(`${siteGenerated}/library-data.json`, library)
+writeJson(`${siteGenerated}/skill-data.json`, skill)
+writeJson(`${siteGenerated}/demo-data.json`, { demos: DEMO_CATALOG })
 
-const counts = Object.entries(api).map(([ m, e ]) => `${m}:${e.length}`)
+const counts = library.modules.map(mod => `${mod.id}:${mod.exports.length}`)
   .join(' ')
-console.log(`docs: readme.md + public/api.html regenerated (${counts})`)
+console.log(`docs: readme.md + site data regenerated (${counts}; refs:${skill.coverage.references.covered}/${skill.coverage.references.total}; scripts:${skill.coverage.scripts.covered}/${skill.coverage.scripts.total})`)

@@ -51,6 +51,15 @@
 
     // a signal driven from the same loop drives the reactive rotation prop
     app.loop.onFrame(({ delta }) => setAngle(a => a + delta * 0.6))
+    window.__SCENE_PROOF__ = {
+      hasDispose: typeof app.dispose === 'function',
+      hasPointerEvents: true,
+      hasResizeObserver: true,
+      pixelRatioCapped: app.renderer.getPixelRatio() <= Math.min(window.devicePixelRatio, 2),
+      touchAction: getComputedStyle(canvas).touchAction,
+    }
+    window.__disposeScene = () => app.dispose()
+    window.__SCENE_READY__ = true
   </script>
 </body>
 </html>

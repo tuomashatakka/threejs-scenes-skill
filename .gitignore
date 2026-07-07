@@ -5,6 +5,7 @@ node_modules
 # before packaging), so it is not tracked. The .skill bundle + its staging dir
 # are produced by scripts/package-skill.ts.
 /dist
+/site-dist
 /skill/lib
 /threejs-scenes.skill
 /threejs-scenes/

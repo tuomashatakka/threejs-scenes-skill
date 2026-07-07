@@ -7,8 +7,10 @@ authentication is required for any URL listed here.
 
 ## Documentation
 
-- [Module overview](https://tuomashatakka.github.io/threejs-scenes-skill/index.html): every submodule with its exports, live demo links, and code examples
-- [Full API reference](https://tuomashatakka.github.io/threejs-scenes-skill/api.html): generated per-export API documentation
+- [Overview](https://tuomashatakka.github.io/threejs-scenes-skill/): vite app entry with library, skill, demos, and downloads
+- [Library reference](https://tuomashatakka.github.io/threejs-scenes-skill/library/): generated per-export API documentation with runnable playgrounds
+- [Skill cases](https://tuomashatakka.github.io/threejs-scenes-skill/skill/): generated case registry for references, scripts, templates, and workflows
+- [API compatibility route](https://tuomashatakka.github.io/threejs-scenes-skill/api/): same generated library reference; `api.html` redirects here
 - [Source repository](https://github.com/tuomashatakka/threejs-scenes-skill): TypeScript sources under `lib/`, skill sources under `skill/`
 
 ## Downloads (no token required)
@@ -19,7 +21,7 @@ authentication is required for any URL listed here.
 
 ## Live demos
 
-- [Demo index](https://tuomashatakka.github.io/threejs-scenes-skill/index.html#demos): every demo below runs in the browser with no build step
+- [Demo index](https://tuomashatakka.github.io/threejs-scenes-skill/#demos): every demo below runs in the browser with no build step
 - [bootstrap](https://tuomashatakka.github.io/threejs-scenes-skill/demos/bootstrap.html): createApp — unidirectional state flow, fixed-step clock, seeded emitter
 - [minimal-scene](https://tuomashatakka.github.io/threejs-scenes-skill/demos/minimal-scene.html): renderer, frame loop, pointer-orbit, resize, dispose
 - [geometry](https://tuomashatakka.github.io/threejs-scenes-skill/demos/geometry.html): extrusion, vertex deformers, grid layout

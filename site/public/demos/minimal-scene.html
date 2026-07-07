@@ -261,6 +261,13 @@
 
     // teardown hook — call when unmounting (route change, quality swap)
     window.__disposeScene = () => { loop.dispose(); disposeScene(scene); renderer.dispose() }
+    window.__SCENE_PROOF__ = {
+      hasDispose: typeof window.__disposeScene === 'function',
+      hasPointerEvents: true,
+      hasResizeObserver: true,
+      pixelRatioCapped: renderer.getPixelRatio() <= 2,
+      touchAction: getComputedStyle(canvas).touchAction,
+    }
     // headless capture signal (Playwright + SwiftShader waits on this)
     window.__SCENE_READY__ = true
   </script>

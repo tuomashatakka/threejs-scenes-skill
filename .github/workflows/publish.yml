@@ -2,7 +2,7 @@ name: Publish package, showcase & skill
 
 # Publishes the npm package to GitHub Packages, creates a GitHub release with
 # the .skill archive + npm tarball (both downloadable without a token), then
-# publishes the public/ showcase and packaged threejs-scenes.skill to GitHub
+# publishes the vite-built site and packaged threejs-scenes.skill to GitHub
 # Pages. Requires Pages source set to "GitHub Actions" once in repo Settings → Pages.
 
 on:
@@ -46,8 +46,9 @@ jobs:
             exit 1
           fi
           bun install --frozen-lockfile
-          # tsc build + copy-lib refreshes skill/lib/dist and public/lib/dist,
-          # then package-skill.ts validates SKILL.md and zips skill/ into
+          # tsc build + copy-lib refreshes skill/lib/dist and site/public/lib/dist,
+          # docs generates vite site data, vite builds site-dist, then
+          # package-skill.ts validates SKILL.md and zips skill/ into
           # threejs-scenes.skill (extracts to threejs-scenes/).
           bun run build
           bun run scripts/package-skill.ts
@@ -146,8 +147,9 @@ jobs:
       - name: Assemble site
         run: |
           set -euo pipefail
+          test -f site-dist/index.html
           mkdir -p _site
-          cp -r public/. _site/
+          cp -r site-dist/. _site/
           cp threejs-scenes.skill _site/
           # tokenless npm install straight from Pages:
           #   npm install https://tuomashatakka.github.io/threejs-scenes-skill/threejs-scenes.tgz

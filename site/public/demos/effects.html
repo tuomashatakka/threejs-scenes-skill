@@ -568,6 +568,14 @@
       btnGPU.title = 'WebGPU unavailable in this browser'
     }
 
+    window.__disposeScene = () => {
+      if (engine) {
+        engine.dispose()
+        engine = null
+      }
+      window.__SCENE_READY__ = false
+    }
+
     selectEngine('webgl')
   </script>
 </body>

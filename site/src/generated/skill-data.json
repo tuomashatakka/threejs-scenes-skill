@@ -1,0 +1,819 @@
+{
+  "version": "1.7.1",
+  "generatedAt": "package 1.7.1",
+  "skill": {
+    "name": "threejs-scenes",
+    "description": "Build production-quality three.js WebGL scenes with vanilla three.js (no R3F). Use this skill whenever the user mentions three.js, WebGL, 3D scenes in the browser, isometric games, voxel worlds, infinite/endless scrollable 3D, procedural geometry, instancing/BatchedMesh, billboards, particle systems, shader effects, glitch effects, bloom, lens flares, god rays, depth of field, chromatic aberration, stereoscopy, anaglyph, film grain, HUD transitions, camera controls (orbit/follow/pan-zoom), touch-friendly 3D controls, three.js performance optimization, draw-call reduction, LOD, post-processing chains, EffectComposer, GLSL ShaderMaterial, or LLM-driven programmatic generation of three.js content. Also trigger when the user wants to build a 3D web experience, mounts a `canvas` for three.js, asks \"how do I make this run smooth\", needs frame-rate capping, or wants to generate 3D assets from text prompts via Gemini / ai-sdk function tools."
+  },
+  "references": [
+    {
+      "file": "animation-system.md",
+      "title": "Animation system",
+      "summary": "A convenience layer over three's `AnimationMixer` / `AnimationClip` / `AnimationAction`"
+    },
+    {
+      "file": "anti-patterns.md",
+      "title": "Anti-Patterns",
+      "summary": "Quick scan before committing. If your code does any of these, fix it."
+    },
+    {
+      "file": "billboards.md",
+      "title": "Billboards",
+      "summary": "Camera-facing planes for sprites, trees, particles, markers."
+    },
+    {
+      "file": "camera-handling.md",
+      "title": "Camera Handling",
+      "summary": "Camera setup and control patterns that work on every input device."
+    },
+    {
+      "file": "cinematic-and-streaming.md",
+      "title": "Cinematic lighting & streaming worlds",
+      "summary": "Patterns abstracted from three shipping projects — anime-anima (cinematic VRM"
+    },
+    {
+      "file": "code-style.md",
+      "title": "Code Style",
+      "summary": "`@tuomashatakka/eslint-config` for JavaScript/TypeScript + Semantic Nodes for CSS."
+    },
+    {
+      "file": "core-principles.md",
+      "title": "Core Principles",
+      "summary": "The non-negotiable rules that apply to every three.js scene under this skill."
+    },
+    {
+      "file": "fundamentals.md",
+      "title": "Fundamentals — three.js primitives & scene building blocks",
+      "summary": "Distilled from the [three.js manual](https://threejs.org/manual/) fundamentals"
+    },
+    {
+      "file": "geometry.md",
+      "title": "Geometry — programmatic meshes & grouping",
+      "summary": "Build bespoke geometry in code instead of importing models. All factories live in"
+    },
+    {
+      "file": "instancing.md",
+      "title": "Instancing",
+      "summary": "When and how to use `InstancedMesh` and `BatchedMesh` to collapse draw calls."
+    },
+    {
+      "file": "isometric-and-infinite-scenes.md",
+      "title": "Isometric and Infinite Scenes",
+      "summary": "How to build iso views and scenes that scroll forever without dying."
+    },
+    {
+      "file": "jsx-layer.md",
+      "title": "JSX layer — reactive scenes on the frame loop",
+      "summary": "A higher-level declarative layer over the library, à la react-three-fiber but"
+    },
+    {
+      "file": "library-local.md",
+      "title": "Using the local library",
+      "summary": "The skill ships a **local, version-pinned copy** of the compiled library at"
+    },
+    {
+      "file": "lighting.md",
+      "title": "Lighting",
+      "summary": "Scene lighting hierarchy and shadow tuning."
+    },
+    {
+      "file": "llm-function-definitions.md",
+      "title": "LLM Function Definitions",
+      "summary": "Gemini / ai-sdk tool schemas for procedural three.js scene generation."
+    },
+    {
+      "file": "materials.md",
+      "title": "Materials — common starting points",
+      "summary": "Tuned starting materials so you don't hand-set `metalness`/`roughness` every time."
+    },
+    {
+      "file": "particles.md",
+      "title": "Particles",
+      "summary": "Particle systems without WebGPU compute shaders."
+    },
+    {
+      "file": "performance.md",
+      "title": "Performance",
+      "summary": "Diagnose before optimizing. Most three.js perf problems fall into one of three"
+    },
+    {
+      "file": "post-processing.md",
+      "title": "Post-Processing",
+      "summary": "Effect composer setup and pass library."
+    },
+    {
+      "file": "production-lessons.md",
+      "title": "Production Lessons",
+      "summary": "Hard-won patterns distilled from a shipping three.js project (`scene/` — an"
+    },
+    {
+      "file": "programmatic-generation.md",
+      "title": "Programmatic Generation",
+      "summary": "Any time you need more than ~20 entries — geometry vertices, instance transforms,"
+    },
+    {
+      "file": "project-architecture.md",
+      "title": "Project Architecture",
+      "summary": "How to organize a three.js project so it scales past the prototype stage."
+    },
+    {
+      "file": "prompt-handling-flow.md",
+      "title": "Prompt Handling Flow",
+      "summary": "How to classify a user request and route it to the right primitives."
+    },
+    {
+      "file": "props-and-factories.md",
+      "title": "Props & factories",
+      "summary": "A **prop** bundles an `Object3D` with optional animation clips, embedded light"
+    },
+    {
+      "file": "shaders.md",
+      "title": "Shaders",
+      "summary": "Custom GLSL via `ShaderMaterial` and `RawShaderMaterial`."
+    },
+    {
+      "file": "textures-and-maps.md",
+      "title": "Textures and Maps",
+      "summary": "Surface texturing with diffuse, normal, ORM-packed maps, UV manipulation, and"
+    },
+    {
+      "file": "threejs-docs-lookup.md",
+      "title": "Live three.js docs lookup",
+      "summary": "Do **not** rely on a bundled copy of the three.js documentation — query the"
+    },
+    {
+      "file": "voxel-geometry.md",
+      "title": "Voxel Geometry",
+      "summary": "How to build performant voxel worlds in vanilla three.js."
+    }
+  ],
+  "scripts": [
+    {
+      "file": "query-threejs-docs.js",
+      "category": "Tooling",
+      "purpose": "CLI for the live three.js docs — per-class markdown pages, llms-full.txt sections (TSL), search, manual articles. Not a scene module; run with `node`/`bun`.",
+      "reference": "threejs-docs-lookup.md",
+      "exists": true
+    },
+    {
+      "file": "frame-loop.js",
+      "category": "Foundation",
+      "purpose": "Singleton render-loop adapter for `@tuomashatakka/canvas-loop-framecapper`. Drives every animated subsystem via `onFrame(cb)`.",
+      "reference": "project-architecture.md",
+      "exists": true
+    },
+    {
+      "file": "renderer-setup.js",
+      "category": "Foundation",
+      "purpose": "`WebGLRenderer` factory with sane defaults + `ResizeObserver` attachment helper.",
+      "reference": "project-architecture.md",
+      "exists": true
+    },
+    {
+      "file": "scene-bootstrap.js",
+      "category": "Foundation",
+      "purpose": "Minimal end-to-end scene wiring. Copy as starting point for any new scene.",
+      "reference": "project-architecture.md",
+      "exists": true
+    },
+    {
+      "file": "pointer-gesture.js",
+      "category": "Foundation",
+      "purpose": "Unified pointer handler — drag, pinch, wheel, tap. Mouse/touch/pen identical.",
+      "reference": "camera-handling.md",
+      "exists": true
+    },
+    {
+      "file": "rng.js",
+      "category": "Foundation",
+      "purpose": "Seeded RNG (`mulberry32`) + hash/lerp/smoothstep helpers.",
+      "reference": "programmatic-generation.md",
+      "exists": true
+    },
+    {
+      "file": "dispose-scene.js",
+      "category": "Foundation",
+      "purpose": "Recursive scene cleanup. Disposes geometries, materials, textures, render targets.",
+      "reference": "performance.md",
+      "exists": true
+    },
+    {
+      "file": "quality-tier.js",
+      "category": "Foundation",
+      "purpose": "Device-tier detection + per-tier preset configs (shadows, post-fx, chunks, particles).",
+      "reference": "performance.md",
+      "exists": true
+    },
+    {
+      "file": "iso-camera.js",
+      "category": "Camera",
+      "purpose": "Isometric `OrthographicCamera` factory (true-iso or dimetric) + resize helper.",
+      "reference": "isometric-and-infinite-scenes.md",
+      "exists": true
+    },
+    {
+      "file": "follow-camera.js",
+      "category": "Camera",
+      "purpose": "Critically-damped third-person follow with framerate-independent lerp.",
+      "reference": "camera-handling.md",
+      "exists": true
+    },
+    {
+      "file": "procedural-crystal-geometry.js",
+      "category": "Geometry & Instancing",
+      "purpose": "Programmatic geometry — crystal-shard cluster. Template for any procedural BufferGeometry.",
+      "reference": "programmatic-generation.md",
+      "exists": true
+    },
+    {
+      "file": "extruded-mesh.js",
+      "category": "Geometry & Instancing",
+      "purpose": "Extruded shapes (star/gear/panel) + a lathe vase via `createExtrudedMesh` / `createLatheMesh`.",
+      "reference": "geometry.md",
+      "exists": true
+    },
+    {
+      "file": "geometry-modifiers.js",
+      "category": "Geometry & Instancing",
+      "purpose": "Vertex deformers (`applyTwist`, `displaceByNoise`) + static-batch `mergeMeshes`.",
+      "reference": "geometry.md",
+      "exists": true
+    },
+    {
+      "file": "instancing-grass.js",
+      "category": "Geometry & Instancing",
+      "purpose": "`InstancedMesh` field — 1 draw call for N copies of one geometry.",
+      "reference": "instancing.md",
+      "exists": true
+    },
+    {
+      "file": "batched-buildings.js",
+      "category": "Geometry & Instancing",
+      "purpose": "`BatchedMesh` — 1 draw call for N varied geometries sharing one material.",
+      "reference": "instancing.md",
+      "exists": true
+    },
+    {
+      "file": "poisson-disk.js",
+      "category": "Geometry & Instancing",
+      "purpose": "Poisson disk 2D sampling for natural placement (forests, asteroids).",
+      "reference": "programmatic-generation.md",
+      "exists": true
+    },
+    {
+      "file": "voxel-data.js",
+      "category": "Voxels",
+      "purpose": "`VoxelChunk` class — flat `Uint16Array` storage with bounds-checked accessors.",
+      "reference": "voxel-geometry.md",
+      "exists": true
+    },
+    {
+      "file": "greedy-mesh.js",
+      "category": "Voxels",
+      "purpose": "Greedy voxel meshing. Reduces face count 10–30× vs naive 6-quads-per-cell.",
+      "reference": "voxel-geometry.md",
+      "exists": true
+    },
+    {
+      "file": "chunk-manager.js",
+      "category": "Infinite Scenes",
+      "purpose": "Pooled chunk loader for infinite worlds. Origin rebasing avoids float32 precision rot.",
+      "reference": "isometric-and-infinite-scenes.md",
+      "exists": true
+    },
+    {
+      "file": "noise-texture.js",
+      "category": "Textures",
+      "purpose": "Seamless tileable noise as `DataTexture` via toroidal simplex noise sampling.",
+      "reference": "textures-and-maps.md",
+      "exists": true
+    },
+    {
+      "file": "glyph-atlas.js",
+      "category": "Textures",
+      "purpose": "Sprite atlas of text glyphs via `OffscreenCanvas`. Returns `CanvasTexture` + UV lookup.",
+      "reference": "textures-and-maps.md",
+      "exists": true
+    },
+    {
+      "file": "material-presets.js",
+      "category": "Materials & Shaders",
+      "purpose": "PBR presets (`createStandardMaterial`) + toon + matcap factories.",
+      "reference": "materials.md",
+      "exists": true
+    },
+    {
+      "file": "holographic-material.js",
+      "category": "Materials & Shaders",
+      "purpose": "Example `ShaderMaterial` with fresnel rim, scanlines, animated noise. Template for any custom shader.",
+      "reference": "shaders.md",
+      "exists": true
+    },
+    {
+      "file": "prop-factory.js",
+      "category": "Props & Animation",
+      "purpose": "`defineProp` (mesh + light + clips) + `createProp` + `createInstancedProp`.",
+      "reference": "props-and-factories.md",
+      "exists": true
+    },
+    {
+      "file": "prop-composite.js",
+      "category": "Props & Animation",
+      "purpose": "Assemble props into one group with relative transforms via `createPropComposite`.",
+      "reference": "props-and-factories.md",
+      "exists": true
+    },
+    {
+      "file": "animation-controller.js",
+      "category": "Props & Animation",
+      "purpose": "`createAnimationController` + programmatic clips; crossfade on the frame loop.",
+      "reference": "animation-system.md",
+      "exists": true
+    },
+    {
+      "file": "gltf-prop.js",
+      "category": "Props & Animation",
+      "purpose": "`loadGLTF` a model and play its baked `AnimationClip`s through the loop.",
+      "reference": "animation-system.md",
+      "exists": true
+    },
+    {
+      "file": "jsx-scene.js",
+      "category": "JSX Layer",
+      "purpose": "Reactive `render()` + `h()` + `signal()`; a signal drives a rotation accessor re-read each frame.",
+      "reference": "jsx-layer.md",
+      "exists": true
+    },
+    {
+      "file": "lighting-setup.js",
+      "category": "Lighting",
+      "purpose": "Standard scene lighting — IBL env + sun + hemisphere fill. Tuned shadow frustum.",
+      "reference": "lighting.md",
+      "exists": true
+    },
+    {
+      "file": "cpu-particles.js",
+      "category": "Particles",
+      "purpose": "CPU-driven instanced particle system. 10k–50k particles with custom physics.",
+      "reference": "particles.md",
+      "exists": true
+    },
+    {
+      "file": "sprite-batch.js",
+      "category": "Billboards",
+      "purpose": "GLSL-billboarded `InstancedMesh`. 1 draw call for 100k+ camera-facing quads.",
+      "reference": "billboards.md",
+      "exists": true
+    },
+    {
+      "file": "composer-setup.js",
+      "category": "Post-Processing",
+      "purpose": "`EffectComposer` factory with `DepthTexture` and bloom pre-wired.",
+      "reference": "post-processing.md",
+      "exists": true
+    },
+    {
+      "file": "glitch-passes.js",
+      "category": "Post-Processing",
+      "purpose": "Three glitch variants: RGB shift, block displacement, scan corruption. Stackable.",
+      "reference": "post-processing.md",
+      "exists": true
+    },
+    {
+      "file": "god-rays-pass.js",
+      "category": "Post-Processing",
+      "purpose": "Screen-space radial blur from light position. Light auto-projected each frame.",
+      "reference": "post-processing.md",
+      "exists": true
+    },
+    {
+      "file": "dof-chromatic-pass.js",
+      "category": "Post-Processing",
+      "purpose": "Depth-of-field + chromatic aberration in one pass. Configurable focal point.",
+      "reference": "post-processing.md",
+      "exists": true
+    },
+    {
+      "file": "film-grain-pass.js",
+      "category": "Post-Processing",
+      "purpose": "Procedural per-fragment grain with luma toggle and optional desaturation.",
+      "reference": "post-processing.md",
+      "exists": true
+    },
+    {
+      "file": "hud-beam-transition.js",
+      "category": "Post-Processing",
+      "purpose": "Horizontal beam phase-in with midpoint callback for content swap.",
+      "reference": "post-processing.md",
+      "exists": true
+    },
+    {
+      "file": "stereoscopy.js",
+      "category": "Post-Processing",
+      "purpose": "Anaglyph + side-by-side stereo render wrappers.",
+      "reference": "post-processing.md",
+      "exists": true
+    },
+    {
+      "file": "llm-functions.js",
+      "category": "LLM Codegen",
+      "purpose": "Six ai-sdk tool schemas (zod) for Gemini-driven scene generation.",
+      "reference": "llm-function-definitions.md",
+      "exists": true
+    },
+    {
+      "file": "codegen-runner.js",
+      "category": "LLM Codegen",
+      "purpose": "CLI runner that calls a named tool, validates output, writes JSON + meta.",
+      "reference": "llm-function-definitions.md",
+      "exists": true
+    }
+  ],
+  "cases": [
+    {
+      "id": "foundation",
+      "title": "minimal production scene",
+      "summary": "start with renderer, one loop, resize observer, pointer gestures, quality tiers, and explicit cleanup.",
+      "demoMode": "live",
+      "tags": [
+        "core",
+        "renderer",
+        "lifecycle"
+      ],
+      "demos": [
+        "minimal-scene",
+        "bootstrap"
+      ],
+      "refs": [
+        "core-principles.md",
+        "project-architecture.md",
+        "fundamentals.md",
+        "library-local.md",
+        "production-lessons.md",
+        "code-style.md",
+        "anti-patterns.md"
+      ],
+      "scripts": [
+        "frame-loop.js",
+        "renderer-setup.js",
+        "scene-bootstrap.js",
+        "pointer-gesture.js",
+        "dispose-scene.js",
+        "quality-tier.js"
+      ],
+      "checklist": [
+        "single loop",
+        "pixel ratio <= 2",
+        "resize observer on parent",
+        "dispose all owned resources"
+      ]
+    },
+    {
+      "id": "camera-touch",
+      "title": "camera and touch controls",
+      "summary": "orbit, iso, follow, path, pointer capture, pinch zoom, and raycast-safe pointer coordinates.",
+      "demoMode": "live",
+      "tags": [
+        "camera",
+        "input",
+        "mobile"
+      ],
+      "demos": [
+        "isometric",
+        "follow-camera"
+      ],
+      "refs": [
+        "camera-handling.md",
+        "isometric-and-infinite-scenes.md"
+      ],
+      "scripts": [
+        "iso-camera.js",
+        "follow-camera.js",
+        "pointer-gesture.js"
+      ],
+      "checklist": [
+        "pointer events only",
+        "setPointerCapture on down",
+        "wheel listener passive false",
+        "damped movement"
+      ]
+    },
+    {
+      "id": "instancing-infinite",
+      "title": "instancing, billboards, and infinite scenes",
+      "summary": "choose InstancedMesh, BatchedMesh, billboards, chunk managers, and origin rebasing for large worlds.",
+      "demoMode": "live",
+      "tags": [
+        "instancing",
+        "billboards",
+        "infinite"
+      ],
+      "demos": [
+        "instanced-field",
+        "batched-buildings",
+        "isometric-infinite"
+      ],
+      "refs": [
+        "instancing.md",
+        "billboards.md",
+        "isometric-and-infinite-scenes.md",
+        "performance.md"
+      ],
+      "scripts": [
+        "instancing-grass.js",
+        "batched-buildings.js",
+        "sprite-batch.js",
+        "chunk-manager.js",
+        "iso-camera.js"
+      ],
+      "checklist": [
+        "one geometry repeated -> InstancedMesh",
+        "varied geometry same material -> BatchedMesh",
+        "rebase open worlds"
+      ]
+    },
+    {
+      "id": "geometry-procedural",
+      "title": "geometry and procedural generation",
+      "summary": "build shapes, extrusions, tubes, lattices, seeded scatter, noise textures, and runtime geometry factories.",
+      "demoMode": "live",
+      "tags": [
+        "geometry",
+        "procedural",
+        "textures"
+      ],
+      "demos": [
+        "geometry",
+        "procedural"
+      ],
+      "refs": [
+        "geometry.md",
+        "programmatic-generation.md",
+        "textures-and-maps.md"
+      ],
+      "scripts": [
+        "procedural-crystal-geometry.js",
+        "extruded-mesh.js",
+        "geometry-modifiers.js",
+        "poisson-disk.js",
+        "rng.js",
+        "noise-texture.js",
+        "glyph-atlas.js"
+      ],
+      "checklist": [
+        "seeded factories over static arrays",
+        "compute bounds after deformation",
+        "reuse scratch vectors"
+      ]
+    },
+    {
+      "id": "materials-shaders",
+      "title": "materials and shaders",
+      "summary": "combine pbr presets, toon ramps, matcaps, triplanar mapping, and shader-material recipes without raw string chaos.",
+      "demoMode": "live",
+      "tags": [
+        "materials",
+        "shader",
+        "glsl"
+      ],
+      "demos": [
+        "materials",
+        "shader-material"
+      ],
+      "refs": [
+        "materials.md",
+        "shaders.md",
+        "textures-and-maps.md"
+      ],
+      "scripts": [
+        "material-presets.js",
+        "holographic-material.js",
+        "noise-texture.js"
+      ],
+      "checklist": [
+        "wrap glsl in tagged templates",
+        "share materials",
+        "dispose generated textures"
+      ]
+    },
+    {
+      "id": "lighting",
+      "title": "lighting setup",
+      "summary": "compose image-based environment, shadow-tuned sun, hemisphere fill, and visible light cones.",
+      "demoMode": "live",
+      "tags": [
+        "lighting",
+        "shadows",
+        "environment"
+      ],
+      "demos": [
+        "lighting"
+      ],
+      "refs": [
+        "lighting.md"
+      ],
+      "scripts": [
+        "lighting-setup.js"
+      ],
+      "checklist": [
+        "hemisphere fill before ambient-only lighting",
+        "tight shadow frustum",
+        "mobile shadow budget"
+      ]
+    },
+    {
+      "id": "particles",
+      "title": "particles and billboards",
+      "summary": "use cpu instanced particles, gpu-emitter paths, baked curves, and camera-facing sprite batches.",
+      "demoMode": "live",
+      "tags": [
+        "particles",
+        "billboards",
+        "curves"
+      ],
+      "demos": [
+        "particles"
+      ],
+      "refs": [
+        "particles.md",
+        "billboards.md",
+        "performance.md"
+      ],
+      "scripts": [
+        "cpu-particles.js",
+        "sprite-batch.js",
+        "rng.js"
+      ],
+      "checklist": [
+        "no Sprite per particle",
+        "depthWrite false for transparent particles",
+        "curves baked to buffers/textures"
+      ]
+    },
+    {
+      "id": "post-processing",
+      "title": "post-processing effects",
+      "summary": "wire composer chains, bloom, glitch, god rays, dof, film grain, hud beam transitions, and stereoscopy.",
+      "demoMode": "live",
+      "tags": [
+        "post",
+        "composer",
+        "effects"
+      ],
+      "demos": [
+        "effects",
+        "post-processing",
+        "glitch",
+        "god-rays",
+        "dof"
+      ],
+      "refs": [
+        "post-processing.md",
+        "cinematic-and-streaming.md",
+        "shaders.md"
+      ],
+      "scripts": [
+        "composer-setup.js",
+        "glitch-passes.js",
+        "god-rays-pass.js",
+        "dof-chromatic-pass.js",
+        "film-grain-pass.js",
+        "hud-beam-transition.js",
+        "stereoscopy.js"
+      ],
+      "checklist": [
+        "output pass last",
+        "depth texture for depth effects",
+        "disable expensive passes on touch devices"
+      ]
+    },
+    {
+      "id": "voxels",
+      "title": "voxel worlds",
+      "summary": "store voxel chunks compactly, greedy-mesh exposed faces, and update only affected chunks.",
+      "demoMode": "live",
+      "tags": [
+        "voxels",
+        "terrain",
+        "meshing"
+      ],
+      "demos": [
+        "voxels"
+      ],
+      "refs": [
+        "voxel-geometry.md",
+        "performance.md"
+      ],
+      "scripts": [
+        "voxel-data.js",
+        "greedy-mesh.js",
+        "chunk-manager.js"
+      ],
+      "checklist": [
+        "never mesh per voxel",
+        "greedy merge same-id faces",
+        "remesh affected chunk boundaries"
+      ]
+    },
+    {
+      "id": "props-animation-jsx",
+      "title": "props, animation, and jsx",
+      "summary": "compose props, load gltf fallbacks, author programmatic clips, and mount reactive jsx scenes without react.",
+      "demoMode": "live",
+      "tags": [
+        "props",
+        "animation",
+        "jsx"
+      ],
+      "demos": [
+        "props",
+        "animation",
+        "jsx-scene"
+      ],
+      "refs": [
+        "props-and-factories.md",
+        "animation-system.md",
+        "jsx-layer.md"
+      ],
+      "scripts": [
+        "prop-factory.js",
+        "prop-composite.js",
+        "animation-controller.js",
+        "gltf-prop.js",
+        "jsx-scene.js"
+      ],
+      "checklist": [
+        "prop owns its dispose path",
+        "mixer uncacheRoot on teardown",
+        "function props are reactive accessors"
+      ]
+    },
+    {
+      "id": "performance-debug",
+      "title": "performance and debug workflow",
+      "summary": "diagnose draw calls, fragments, gc pressure, shader stalls, and scene ownership before optimizing.",
+      "demoMode": "guide",
+      "tags": [
+        "performance",
+        "debug",
+        "cleanup"
+      ],
+      "demos": [
+        "architecture",
+        "minimal-scene"
+      ],
+      "refs": [
+        "performance.md",
+        "anti-patterns.md",
+        "production-lessons.md"
+      ],
+      "scripts": [
+        "dispose-scene.js",
+        "quality-tier.js",
+        "frame-loop.js"
+      ],
+      "checklist": [
+        "renderer.info before guessing",
+        "compile before first frame",
+        "avoid per-frame allocations"
+      ]
+    },
+    {
+      "id": "llm-codegen",
+      "title": "llm-driven scene generation",
+      "summary": "route prompts through structured function tools, zod validation, deterministic seeds, and auditable generated files.",
+      "demoMode": "schema",
+      "tags": [
+        "llm",
+        "codegen",
+        "schemas"
+      ],
+      "demos": [],
+      "refs": [
+        "prompt-handling-flow.md",
+        "llm-function-definitions.md",
+        "threejs-docs-lookup.md"
+      ],
+      "scripts": [
+        "llm-functions.js",
+        "codegen-runner.js",
+        "query-threejs-docs.js"
+      ],
+      "checklist": [
+        "schemas before free-form code",
+        "embed prompt/model/seed metadata",
+        "cap tool roundtrips"
+      ]
+    }
+  ],
+  "coverage": {
+    "references": {
+      "total": 28,
+      "covered": 28
+    },
+    "scripts": {
+      "total": 40,
+      "covered": 40
+    }
+  }
+}

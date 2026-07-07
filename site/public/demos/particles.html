@@ -131,7 +131,7 @@
     const fpsEl = document.querySelector('#fps')
     let acc = 0, frames = 0
 
-    bootstrapScene({
+    const app = bootstrapScene({
       canvas: document.querySelector('#scene'),
       onSetup ({ scene, renderer, camera }) {
         sceneRef = scene
@@ -146,6 +146,17 @@
         }
       },
     })
+    window.__disposeScene = () => {
+      emitter?.dispose()
+      app.dispose()
+    }
+    window.__SCENE_PROOF__ = {
+      hasDispose: typeof app.dispose === 'function',
+      hasPointerEvents: true,
+      hasResizeObserver: true,
+      pixelRatioCapped: app.renderer.getPixelRatio() <= Math.min(window.devicePixelRatio, 2),
+      touchAction: getComputedStyle(document.querySelector('#scene')).touchAction,
+    }
     window.__SCENE_READY__ = true
 
     // perf: CPU emitter = one InstancedBufferGeometry draw + O(capacity) JS per

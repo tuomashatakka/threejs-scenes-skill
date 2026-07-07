@@ -36,10 +36,12 @@
     "lib": "lib"
   },
   "scripts": {
-    "dev": "bun run scripts/dev.ts",
-    "build": "tsc -p tsconfig.json && bun run copy:lib && bun run docs",
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -p tsconfig.json && bun run copy:lib && bun run docs && bun run site:build",
     "copy:lib": "bun run scripts/copy-lib.ts",
     "docs": "bun run scripts/generate-docs.ts",
+    "site:build": "vite build",
+    "site:preview": "vite preview --host 0.0.0.0",
     "package:skill": "bun run build && bun run scripts/package-skill.ts",
     "version": "bun run scripts/sync-version.ts && git add skill/SKILL.md",
     "docs:query": "node skill/scripts/query-threejs-docs.js",
@@ -79,7 +81,8 @@
     "@tuomashatakka/eslint-config": "^4.0.1",
     "@types/three": "^0.184.1",
     "three": "^0.184.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vite": "^8.1.3"
   },
   "dependencies": {
     "@tuomashatakka/canvas-loop-framecapper": "^1.0.0",

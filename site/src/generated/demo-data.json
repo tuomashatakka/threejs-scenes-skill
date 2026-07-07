@@ -1,0 +1,124 @@
+{
+  "demos": [
+    {
+      "slug": "bootstrap",
+      "label": "Bootstrap",
+      "caption": "createApp state flow, fixed-step clock, seeded emitter, and click-to-reseed interaction."
+    },
+    {
+      "slug": "minimal-scene",
+      "label": "Minimal",
+      "caption": "Renderer, frame loop, pointer orbit, resize observer, and explicit disposal."
+    },
+    {
+      "slug": "geometry",
+      "label": "Geometry",
+      "caption": "Extruded shapes, lathe surfaces, deformers, static merging, and layout helpers."
+    },
+    {
+      "slug": "materials",
+      "label": "Materials",
+      "caption": "PBR presets, toon ramps, matcap material, and material comparisons."
+    },
+    {
+      "slug": "props",
+      "label": "Props",
+      "caption": "Reusable prop factories, composites, animation clips, and instanced props."
+    },
+    {
+      "slug": "animation",
+      "label": "Animation",
+      "caption": "Programmatic clips and createAnimationController crossfades."
+    },
+    {
+      "slug": "jsx-scene",
+      "label": "JSX layer",
+      "caption": "Hyperscript tree rendered by the reactive scene layer."
+    },
+    {
+      "slug": "instanced-field",
+      "label": "Instancing",
+      "caption": "One-geometry InstancedMesh field with seeded placement."
+    },
+    {
+      "slug": "batched-buildings",
+      "label": "Batched",
+      "caption": "Varied geometries sharing one material through BatchedMesh."
+    },
+    {
+      "slug": "procedural",
+      "label": "Procedural",
+      "caption": "Seeded forest scatter with Poisson disk sampling and noise terrain."
+    },
+    {
+      "slug": "shader-material",
+      "label": "Shader",
+      "caption": "Holographic ShaderMaterial with fresnel, scanlines, and animated opacity."
+    },
+    {
+      "slug": "lighting",
+      "label": "Lighting",
+      "caption": "Environment, sun, and hemisphere fill toggles."
+    },
+    {
+      "slug": "particles",
+      "label": "Particles",
+      "caption": "Emitter shapes, lifetime curves, bursts, and gpu-emitter fallback."
+    },
+    {
+      "slug": "isometric",
+      "label": "Isometric",
+      "caption": "Orthographic isometric camera and instanced props."
+    },
+    {
+      "slug": "isometric-infinite",
+      "label": "Infinite iso",
+      "caption": "Endless heightmap terrain under an isometric camera."
+    },
+    {
+      "slug": "follow-camera",
+      "label": "Follow cam",
+      "caption": "Framerate-independent third-person camera damping."
+    },
+    {
+      "slug": "post-processing",
+      "label": "Post FX",
+      "caption": "Composer chain with bloom, grade, and depth-sampling passes."
+    },
+    {
+      "slug": "glitch",
+      "label": "Glitch",
+      "caption": "RGB shift, block displacement, and scan corruption passes."
+    },
+    {
+      "slug": "god-rays",
+      "label": "God rays",
+      "caption": "Screen-space light shafts from a projected light position."
+    },
+    {
+      "slug": "dof",
+      "label": "DOF + CA",
+      "caption": "Depth of field with chromatic aberration from a depth texture."
+    },
+    {
+      "slug": "effects",
+      "label": "Effects FX",
+      "caption": "Interactive WebGL composer and WebGPU/TSL effect playground."
+    },
+    {
+      "slug": "voxels",
+      "label": "Voxels",
+      "caption": "VoxelChunk storage and greedy meshing terrain."
+    },
+    {
+      "slug": "architecture",
+      "label": "Architecture",
+      "caption": "Scene modules, material pools, pick introspection, and cleanup ownership."
+    },
+    {
+      "slug": "icaras-foundry",
+      "label": "Icaras Foundry",
+      "caption": "A complete stylized ship-forge scene with bloom, beams, particles, and blueprint mode."
+    }
+  ]
+}
