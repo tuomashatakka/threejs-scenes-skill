@@ -25,18 +25,18 @@ interface ModuleMeta {
 // export lists and signatures come from the .d.ts files.
 const MODULES: Record<string, ModuleMeta> = {
   core: {
-    entry: 'dist/index.d.ts',
-    desc:  'The unified core WebGL API: scaffolding, rendering loops, camera controls, materials, programmatic geometry, instancing, loaders, and state management.',
+    entry:   'dist/index.d.ts',
+    desc:    'The unified core WebGL API: scaffolding, rendering loops, camera controls, materials, programmatic geometry, instancing, loaders, and state management.',
     example: `import { createApp, createIsoScaffold, createToonMaterial } from '@tuomashatakka/threejs-scenes'`,
   },
   webgpu: {
-    entry: 'dist/post/webgpu/index.d.ts',
-    desc:  'WebGPU post-processing and node-based effects.',
+    entry:   'dist/post/webgpu/index.d.ts',
+    desc:    'WebGPU post-processing and node-based effects.',
     example: `import * as webgpuPost from '@tuomashatakka/threejs-scenes/webgpu'`,
   },
   jsx: {
-    entry: 'dist/jsx/index.d.ts',
-    desc:  'Reactive JSX layer (no React): author scenes as elements, render() mounts them, signals re-apply reactive props every frame. Component hooks (useScene, useFrame, …) expose the library’s main interfaces inside function components; useFrameLoop works anywhere.',
+    entry:   'dist/jsx/index.d.ts',
+    desc:    'Reactive JSX layer (no React): author scenes as elements, render() mounts them, signals re-apply reactive props every frame. Component hooks (useScene, useFrame, …) expose the library’s main interfaces inside function components; useFrameLoop works anywhere.',
     example: `import { render, h, useSignal, useFrame, useScene } from '@tuomashatakka/threejs-scenes/jsx'
 
 const [hue, setHue] = useSignal(0.5)
@@ -74,9 +74,9 @@ function clean (text: string): string {
 }
 
 function extract (): Record<string, DocExport[]> {
-  const entries = Object.values(MODULES).map(m => root + m.entry)
-  const program = ts.createProgram(entries, { target: ts.ScriptTarget.ES2022, moduleResolution: ts.ModuleResolutionKind.Bundler })
-  const checker = program.getTypeChecker()
+  const entries                          = Object.values(MODULES).map(m => root + m.entry)
+  const program                          = ts.createProgram(entries, { target: ts.ScriptTarget.ES2022, moduleResolution: ts.ModuleResolutionKind.Bundler })
+  const checker                          = program.getTypeChecker()
   const out: Record<string, DocExport[]> = {}
 
   for (const [ name, meta ] of Object.entries(MODULES)) {
@@ -85,17 +85,20 @@ function extract (): Record<string, DocExport[]> {
       console.warn(`docs: missing ${meta.entry}`)
       continue
     }
+
     const moduleSymbol = checker.getSymbolAtLocation(sf)
     if (!moduleSymbol)
       continue
+
     const exports: DocExport[] = []
     for (const sym of checker.getExportsOfModule(moduleSymbol)) {
       const resolved = sym.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(sym) : sym
-      const decls = (resolved.declarations ?? []).filter(d => KIND[d.kind])
+      const decls    = (resolved.declarations ?? []).filter(d => KIND[d.kind])
       if (!decls.length)
         continue
-      const doc = ts.displayPartsToString(resolved.getDocumentationComment(checker))
-        || ts.displayPartsToString(sym.getDocumentationComment(checker))
+
+      const doc = ts.displayPartsToString(resolved.getDocumentationComment(checker)) ||
+        ts.displayPartsToString(sym.getDocumentationComment(checker))
       exports.push({
         name:      sym.getName(),
         kind:      KIND[decls[0].kind] ?? 'value',
@@ -103,6 +106,7 @@ function extract (): Record<string, DocExport[]> {
         signature: decls.map(d => clean(d.kind === ts.SyntaxKind.VariableDeclaration ? d.parent.parent.getText() : d.getText())).join('\n'),
       })
     }
+
     // stable, declaration-agnostic ordering: functions/classes first, then consts, then types
     const rank = (k: string): number => k === 'function' || k === 'class' ? 0 : k === 'const' || k === 'enum' ? 1 : 2
     exports.sort((a, b) => rank(a.kind) - rank(b.kind))
@@ -117,7 +121,8 @@ function summary (doc: string): string {
 }
 
 function escapeHtml (s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
 }
 
 function slugify (name: string): string {
@@ -127,11 +132,11 @@ function slugify (name: string): string {
 // ------------------------------------------------------------- api play demos
 
 interface ParsedParam {
-  raw:        string
-  name:       string
-  type:       string
-  optional:   boolean
-  rest:       boolean
+  raw:                 string
+  name:                string
+  type:                string
+  optional:            boolean
+  rest:                boolean
   destructuredFields?: DestructuredField[]
 }
 
@@ -159,7 +164,7 @@ interface PlaySeed {
 }
 
 const PLAY_EXCLUDED_MODULES = new Set([ 'post/webgpu', 'types', 'scaffold', 'state' ])
-const HARNESS_VARIABLES = new Set([ 'scene', 'camera', 'renderer', 'canvas', 'loop' ])
+const HARNESS_VARIABLES     = new Set([ 'scene', 'camera', 'renderer', 'canvas', 'loop' ])
 
 function escapeJsonForHtml (value: unknown): string {
   return JSON.stringify(value).replace(/</g, '\\u003c')
@@ -169,7 +174,7 @@ function findMatching (text: string, openIndex: number, openChar = '(', closeCha
   let depth = 0
   let quote = ''
   for (let i = openIndex; i < text.length; i += 1) {
-    const ch = text[i]
+    const ch   = text[i]
     const prev = text[i - 1]
     if (quote) {
       if (ch === quote && prev !== '\\')
@@ -193,15 +198,15 @@ function findMatching (text: string, openIndex: number, openChar = '(', closeCha
 
 function splitTopLevel (text: string, separator = ','): string[] {
   const out: string[] = []
-  let start = 0
-  let paren = 0
-  let brace = 0
+  let start   = 0
+  let paren   = 0
+  let brace   = 0
   let bracket = 0
-  let angle = 0
-  let quote = ''
+  let angle   = 0
+  let quote   = ''
 
   for (let i = 0; i < text.length; i += 1) {
-    const ch = text[i]
+    const ch   = text[i]
     const prev = text[i - 1]
     if (quote) {
       if (ch === quote && prev !== '\\')
@@ -212,14 +217,22 @@ function splitTopLevel (text: string, separator = ','): string[] {
       quote = ch
       continue
     }
-    if (ch === '(') paren += 1
-    else if (ch === ')') paren -= 1
-    else if (ch === '{') brace += 1
-    else if (ch === '}') brace -= 1
-    else if (ch === '[') bracket += 1
-    else if (ch === ']') bracket -= 1
-    else if (ch === '<') angle += 1
-    else if (ch === '>') angle = Math.max(0, angle - 1)
+    if (ch === '(')
+      paren += 1
+    else if (ch === ')')
+      paren -= 1
+    else if (ch === '{')
+      brace += 1
+    else if (ch === '}')
+      brace -= 1
+    else if (ch === '[')
+      bracket += 1
+    else if (ch === ']')
+      bracket -= 1
+    else if (ch === '<')
+      angle += 1
+    else if (ch === '>')
+      angle = Math.max(0, angle - 1)
     else if (ch === separator && paren === 0 && brace === 0 && bracket === 0 && angle === 0) {
       const item = text.slice(start, i).trim()
       if (item)
@@ -235,14 +248,14 @@ function splitTopLevel (text: string, separator = ','): string[] {
 }
 
 function findTopLevelColon (text: string): number {
-  let paren = 0
-  let brace = 0
+  let paren   = 0
+  let brace   = 0
   let bracket = 0
-  let angle = 0
-  let quote = ''
+  let angle   = 0
+  let quote   = ''
 
   for (let i = 0; i < text.length; i += 1) {
-    const ch = text[i]
+    const ch   = text[i]
     const prev = text[i - 1]
     if (quote) {
       if (ch === quote && prev !== '\\')
@@ -253,14 +266,22 @@ function findTopLevelColon (text: string): number {
       quote = ch
       continue
     }
-    if (ch === '(') paren += 1
-    else if (ch === ')') paren -= 1
-    else if (ch === '{') brace += 1
-    else if (ch === '}') brace -= 1
-    else if (ch === '[') bracket += 1
-    else if (ch === ']') bracket -= 1
-    else if (ch === '<') angle += 1
-    else if (ch === '>') angle = Math.max(0, angle - 1)
+    if (ch === '(')
+      paren += 1
+    else if (ch === ')')
+      paren -= 1
+    else if (ch === '{')
+      brace += 1
+    else if (ch === '}')
+      brace -= 1
+    else if (ch === '[')
+      bracket += 1
+    else if (ch === ']')
+      bracket -= 1
+    else if (ch === '<')
+      angle += 1
+    else if (ch === '>')
+      angle = Math.max(0, angle - 1)
     else if (ch === ':' && paren === 0 && brace === 0 && bracket === 0 && angle === 0)
       return i
   }
@@ -269,7 +290,7 @@ function findTopLevelColon (text: string): number {
 }
 
 function parseDestructuredFields (nameText: string): DestructuredField[] {
-  const open = nameText.indexOf('{')
+  const open  = nameText.indexOf('{')
   const close = findMatching(nameText, open, '{', '}')
   if (open < 0 || close < 0)
     return []
@@ -278,6 +299,7 @@ function parseDestructuredFields (nameText: string): DestructuredField[] {
       const raw = field.replace(/\?$/, '').trim()
       if (!raw || raw.startsWith('...'))
         return null
+
       const [ name, localName = name ] = raw.split(':').map(part => part.trim())
       if (!name || name.includes(' '))
         return null
@@ -291,14 +313,15 @@ function parseParam (raw: string): ParsedParam | null {
   if (!text)
     return null
 
-  const colon = findTopLevelColon(text)
+  const colon    = findTopLevelColon(text)
   const nameText = colon >= 0 ? text.slice(0, colon).trim() : text
-  const type = colon >= 0 ? text.slice(colon + 1).trim() : 'unknown'
-  const rest = nameText.startsWith('...')
-  const bareName = nameText.replace(/^\.\.\./, '').replace(/\?$/, '').trim()
-  const optional = rest || /\?\s*$/.test(nameText)
+  const type     = colon >= 0 ? text.slice(colon + 1).trim() : 'unknown'
+  const rest     = nameText.startsWith('...')
+  const bareName = nameText.replace(/^\.\.\./, '').replace(/\?$/, '')
+    .trim()
+  const optional           = rest || (/\?\s*$/).test(nameText)
   const destructuredFields = bareName.startsWith('{') ? parseDestructuredFields(bareName) : undefined
-  const name = destructuredFields ? 'options' : bareName
+  const name               = destructuredFields ? 'options' : bareName
 
   return { raw: text, name, type, optional, rest, destructuredFields }
 }
@@ -308,16 +331,21 @@ function parseSignature (entry: DocExport): ParsedSignature | null {
     const match = entry.signature.match(new RegExp(`function\\s+${entry.name}(?:<[^>]+>)?\\s*\\(`))
     if (!match || match.index === undefined)
       return null
-    const open = entry.signature.indexOf('(', match.index)
+
+    const open  = entry.signature.indexOf('(', match.index)
     const close = findMatching(entry.signature, open)
     if (open < 0 || close < 0)
       return null
+
     const params = splitTopLevel(entry.signature.slice(open + 1, close))
       .map(parseParam)
       .filter((param): param is ParsedParam => Boolean(param))
-    const after = entry.signature.slice(close + 1)
-    const colon = after.indexOf(':')
-    const returnType = colon >= 0 ? after.slice(colon + 1).trim().replace(/;$/, '') : 'void'
+    const after      = entry.signature.slice(close + 1)
+    const colon      = after.indexOf(':')
+    const returnType = colon >= 0
+      ? after.slice(colon + 1).trim()
+        .replace(/;$/, '')
+      : 'void'
     return { name: entry.name, params, returnType, isClass: false }
   }
 
@@ -325,10 +353,12 @@ function parseSignature (entry: DocExport): ParsedSignature | null {
     const constructorIndex = entry.signature.indexOf('constructor(')
     if (constructorIndex < 0)
       return { name: entry.name, params: [], returnType: entry.name, isClass: true }
-    const open = entry.signature.indexOf('(', constructorIndex)
-    const close = findMatching(entry.signature, open)
+
+    const open   = entry.signature.indexOf('(', constructorIndex)
+    const close  = findMatching(entry.signature, open)
     const params = open >= 0 && close >= 0
-      ? splitTopLevel(entry.signature.slice(open + 1, close)).map(parseParam).filter((param): param is ParsedParam => Boolean(param))
+      ? splitTopLevel(entry.signature.slice(open + 1, close)).map(parseParam)
+        .filter((param): param is ParsedParam => Boolean(param))
       : []
     return { name: entry.name, params, returnType: entry.name, isClass: true }
   }
@@ -352,41 +382,61 @@ function harnessFlavor (moduleName: string): HarnessFlavor {
 function classifyReturn (moduleName: string, entry: DocExport, parsed: ParsedSignature): WiringKind {
   if (moduleName === 'loaders')
     return 'value'
+
   const type = unwrapReturnType(parsed.isClass ? entry.name : parsed.returnType)
   if (moduleName === 'post' || moduleName === 'post/webgl') {
-    if (/\b(Pass|ShaderPass|ComposerHandle|PostPipeline|StereoRenderer|SelectiveBloomHandle|HudBeamTransition)\b/.test(type))
+    if ((/\b(Pass|ShaderPass|ComposerHandle|PostPipeline|StereoRenderer|SelectiveBloomHandle|HudBeamTransition)\b/).test(type))
       return 'pass'
   }
-  if (/\b(Camera|PerspectiveCamera|OrthographicCamera)\b/.test(type))
+  if ((/\b(Camera|PerspectiveCamera|OrthographicCamera)\b/).test(type))
     return 'camera'
-  if (/Material\b|TickableMaterial\b/.test(type))
+  if ((/Material\b|TickableMaterial\b/).test(type))
     return 'material'
-  if (/\b(Object3D|Mesh|Group|LineSegments|Points|Light|InstancedMesh|BatchedMesh|BufferGeometry|Shape|ProceduralBody|InfiniteGround|ConnectionGraph|PropInstance|PropComposite|InstancedPropResult|ChunkManager)\b/.test(type))
+  if ((/\b(Object3D|Mesh|Group|LineSegments|Points|Light|InstancedMesh|BatchedMesh|BufferGeometry|Shape|ProceduralBody|InfiniteGround|ConnectionGraph|PropInstance|PropComposite|InstancedPropResult|ChunkManager)\b/).test(type))
     return 'object3d'
   return 'value'
 }
 
 function nameAwareNumber (name: string): string {
   const lower = name.toLowerCase()
-  if (lower.includes('seed')) return '7'
-  if (lower.includes('count') || lower.includes('capacity')) return '32'
-  if (lower.includes('resolution') || lower.includes('segments')) return '32'
-  if (lower.includes('sides') || lower.includes('teeth') || lower.includes('points')) return '6'
-  if (lower.includes('duration')) return '2'
-  if (lower === 't' || lower.includes('progress') || lower.includes('mix')) return '0.5'
-  if (lower.includes('angle')) return 'Math.PI / 4'
-  if (lower.includes('aspect')) return 'canvas.clientWidth / Math.max(1, canvas.clientHeight)'
-  if (lower.includes('width')) return '1.8'
-  if (lower.includes('height')) return '1.2'
-  if (lower.includes('inner')) return '0.45'
-  if (lower.includes('outer')) return '1'
-  if (lower.includes('radius') || lower.includes('size')) return '1'
-  if (lower.includes('distance')) return '4'
-  if (lower.includes('near')) return '0.1'
-  if (lower.includes('far')) return '100'
-  if (lower === 'x' || lower === 'y' || lower === 'z' || lower.startsWith('ndc')) return '0'
-  if (lower.includes('min')) return '0.4'
-  if (lower.includes('max')) return '1.4'
+  if (lower.includes('seed'))
+    return '7'
+  if (lower.includes('count') || lower.includes('capacity'))
+    return '32'
+  if (lower.includes('resolution') || lower.includes('segments'))
+    return '32'
+  if (lower.includes('sides') || lower.includes('teeth') || lower.includes('points'))
+    return '6'
+  if (lower.includes('duration'))
+    return '2'
+  if (lower === 't' || lower.includes('progress') || lower.includes('mix'))
+    return '0.5'
+  if (lower.includes('angle'))
+    return 'Math.PI / 4'
+  if (lower.includes('aspect'))
+    return 'canvas.clientWidth / Math.max(1, canvas.clientHeight)'
+  if (lower.includes('width'))
+    return '1.8'
+  if (lower.includes('height'))
+    return '1.2'
+  if (lower.includes('inner'))
+    return '0.45'
+  if (lower.includes('outer'))
+    return '1'
+  if (lower.includes('radius') || lower.includes('size'))
+    return '1'
+  if (lower.includes('distance'))
+    return '4'
+  if (lower.includes('near'))
+    return '0.1'
+  if (lower.includes('far'))
+    return '100'
+  if (lower === 'x' || lower === 'y' || lower === 'z' || lower.startsWith('ndc'))
+    return '0'
+  if (lower.includes('min'))
+    return '0.4'
+  if (lower.includes('max'))
+    return '1.4'
   return '1'
 }
 
@@ -396,67 +446,113 @@ function stringLiteralFromUnion (type: string): string | null {
 }
 
 function objectLiteralFromFieldValue (field: DestructuredField): string | null {
-  const name = field.name
-  const local = field.localName
-  const lower = name.toLowerCase()
+  const name       = field.name
+  const local      = field.localName
+  const lower      = name.toLowerCase()
   const localLower = local.toLowerCase()
 
   if (localLower.endsWith('options'))
     return '{}'
   if (HARNESS_VARIABLES.has(name))
     return name
-  if (lower === 'geometry') return 'demoGeometry.clone()'
-  if (lower === 'geometries') return '[demoGeometry.clone(), new THREE.ConeGeometry(0.6, 1.2, 6)]'
-  if (lower === 'material') return 'demoMaterial.clone()'
-  if (lower === 'shape') return 'demoShape'
-  if (lower === 'points' || lower === 'nodes') return 'demoPoints'
-  if (lower === 'profile') return 'demoProfile'
-  if (lower === 'path') return 'demoCurve'
-  if (lower === 'transforms') return '[new THREE.Matrix4(), new THREE.Matrix4().makeTranslation(1.6, 0, 0)]'
-  if (lower === 'build') return '(cx, cz, chunk) => { chunk.add(new THREE.Mesh(demoGeometry.clone(), demoMaterial.clone())) }'
-  if (lower === 'create') return '() => ({ dispose () {} })'
-  if (lower === 'paint') return 'paintDemoTexture'
-  if (lower === 'displace') return '(x, z) => Math.sin(x * 0.7) * Math.cos(z * 0.7) * 0.2'
-  if (lower === 'place') return null
-  if (lower === 'onframe') return '() => {}'
-  if (lower === 'oncomplete') return '() => {}'
-  if (lower === 'state') return '{ hue: 0.55 }'
-  if (lower === 'modules') return '[]'
-  if (lower === 'clock') return null
-  if (lower === 'reducer') return null
-  if (lower === 'background') return '\'#0a0a14\''
-  if (lower.includes('color') || lower.includes('tint')) return '\'#79f7ff\''
-  if (lower === 'palette') return '[\'#14213d\', \'#79f7ff\', \'#ff7ad9\']'
-  if (lower === 'position' || lower === 'offset' || lower === 'lookat' || lower === 'gravity' || lower === 'velocity') return '[0, 1, 0]'
-  if (lower === 'lifetime') return '[0.8, 1.4]'
-  if (lower === 'bounds') return 'new THREE.Box3(new THREE.Vector3(-1, -1, -1), new THREE.Vector3(1, 1, 1))'
-  if (lower === 'texture') return 'null'
-  if (lower === 'fragmentshader') return 'demoFragmentShader'
-  if (lower === 'uniforms') return '{}'
-  if (lower === 'pointerelement') return 'canvas'
-  if (lower === 'element') return 'canvas'
-  if (lower === 'type') return '\'terrestrial\''
-  if (lower === 'name' || lower === 'key') return '\'demo\''
-  if (lower === 'src' || lower === 'url') return '\'./replace-with-your-model.glb\''
-  if (lower.includes('width')) return 'canvas.clientWidth'
-  if (lower.includes('height')) return 'canvas.clientHeight'
-  if (lower.includes('shadow') || lower.includes('enabled') || lower.includes('antialias') || lower.includes('orbit') || lower.includes('lighting')) return 'true'
-  if (lower.includes('seed')) return '7'
-  if (lower.includes('count') || lower.includes('capacity')) return '32'
-  if (lower.includes('radius') || lower.includes('size') || lower.includes('scale')) return '1'
-  if (lower.includes('duration')) return '2'
-  if (lower.includes('angle')) return 'Math.PI / 4'
-  if (lower.includes('frequency')) return '1.4'
-  if (lower.includes('octaves')) return '3'
-  if (lower.includes('intensity') || lower.includes('strength') || lower.includes('opacity')) return '0.8'
-  if (lower.includes('near')) return '0.1'
-  if (lower.includes('far')) return '100'
+  if (lower === 'geometry')
+    return 'demoGeometry.clone()'
+  if (lower === 'geometries')
+    return '[demoGeometry.clone(), new THREE.ConeGeometry(0.6, 1.2, 6)]'
+  if (lower === 'material')
+    return 'demoMaterial.clone()'
+  if (lower === 'shape')
+    return 'demoShape'
+  if (lower === 'points' || lower === 'nodes')
+    return 'demoPoints'
+  if (lower === 'profile')
+    return 'demoProfile'
+  if (lower === 'path')
+    return 'demoCurve'
+  if (lower === 'transforms')
+    return '[new THREE.Matrix4(), new THREE.Matrix4().makeTranslation(1.6, 0, 0)]'
+  if (lower === 'build')
+    return '(cx, cz, chunk) => { chunk.add(new THREE.Mesh(demoGeometry.clone(), demoMaterial.clone())) }'
+  if (lower === 'create')
+    return '() => ({ dispose () {} })'
+  if (lower === 'paint')
+    return 'paintDemoTexture'
+  if (lower === 'displace')
+    return '(x, z) => Math.sin(x * 0.7) * Math.cos(z * 0.7) * 0.2'
+  if (lower === 'place')
+    return null
+  if (lower === 'onframe')
+    return '() => {}'
+  if (lower === 'oncomplete')
+    return '() => {}'
+  if (lower === 'state')
+    return '{ hue: 0.55 }'
+  if (lower === 'modules')
+    return '[]'
+  if (lower === 'clock')
+    return null
+  if (lower === 'reducer')
+    return null
+  if (lower === 'background')
+    return '\'#0a0a14\''
+  if (lower.includes('color') || lower.includes('tint'))
+    return '\'#79f7ff\''
+  if (lower === 'palette')
+    return '[\'#14213d\', \'#79f7ff\', \'#ff7ad9\']'
+  if (lower === 'position' || lower === 'offset' || lower === 'lookat' || lower === 'gravity' || lower === 'velocity')
+    return '[0, 1, 0]'
+  if (lower === 'lifetime')
+    return '[0.8, 1.4]'
+  if (lower === 'bounds')
+    return 'new THREE.Box3(new THREE.Vector3(-1, -1, -1), new THREE.Vector3(1, 1, 1))'
+  if (lower === 'texture')
+    return 'null'
+  if (lower === 'fragmentshader')
+    return 'demoFragmentShader'
+  if (lower === 'uniforms')
+    return '{}'
+  if (lower === 'pointerelement')
+    return 'canvas'
+  if (lower === 'element')
+    return 'canvas'
+  if (lower === 'type')
+    return '\'terrestrial\''
+  if (lower === 'name' || lower === 'key')
+    return '\'demo\''
+  if (lower === 'src' || lower === 'url')
+    return '\'./replace-with-your-model.glb\''
+  if (lower.includes('width'))
+    return 'canvas.clientWidth'
+  if (lower.includes('height'))
+    return 'canvas.clientHeight'
+  if (lower.includes('shadow') || lower.includes('enabled') || lower.includes('antialias') || lower.includes('orbit') || lower.includes('lighting'))
+    return 'true'
+  if (lower.includes('seed'))
+    return '7'
+  if (lower.includes('count') || lower.includes('capacity'))
+    return '32'
+  if (lower.includes('radius') || lower.includes('size') || lower.includes('scale'))
+    return '1'
+  if (lower.includes('duration'))
+    return '2'
+  if (lower.includes('angle'))
+    return 'Math.PI / 4'
+  if (lower.includes('frequency'))
+    return '1.4'
+  if (lower.includes('octaves'))
+    return '3'
+  if (lower.includes('intensity') || lower.includes('strength') || lower.includes('opacity'))
+    return '0.8'
+  if (lower.includes('near'))
+    return '0.1'
+  if (lower.includes('far'))
+    return '100'
   return null
 }
 
 function synthesizeDestructuredParam (param: ParsedParam): string {
   const fields = param.destructuredFields ?? []
-  const props = fields
+  const props  = fields
     .map(field => {
       const value = objectLiteralFromFieldValue(field)
       return value ? `  ${field.name}: ${value}` : ''
@@ -466,35 +562,35 @@ function synthesizeDestructuredParam (param: ParsedParam): string {
 }
 
 function synthesizeObjectByType (type: string, name: string, moduleName: string): string {
-  if (/ExtrudeOptions\b/.test(type))
+  if ((/ExtrudeOptions\b/).test(type))
     return '{ shape: demoShape, depth: 0.35, material: demoMaterial.clone() }'
-  if (/TrackSpec\b/.test(type))
+  if ((/TrackSpec\b/).test(type))
     return '{ path: \'.rotation[y]\', times: [0, 1, 2], values: [0, Math.PI, Math.PI * 2], type: \'number\' }'
-  if (/PropDefinition\b/.test(type))
+  if ((/PropDefinition\b/).test(type))
     return '{ name: \'demo-prop\', build: () => ({ object: demoMesh.clone(), dispose () {} }) }'
-  if (/PropContext\b/.test(type))
+  if ((/PropContext\b/).test(type))
     return '{ scene, renderer, camera, loop, rng: Math.random }'
-  if (/InstancedPropOptions\b/.test(type))
+  if ((/InstancedPropOptions\b/).test(type))
     return '{ count: 12, radius: 2, seed: 7 }'
-  if (/SceneModuleDefinition\b/.test(type))
+  if ((/SceneModuleDefinition\b/).test(type))
     return '{ id: \'demo\', setup: () => {}, update: () => {} }'
-  if (/ParamSpecMap\b/.test(type))
+  if ((/ParamSpecMap\b/).test(type))
     return '{ speed: { type: \'number\', default: 1 } }'
-  if (/ParamSpec\b/.test(type))
+  if ((/ParamSpec\b/).test(type))
     return '{ type: \'number\', default: 1 }'
-  if (/PoissonDiskOptions\b/.test(type))
+  if ((/PoissonDiskOptions\b/).test(type))
     return '{ width: 4, height: 4, minDist: 0.5, rng: Math.random }'
-  if (/GpuEmitterOptions\b/.test(type))
+  if ((/GpuEmitterOptions\b/).test(type))
     return '{ count: 256, seed: 7 }'
-  if (/EmitterOptions\b/.test(type))
+  if ((/EmitterOptions\b/).test(type))
     return '{ capacity: 256, seed: 7, color: [[0, \'#79f7ff\'], [1, \'#ff7ad9\']] }'
-  if (/ParticleEmitterOptions\b/.test(type))
+  if ((/ParticleEmitterOptions\b/).test(type))
     return '{ count: 256, seed: 7 }'
-  if (/RenderOptions\b/.test(type))
+  if ((/RenderOptions\b/).test(type))
     return '{ canvas, background: \'#0a0a14\' }'
-  if (/Record<string, unknown>/.test(type))
+  if ((/Record<string, unknown>/).test(type))
     return '{}'
-  if (moduleName === 'loaders' && (name === 'options' || /GLTFLoaderOptions\b/.test(type)))
+  if (moduleName === 'loaders' && (name === 'options' || (/GLTFLoaderOptions\b/).test(type)))
     return '{}'
   return '{}'
 }
@@ -503,55 +599,95 @@ function synthesizeParamValue (param: ParsedParam, moduleName: string): string {
   if (param.destructuredFields)
     return synthesizeDestructuredParam(param)
 
-  const name = param.name.replace(/^\.\.\./, '')
+  const name  = param.name.replace(/^\.\.\./, '')
   const lower = name.toLowerCase()
-  const type = param.type
+  const type  = param.type
 
-  if (/THREE\.Object3D\[\]|Object3D\[\]/.test(type)) return '[demoMesh]'
-  if (/THREE\.Mesh\[\]|Mesh\[\]/.test(type)) return '[demoMesh]'
-  if (/THREE\.BufferGeometry\[\]|BufferGeometry\[\]/.test(type)) return '[demoGeometry.clone(), new THREE.ConeGeometry(0.6, 1.2, 6)]'
-  if (/THREE\.Matrix4\[\]|Matrix4\[\]/.test(type)) return '[new THREE.Matrix4(), new THREE.Matrix4().makeTranslation(1.6, 0, 0)]'
-  if (/THREE\.Vector3\[\]|Vector3\[\]/.test(type)) return 'demoVectorPoints'
-  if (/number\[\]/.test(type)) return lower.includes('time') ? '[0, 1, 2]' : '[0, 1, 0]'
-  if (/ScalarCurve\b/.test(type)) return '[[0, 0], [0.5, 1], [1, 0]]'
-  if (/ColorCurve\b/.test(type)) return '[[0, \'#79f7ff\'], [1, \'#ff7ad9\']]'
-  if (/ReadonlyArray<readonly \[number, number, number\]>/.test(type)) return 'demoPoints'
-  if (/ReadonlyArray<readonly \[number, number\]/.test(type)) return 'demoProfile'
-  if (/readonly \[number, number, number\]|\[number, number, number\]|Vec3Tuple\b/.test(type)) return '[0, 1, 0]'
-  if (/readonly \[number, number\]|\[number, number\]/.test(type)) return '[0, 1]'
-  if (/MaskLayer\[\]/.test(type)) return '[]'
+  if ((/THREE\.Object3D\[\]|Object3D\[\]/).test(type))
+    return '[demoMesh]'
+  if ((/THREE\.Mesh\[\]|Mesh\[\]/).test(type))
+    return '[demoMesh]'
+  if ((/THREE\.BufferGeometry\[\]|BufferGeometry\[\]/).test(type))
+    return '[demoGeometry.clone(), new THREE.ConeGeometry(0.6, 1.2, 6)]'
+  if ((/THREE\.Matrix4\[\]|Matrix4\[\]/).test(type))
+    return '[new THREE.Matrix4(), new THREE.Matrix4().makeTranslation(1.6, 0, 0)]'
+  if ((/THREE\.Vector3\[\]|Vector3\[\]/).test(type))
+    return 'demoVectorPoints'
+  if ((/number\[\]/).test(type))
+    return lower.includes('time') ? '[0, 1, 2]' : '[0, 1, 0]'
+  if ((/ScalarCurve\b/).test(type))
+    return '[[0, 0], [0.5, 1], [1, 0]]'
+  if ((/ColorCurve\b/).test(type))
+    return '[[0, \'#79f7ff\'], [1, \'#ff7ad9\']]'
+  if ((/ReadonlyArray<readonly \[number, number, number\]>/).test(type))
+    return 'demoPoints'
+  if ((/ReadonlyArray<readonly \[number, number\]/).test(type))
+    return 'demoProfile'
+  if ((/readonly \[number, number, number\]|\[number, number, number\]|Vec3Tuple\b/).test(type))
+    return '[0, 1, 0]'
+  if ((/readonly \[number, number\]|\[number, number\]/).test(type))
+    return '[0, 1]'
+  if ((/MaskLayer\[\]/).test(type))
+    return '[]'
 
   if (HARNESS_VARIABLES.has(name))
     return name
-  if (/WebGlPassContext\b/.test(type)) return 'postContext'
-  if (/HTMLCanvasElement\b/.test(type)) return 'canvas'
-  if (/HTMLElement\b|Element\b/.test(type)) return 'canvas'
-  if (/THREE\.WebGLRenderer\b|WebGLRenderer\b/.test(type)) return 'renderer'
-  if (/THREE\.Scene\b/.test(type)) return lower.endsWith('b') ? 'altScene' : 'scene'
-  if (/THREE\.Curve<THREE\.Vector3>|Curve<THREE\.Vector3>/.test(type)) return 'demoCurve'
-  if (/OrthographicCamera\b/.test(type)) return 'new THREE.OrthographicCamera(-2, 2, 2, -2, 0.1, 100)'
-  if (/PerspectiveCamera\b/.test(type)) return 'camera'
-  if (/THREE\.Camera\b|\bCamera\b/.test(type)) return lower.endsWith('b') ? 'altCamera' : 'camera'
-  if (/DirectionalLight\b|PointLight\b/.test(type)) return 'keyLight'
-  if (/THREE\.Vector3\b|Vector3\b/.test(type)) return 'new THREE.Vector3(0, 1, 0)'
-  if (/THREE\.Object3D\b|Object3D\b/.test(type)) return 'demoMesh'
-  if (/THREE\.Mesh\b/.test(type)) return 'demoMesh'
-  if (/THREE\.Material\b|Material\b/.test(type)) return 'demoMaterial.clone()'
-  if (/THREE\.BufferGeometry\b|BufferGeometry\b/.test(type)) return 'demoGeometry.clone()'
-  if (/THREE\.Shape\b|\bShape\b/.test(type)) return 'demoShape'
-  if (/THREE\.Texture\b|Texture\b/.test(type)) return 'demoTexture'
-  if (/FrameLoop\b/.test(type)) return 'loop'
-  if (/SceneChild\b|SceneElement\b/.test(type)) return 'demoElement'
-  if (/ElementType\b/.test(type)) return '\'mesh\''
+  if ((/WebGlPassContext\b/).test(type))
+    return 'postContext'
+  if ((/HTMLCanvasElement\b/).test(type))
+    return 'canvas'
+  if ((/HTMLElement\b|Element\b/).test(type))
+    return 'canvas'
+  if ((/THREE\.WebGLRenderer\b|WebGLRenderer\b/).test(type))
+    return 'renderer'
+  if ((/THREE\.Scene\b/).test(type))
+    return lower.endsWith('b') ? 'altScene' : 'scene'
+  if ((/THREE\.Curve<THREE\.Vector3>|Curve<THREE\.Vector3>/).test(type))
+    return 'demoCurve'
+  if ((/OrthographicCamera\b/).test(type))
+    return 'new THREE.OrthographicCamera(-2, 2, 2, -2, 0.1, 100)'
+  if ((/PerspectiveCamera\b/).test(type))
+    return 'camera'
+  if ((/THREE\.Camera\b|\bCamera\b/).test(type))
+    return lower.endsWith('b') ? 'altCamera' : 'camera'
+  if ((/DirectionalLight\b|PointLight\b/).test(type))
+    return 'keyLight'
+  if ((/THREE\.Vector3\b|Vector3\b/).test(type))
+    return 'new THREE.Vector3(0, 1, 0)'
+  if ((/THREE\.Object3D\b|Object3D\b/).test(type))
+    return 'demoMesh'
+  if ((/THREE\.Mesh\b/).test(type))
+    return 'demoMesh'
+  if ((/THREE\.Material\b|Material\b/).test(type))
+    return 'demoMaterial.clone()'
+  if ((/THREE\.BufferGeometry\b|BufferGeometry\b/).test(type))
+    return 'demoGeometry.clone()'
+  if ((/THREE\.Shape\b|\bShape\b/).test(type))
+    return 'demoShape'
+  if ((/THREE\.Texture\b|Texture\b/).test(type))
+    return 'demoTexture'
+  if ((/FrameLoop\b/).test(type))
+    return 'loop'
+  if ((/SceneChild\b|SceneElement\b/).test(type))
+    return 'demoElement'
+  if ((/ElementType\b/).test(type))
+    return '\'mesh\''
 
-  if (/\(\)\s*=>\s*number/.test(type)) return '() => 0.42'
-  if (/=>/.test(type)) return lower.includes('paint') ? 'paintDemoTexture' : '() => {}'
-  if (/\bnumber\b/.test(type)) return nameAwareNumber(name)
-  if (/\bboolean\b/.test(type)) return 'true'
-  if (/\bstring\b/.test(type)) {
-    if (lower.includes('color') || lower.includes('tint')) return '\'#79f7ff\''
-    if (lower.includes('path')) return '\'.rotation[y]\''
-    if (moduleName === 'loaders' && (lower === 'url' || lower === 'src')) return '\'./replace-with-your-model.glb\''
+  if ((/\(\)\s*=>\s*number/).test(type))
+    return '() => 0.42'
+  if ((/=>/).test(type))
+    return lower.includes('paint') ? 'paintDemoTexture' : '() => {}'
+  if ((/\bnumber\b/).test(type))
+    return nameAwareNumber(name)
+  if ((/\bboolean\b/).test(type))
+    return 'true'
+  if ((/\bstring\b/).test(type)) {
+    if (lower.includes('color') || lower.includes('tint'))
+      return '\'#79f7ff\''
+    if (lower.includes('path'))
+      return '\'.rotation[y]\''
+    if (moduleName === 'loaders' && (lower === 'url' || lower === 'src'))
+      return '\'./replace-with-your-model.glb\''
     return stringLiteralFromUnion(type) ?? '\'demo\''
   }
 
@@ -569,7 +705,7 @@ function synthesizeArgs (parsed: ParsedSignature, moduleName: string): string[] 
 }
 
 function synthesizeLoaderStarter (parsed: ParsedSignature, kind: WiringKind): string {
-  const hasAssetParam = parsed.params.some(param => /url|src/i.test(param.name) || /url|src/i.test(param.raw))
+  const hasAssetParam = parsed.params.some(param => (/url|src/i).test(param.name) || (/url|src/i).test(param.raw))
   if (!hasAssetParam) {
     const args = synthesizeArgs(parsed, 'loaders')
     const call = `${parsed.isClass ? `new ${parsed.name}` : parsed.name}(${args.join(', ')})`
@@ -599,9 +735,9 @@ function synthesizeStandardStarter (parsed: ParsedSignature, moduleName: string,
   if (moduleName === 'loaders')
     return synthesizeLoaderStarter(parsed, kind)
 
-  const args = synthesizeArgs(parsed, moduleName)
-  const call = `${parsed.isClass ? `new ${parsed.name}` : parsed.name}(${args.join(', ')})`
-  const awaitKeyword = /^Promise</.test(parsed.returnType) ? 'await ' : ''
+  const args         = synthesizeArgs(parsed, moduleName)
+  const call         = `${parsed.isClass ? `new ${parsed.name}` : parsed.name}(${args.join(', ')})`
+  const awaitKeyword = (/^Promise</).test(parsed.returnType) ? 'await ' : ''
   return [
     `const result = ${awaitKeyword}${call}`,
     `presentResult(result, '${kind}')`,
@@ -609,7 +745,7 @@ function synthesizeStandardStarter (parsed: ParsedSignature, moduleName: string,
 }
 
 function synthesizeJsxStarter (parsed: ParsedSignature, kind: WiringKind): string {
-  if (/^use[A-Z]/.test(parsed.name) && parsed.name !== 'useFrameLoop') {
+  if ((/^use[A-Z]/).test(parsed.name) && parsed.name !== 'useFrameLoop') {
     const args = synthesizeArgs(parsed, 'jsx')
     return [
       'function DemoComponent () {',
@@ -635,7 +771,7 @@ function synthesizeJsxStarter (parsed: ParsedSignature, kind: WiringKind): strin
 }
 
 function createPlaySeed (moduleName: string, entry: DocExport): PlaySeed | null {
-  if (PLAY_EXCLUDED_MODULES.has(moduleName) || (entry.kind !== 'function' && entry.kind !== 'class'))
+  if (PLAY_EXCLUDED_MODULES.has(moduleName) || entry.kind !== 'function' && entry.kind !== 'class')
     return null
 
   const parsed = parseSignature(entry)
@@ -643,8 +779,8 @@ function createPlaySeed (moduleName: string, entry: DocExport): PlaySeed | null 
     return null
 
   const flavor = harnessFlavor(moduleName)
-  const kind = classifyReturn(moduleName, entry, parsed)
-  const code = flavor === 'jsx'
+  const kind   = classifyReturn(moduleName, entry, parsed)
+  const code   = flavor === 'jsx'
     ? synthesizeJsxStarter(parsed, kind)
     : synthesizeStandardStarter(parsed, moduleName, kind)
 
@@ -661,11 +797,11 @@ function renderPlayControls (moduleName: string, entry: DocExport): string {
 
 function renderPlayRuntime (): string {
   const helpersSource = JSON.stringify(sharedHarnessHelpers())
-  const runtime = String.raw`  <script>
+  const runtime       = String.raw `  <script>
     (() => {
       const baseHref = new URL('.', window.location.href).href
-      const moduleSpecifier = (moduleName) => moduleName === 'core' ? '@tuomashatakka/threejs-scenes' : ` + "`@tuomashatakka/threejs-scenes/${moduleName}`" + `
-      const moduleUrl = (moduleName) => moduleName === 'core' ? './lib/dist/index.js' : (moduleName === 'webgpu' ? './lib/dist/post/webgpu/index.js' : ` + "`./lib/dist/${moduleName}/index.js`" + `)
+      const moduleSpecifier = (moduleName) => moduleName === 'core' ? '@tuomashatakka/threejs-scenes' : ` + '`@tuomashatakka/threejs-scenes/${moduleName}`' + `
+      const moduleUrl = (moduleName) => moduleName === 'core' ? './lib/dist/index.js' : (moduleName === 'webgpu' ? './lib/dist/post/webgpu/index.js' : ` + '`./lib/dist/${moduleName}/index.js`' + `)
       const escapeHtml = (value) => String(value)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -770,7 +906,7 @@ function renderPlayRuntime (): string {
 }
 
 function sharedHarnessHelpers (): string {
-  return String.raw`
+  return String.raw `
     const canvas = document.querySelector('#scene')
     const report = document.querySelector('#report')
     const stats = document.querySelector('#stats')
@@ -1190,7 +1326,8 @@ function renderReadme (api: Record<string, DocExport[]>): string {
       const head = `- **\`${e.name}\`** *(${e.kind})*${e.doc ? ' — ' + summary(e.doc) : ''}`
       lines.push(head)
       if (e.kind === 'function') {
-        const sig = e.signature.split('\n').filter(l => l.startsWith('function')).join('\n') || e.signature
+        const sig = e.signature.split('\n').filter(l => l.startsWith('function'))
+          .join('\n') || e.signature
         lines.push('')
         lines.push('  ```ts')
         for (const l of sig.split('\n'))
@@ -1217,11 +1354,12 @@ function renderReadme (api: Record<string, DocExport[]>): string {
 
 function renderApiHtml (api: Record<string, DocExport[]>): string {
   const version = JSON.parse(readFileSync(root + 'package.json', 'utf8')).version as string
-  const nav = Object.keys(api).map(m => `        <li><a href="#${slugify(m)}">${m}</a></li>`).join('\n')
+  const nav     = Object.keys(api).map(m => `        <li><a href="#${slugify(m)}">${m}</a></li>`)
+    .join('\n')
 
   const sections = Object.entries(api).map(([ mod, exports ]) => {
     const meta = MODULES[mod]
-    const id = slugify(mod)
+    const id   = slugify(mod)
     const demo = meta.demo
       ? `      <div class="api-preview"><iframe loading="lazy" title="${mod} live demo" src="demos/${meta.demo}.html"></iframe></div>
       <p class="demo-link"><a href="demos/${meta.demo}.html">Open demo — ${meta.demo}.html</a></p>`
@@ -1247,7 +1385,8 @@ ${example}
 ${demo}
 ${cards}
     </section>`
-  }).join('\n\n')
+  })
+    .join('\n\n')
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1312,12 +1451,13 @@ const BEGIN = '<!-- api:begin -->'
 const END   = '<!-- api:end -->'
 if (!readme.includes(BEGIN))
   throw new Error('readme.md is missing the <!-- api:begin --> / <!-- api:end --> markers')
-readme = readme.slice(0, readme.indexOf(BEGIN) + BEGIN.length)
-  + '\n' + renderReadme(api) + '\n'
-  + readme.slice(readme.indexOf(END))
+readme = readme.slice(0, readme.indexOf(BEGIN) + BEGIN.length) +
+  '\n' + renderReadme(api) + '\n' +
+  readme.slice(readme.indexOf(END))
 writeFileSync(readmePath, readme)
 
 writeFileSync(root + 'public/api.html', renderApiHtml(api))
 
-const counts = Object.entries(api).map(([ m, e ]) => `${m}:${e.length}`).join(' ')
+const counts = Object.entries(api).map(([ m, e ]) => `${m}:${e.length}`)
+  .join(' ')
 console.log(`docs: readme.md + public/api.html regenerated (${counts})`)

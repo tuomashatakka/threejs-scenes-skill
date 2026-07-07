@@ -36,6 +36,7 @@
     "lib": "lib"
   },
   "scripts": {
+    "dev": "bun run scripts/dev.ts",
     "build": "tsc -p tsconfig.json && bun run copy:lib && bun run docs",
     "copy:lib": "bun run scripts/copy-lib.ts",
     "docs": "bun run scripts/generate-docs.ts",
