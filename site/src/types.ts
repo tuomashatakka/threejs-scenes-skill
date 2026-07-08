@@ -11,6 +11,11 @@ export interface PlaySeed {
   requiresWebGpu: boolean
 }
 
+export interface DocNamedTag {
+  name: string
+  text: string
+}
+
 export interface LibraryExport {
   name:          string
   kind:          string
@@ -21,6 +26,16 @@ export interface LibraryExport {
   sample:        string
   relatedDemos:  string[]
   playSeed?:     PlaySeed
+  params:        DocNamedTag[]
+  typeParams:    DocNamedTag[]
+  returns?:      string
+  remarks?:      string
+  examples:      string[]
+  throws:        string[]
+  defaultValue?: string
+  see:           string[]
+  deprecated?:   string
+  source:        string
 }
 
 export interface LibraryModule {
@@ -44,6 +59,7 @@ export interface LibraryData {
     modules: number
     playable: number
     typeReferences: number
+    documented: number
   }
   modules: LibraryModule[]
 }

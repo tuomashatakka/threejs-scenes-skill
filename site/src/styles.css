@@ -438,6 +438,35 @@
     justify-self: start;
   }
 
+  [data-params] {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.15rem 0.8rem;
+    margin: 0.4rem 0 0.2rem;
+    font-size: 0.9rem;
+  }
+
+  [data-params] dd {
+    margin: 0;
+    color: var(--muted, inherit);
+  }
+
+  [data-remarks],
+  [data-returns],
+  [data-default],
+  [data-throws],
+  [data-see] {
+    margin: 0.3rem 0 0;
+    font-size: 0.9rem;
+  }
+
+  [data-deprecated] {
+    margin: 0.3rem 0 0;
+    font-size: 0.9rem;
+    color: var(--warn);
+    font-weight: 600;
+  }
+
   [data-related],
   [data-tags],
   [data-demo-tabs],

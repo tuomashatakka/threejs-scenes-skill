@@ -28,6 +28,11 @@ interface ModuleMeta {
   example?:  string
 }
 
+interface DocNamedTag {
+  name: string
+  text: string
+}
+
 interface DocExport {
   name:          string
   kind:          string
@@ -38,6 +43,16 @@ interface DocExport {
   sample:        string
   relatedDemos:  string[]
   playSeed?:     PlaySeed
+  params:        DocNamedTag[]
+  typeParams:    DocNamedTag[]
+  returns?:      string
+  remarks?:      string
+  examples:      string[]
+  throws:        string[]
+  defaultValue?: string
+  see:           string[]
+  deprecated?:   string
+  source:        string
 }
 
 interface LibraryData {
@@ -49,6 +64,7 @@ interface LibraryData {
     modules: number
     playable: number
     typeReferences: number
+    documented: number
   }
   modules: Array<ModuleMeta & { exports: DocExport[] }>
 }
@@ -405,6 +421,91 @@ function clean (text: string): string {
 function summary (doc: string): string {
   const first = doc.split(/\.\s|\n/)[0].trim()
   return first ? first.replace(/\.?$/, '.') : ''
+}
+
+// {@link Target} / {@link Target|label} come back literally through
+// displayPartsToString — render the label (or target) as plain text.
+function stripInlineLinks (text: string): string {
+  return text.replace(/\{@link\s+([^}|]+?)(?:\s*\|\s*([^}]+))?\}/g, (_, target: string, label?: string) => (label ?? target).trim())
+}
+
+function stripCodeFence (text: string): string {
+  const fenced = text.match(/^\s*```\w*\n([\s\S]*?)\n?\s*```\s*$/)
+  return (fenced ? fenced[1]! : text).trim()
+}
+
+interface DocTags {
+  params:        DocNamedTag[]
+  typeParams:    DocNamedTag[]
+  returns?:      string
+  remarks?:      string
+  examples:      string[]
+  throws:        string[]
+  defaultValue?: string
+  see:           string[]
+  deprecated?:   string
+}
+
+// Structured TSDoc: read block tags off the resolved symbol (falling back to
+// the alias — mirrors the doc-comment lookup above), so `export { x } from`
+// re-export barrels still surface the source declaration's tags.
+function collectTags (resolved: ts.Symbol, sym: ts.Symbol, checker: ts.TypeChecker): DocTags {
+  const raw = resolved.getJsDocTags(checker)
+  const tags = raw.length ? raw : sym.getJsDocTags(checker)
+  const out: DocTags = { params: [], typeParams: [], examples: [], throws: [], see: [] }
+
+  for (const tag of tags) {
+    const parts = tag.text ?? []
+    const joined = ts.displayPartsToString(parts).trim()
+    switch (tag.name) {
+      case 'param':
+      case 'typeParam': {
+        const name = parts.find(p => p.kind === 'parameterName')?.text ??
+          joined.split(/\s+/)[0] ?? ''
+        const text = ts.displayPartsToString(parts.filter(p => p.kind !== 'parameterName'))
+          .trim()
+          .replace(/^[-—]\s*/, '')
+        const list = tag.name === 'param' ? out.params : out.typeParams
+        if (name)
+          list.push({ name, text })
+        break
+      }
+      case 'returns':
+      case 'return':
+        out.returns = joined
+        break
+      case 'remarks':
+        out.remarks = joined
+        break
+      case 'example':
+        out.examples.push(stripCodeFence(joined))
+        break
+      case 'throws':
+      case 'exception':
+        out.throws.push(joined)
+        break
+      case 'defaultValue':
+      case 'default':
+        out.defaultValue = joined
+        break
+      case 'see':
+        out.see.push(stripInlineLinks(joined))
+        break
+      case 'deprecated':
+        out.deprecated = joined
+        break
+    }
+  }
+  return out
+}
+
+// dist/**/*.d.ts mirrors lib/**/*.ts 1:1 (plain tsc, no bundling) — derive the
+// authoring location textually for the coverage report.
+function sourceHint (decl: ts.Declaration): string {
+  const sf = decl.getSourceFile()
+  const { line } = sf.getLineAndCharacterOfPosition(decl.getStart())
+  const file = sf.fileName.replace(/^.*\/dist\//, 'lib/').replace(/\.d\.ts$/, '.ts')
+  return `${file} (dist ln ${line + 1})`
 }
 
 function findMatching (text: string, openIndex: number, openChar = '(', closeChar = ')'): number {
@@ -1048,15 +1149,26 @@ function extractLibrary (): LibraryData {
         ts.displayPartsToString(sym.getDocumentationComment(checker))
       const name = sym.getName()
       const kind = KIND[decls[0]!.kind] ?? 'value'
+      const tags = collectTags(resolved, sym, checker)
       const entry: DocExport = {
         name,
         kind,
-        doc:           doc.trim(),
-        summary:       summary(doc),
+        doc:           stripInlineLinks(doc.trim()),
+        summary:       stripInlineLinks(summary(doc)),
         signature:     decls.map(d => clean(d.kind === ts.SyntaxKind.VariableDeclaration ? d.parent.parent.getText() : d.getText())).join('\n'),
         coverage:      'type-reference',
         sample:        '',
         relatedDemos:  [],
+        params:        tags.params.map(p => ({ name: p.name, text: stripInlineLinks(p.text) })),
+        typeParams:    tags.typeParams.map(p => ({ name: p.name, text: stripInlineLinks(p.text) })),
+        returns:       tags.returns && stripInlineLinks(tags.returns),
+        remarks:       tags.remarks && stripInlineLinks(tags.remarks),
+        examples:      tags.examples,
+        throws:        tags.throws.map(stripInlineLinks),
+        defaultValue:  tags.defaultValue,
+        see:           tags.see,
+        deprecated:    tags.deprecated === undefined ? undefined : stripInlineLinks(tags.deprecated),
+        source:        sourceHint(decls[0]!),
       }
       const seed = createPlaySeed(module, entry)
       entry.playSeed = seed
@@ -1077,6 +1189,8 @@ function extractLibrary (): LibraryData {
   if (missing.length)
     throw new Error(`docs: exports missing coverage: ${missing.map(e => e.name).join(', ')}`)
 
+  reportDocCoverage(modulesWithExports)
+
   return {
     version:     packageJson.version,
     packageName: packageJson.name,
@@ -1086,9 +1200,30 @@ function extractLibrary (): LibraryData {
       modules:        modulesWithExports.length,
       playable:       flat.filter(entry => entry.playSeed).length,
       typeReferences: flat.filter(entry => !entry.playSeed).length,
+      documented:     flat.filter(entry => entry.doc).length,
     },
     modules: modulesWithExports,
   }
+}
+
+// Doc-comment coverage gate: every export must carry a docstring. Fails the
+// build (and thereby CI) on gaps; DOCS_COVERAGE=warn downgrades to a listing
+// so in-progress sweeps can still regenerate the site.
+function reportDocCoverage (modules: Array<ModuleMeta & { exports: DocExport[] }>): void {
+  const undocumented = modules.flatMap(mod => mod.exports.filter(e => !e.doc)
+    .map(e => ({ mod, e })))
+  const perModule = modules.map(mod => `${mod.id}:${mod.exports.filter(e => e.doc).length}/${mod.exports.length}`)
+    .join(' ')
+  console.log(`docs: coverage ${perModule}`)
+  if (!undocumented.length)
+    return
+  for (const { mod, e } of undocumented)
+    console.log(`  - ${mod.specifier} ${e.name} (${e.kind}) → ${e.source}`)
+  const message = `docs: ${undocumented.length} exports lack a doc comment`
+  if (process.env.DOCS_COVERAGE === 'warn')
+    console.warn(`${message} (DOCS_COVERAGE=warn — not failing)`)
+  else
+    throw new Error(message)
 }
 
 function renderReadme (library: LibraryData): string {
@@ -1104,7 +1239,8 @@ function renderReadme (library: LibraryData): string {
     lines.push(mod.desc)
     lines.push('')
     for (const e of mod.exports) {
-      const head = `- **\`${e.name}\`** *(${e.kind})*${e.summary ? ' — ' + e.summary : ''}`
+      const badge = e.deprecated === undefined ? '' : ' **deprecated**'
+      const head = `- **\`${e.name}\`** *(${e.kind})*${badge}${e.summary ? ' — ' + e.summary : ''}`
       lines.push(head)
       if (e.kind === 'function') {
         const sig = e.signature.split('\n').filter(l => l.startsWith('function'))
@@ -1114,6 +1250,20 @@ function renderReadme (library: LibraryData): string {
         for (const l of sig.split('\n'))
           lines.push('  ' + l)
         lines.push('  ```')
+      }
+      for (const p of e.params)
+        lines.push(`  - \`${p.name}\`${p.text ? ' — ' + p.text : ''}`)
+      if (e.returns)
+        lines.push(`  - returns — ${e.returns}`)
+      for (const example of e.examples) {
+        lines.push('')
+        lines.push('  <details><summary>Example</summary>')
+        lines.push('')
+        lines.push('  ```ts')
+        for (const l of example.split('\n'))
+          lines.push('  ' + l)
+        lines.push('  ```')
+        lines.push('  </details>')
       }
     }
     if (mod.example) {

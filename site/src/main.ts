@@ -328,14 +328,33 @@ function exportCard (module: LibraryModule, entry: LibraryExport): string {
   const sample = entry.coverage === 'type-reference'
     ? `<pre><code>${escapeHtml(entry.sample)}</code></pre>`
     : ''
-  return `<article id="${id}" data-export-card data-search-text="${escapeHtml(`${module.specifier} ${entry.name} ${entry.kind} ${entry.doc} ${entry.signature}`)}">
+  const searchText = [ module.specifier, entry.name, entry.kind, entry.doc, entry.remarks ?? '', entry.returns ?? '', entry.params.map(p => `${p.name} ${p.text}`).join(' '), entry.signature ].join(' ')
+  const deprecated = entry.deprecated === undefined
+    ? ''
+    : `<p data-deprecated>deprecated${entry.deprecated ? ` — ${escapeHtml(entry.deprecated)}` : ''}</p>`
+  const namedTags = (label: string, tags: typeof entry.params): string => tags.length
+    ? `<dl data-params aria-label="${label}">${tags.map(p => `<dt><code>${escapeHtml(p.name)}</code></dt><dd>${escapeHtml(p.text)}</dd>`).join('')}</dl>`
+    : ''
+  const details = [
+    entry.remarks ? `<p data-remarks>${escapeHtml(entry.remarks)}</p>` : '',
+    namedTags('type parameters', entry.typeParams),
+    namedTags('parameters', entry.params),
+    entry.returns ? `<p data-returns>returns — ${escapeHtml(entry.returns)}</p>` : '',
+    entry.defaultValue ? `<p data-default>default — ${escapeHtml(entry.defaultValue)}</p>` : '',
+    ...entry.throws.map(t => `<p data-throws>throws — ${escapeHtml(t)}</p>`),
+    ...entry.see.map(s => `<p data-see>see — ${escapeHtml(s)}</p>`),
+    ...entry.examples.map(e => `<pre data-example><code>${escapeHtml(e)}</code></pre>`),
+  ].join('')
+  return `<article id="${id}" data-export-card data-search-text="${escapeHtml(searchText)}">
     <header>
       <p>${escapeHtml(module.specifier)}</p>
       <h4><code>${escapeHtml(entry.name)}</code> <span>${escapeHtml(entry.kind)}</span></h4>
       ${play}
     </header>
+    ${deprecated}
     ${entry.doc ? `<p>${escapeHtml(entry.doc)}</p>` : entry.summary ? `<p>${escapeHtml(entry.summary)}</p>` : '<p>generated declaration coverage; no doc comment was present.</p>'}
     <pre><code>${escapeHtml(entry.signature)}</code></pre>
+    ${details}
     ${sample}
     ${relatedDemoLinks(entry)}
   </article>`

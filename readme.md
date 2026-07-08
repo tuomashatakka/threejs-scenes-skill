@@ -335,7 +335,7 @@ A deliberately small surface: the shared type vocabulary, a hand-picked set of t
 - **`FrameLoop`** *(interface)* — Self-contained Clock-driven frame loop.
 - **`InstancePlaceFn`** *(type)*
 - **`LoadedModel`** *(interface)* — Normalized result of loading a model file (glTF and friends).
-- **`MaterialPoolLike`** *(interface)* — Minimal structural type for a material pool, so {@link SceneContext} can.
+- **`MaterialPoolLike`** *(interface)* — Minimal structural type for a material pool, so SceneContext can.
 - **`ParamSpec`** *(type)* — A parameter specification used to coerce config- or LLM-driven content.
 - **`ParamSpecMap`** *(type)*
 - **`ParamValue`** *(type)*
@@ -1208,7 +1208,7 @@ Unidirectional data flow as a first-class layer: the controller protocol (any { 
   ```ts
   function isStateController<S extends object>(source: StateSource<S> | undefined): source is StateController<S>;
   ```
-- **`lerpOnChange`** *(function)* — Apply-on-animate: like {@link tweened}, but pushes each interpolated value.
+- **`lerpOnChange`** *(function)* — Apply-on-animate: like tweened, but pushes each interpolated value.
 
   ```ts
   function lerpOnChange<S extends object, V extends TweenValue>(source: StateController<S>, select: (state: S) => V, apply: (value: V) => void, options?: TweenOptions): Disposable & {
@@ -1464,7 +1464,7 @@ Experimental WebGPU/TSL node post-processing helpers isolated from the WebGL bar
   ```ts
   function createTransition(passA: Node, passB: Node, mixTexture: Node, options?: TransitionOptions): import("three/addons/tsl/display/TransitionNode.js").default;
   ```
-- **`createPostProcessing`** *(const)*
+- **`createPostProcessing`** *(const)* **deprecated**
 - **`AfterImageOptions`** *(interface)*
 - **`AnamorphicOptions`** *(interface)*
 - **`BloomEmissiveOptions`** *(interface)*
