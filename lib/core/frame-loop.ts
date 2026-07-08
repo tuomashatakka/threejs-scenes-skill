@@ -10,8 +10,11 @@
 
 import { frameLoopManager } from '@tuomashatakka/canvas-loop-framecapper'
 
+import { createWorkerUpdateBridge } from './frame-loop-worker.js'
+
 import type { Clock } from './clock.js'
-import type { FrameCallback, FrameLoop } from '../types.js'
+import type { WorkerUpdateBridge } from './frame-loop-worker.js'
+import type { FrameCallback, FrameLoop, WorkerUpdateFn, WorkerUpdateHandle, WorkerUpdateOptions } from '../types.js'
 
 
 export interface FrameLoopOptions {
@@ -29,6 +32,7 @@ export interface FrameLoopOptions {
 
 export function createFrameLoop ({ clock: simClock, fps }: FrameLoopOptions = {}): FrameLoop {
   const subscribers = new Set<FrameCallback>()
+  const workerBridges = new Set<WorkerUpdateBridge>()
   let frame   = 0
   let elapsed = 0
   let running = false
@@ -92,12 +96,29 @@ export function createFrameLoop ({ clock: simClock, fps }: FrameLoopOptions = {}
     subscribers.delete(cb)
   }
 
+  function registerWorkerUpdate<S = unknown> (fn: WorkerUpdateFn<S>, options?: WorkerUpdateOptions<S>): WorkerUpdateHandle {
+    const bridge = createWorkerUpdateBridge(fn, options)
+    workerBridges.add(bridge)
+    const off = onFrame(ctx => bridge.tick(ctx))
+    return {
+      unregister: off,
+      terminate (): void {
+        off()
+        bridge.terminate()
+        workerBridges.delete(bridge)
+      },
+    }
+  }
+
   function dispose (): void {
     stop()
     subscribers.clear()
+    for (const bridge of workerBridges)
+      bridge.terminate()
+    workerBridges.clear()
     frame   = 0
     elapsed = 0
   }
 
-  return { onFrame, registerUpdate, unregisterUpdate, start, stop, dispose }
+  return { onFrame, registerUpdate, unregisterUpdate, registerWorkerUpdate, start, stop, dispose }
 }

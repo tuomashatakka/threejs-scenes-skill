@@ -22,7 +22,52 @@ export interface FrameContext {
   frame:   number
 }
 
+/** Per-frame subscriber invoked with the shared {@link FrameContext}. */
 export type FrameCallback = (ctx: FrameContext) => void
+
+/**
+ * Off-thread frame handler run inside a Web Worker by
+ * {@link FrameLoop.registerWorkerUpdate}. Receives the frame context and the
+ * previous state; returning a value replaces the state, returning `undefined`
+ * keeps it (useful when mutating `state` in place).
+ *
+ * @remarks
+ * The function is serialized with `Function.prototype.toString()` and
+ * rehydrated inside the worker, so it MUST be self-contained: no captured
+ * closure variables, no imports, no `this`. Everything it needs must arrive
+ * through `ctx` and `state`.
+ *
+ * @typeParam S - Worker-held state; must survive structured clone (plain
+ * data, TypedArrays, Map/Set — not three.js objects or functions).
+ */
+export type WorkerUpdateFn<S> = (ctx: FrameContext, state: S) => S | void
+
+/** Options for {@link FrameLoop.registerWorkerUpdate}. */
+export interface WorkerUpdateOptions<S> {
+
+  /** State seeded into the worker before the first tick. */
+  initialState?: S
+
+  /** Called on the main thread with the state after each completed tick. */
+  onResult?: (state: S) => void
+
+  /**
+   * Called on the main thread when the handler throws inside the worker or a
+   * tick fails to post (e.g. non-cloneable state).
+   * @defaultValue logs via `console.error`
+   */
+  onError?: (error: Error) => void
+}
+
+/** Handle returned by {@link FrameLoop.registerWorkerUpdate}. */
+export interface WorkerUpdateHandle {
+
+  /** Detach from the loop; the worker stays warm and can be re-driven later. */
+  unregister (): void
+
+  /** Detach, terminate the worker, and revoke its blob URL. */
+  terminate (): void
+}
 
 /**
  * Self-contained Clock-driven frame loop. Every animated subsystem registers
@@ -30,10 +75,46 @@ export type FrameCallback = (ctx: FrameContext) => void
  * Mirrors the inlined loop in the templates — no exotic dependency.
  */
 export interface FrameLoop extends Disposable {
+
+  /** Subscribe to every frame. Auto-starts the loop; returns an unsubscribe. */
   onFrame (cb: FrameCallback): () => void
+
+  /** Alias of {@link FrameLoop.onFrame} mirroring the SceneModule lifecycle API. */
   registerUpdate (cb: FrameCallback): () => void
+
+  /** Remove a subscriber previously added via `onFrame`/`registerUpdate`. */
   unregisterUpdate (cb: FrameCallback): void
+
+  /**
+   * Run `fn` off the main thread: the handler is serialized into an inline
+   * blob-URL module worker, receives `{ delta, elapsed, frame }` ticks, and
+   * round-trips `state` via structured clone. Ticks are coalesced latest-wins
+   * while the worker is busy (`delta` sums, `elapsed`/`frame` jump), so worker
+   * updates are never fixed-step even on an fps-capped loop. Falls back to
+   * same-thread microtask scheduling when workers are unavailable (e.g. CSP
+   * without `worker-src blob:`, non-browser runtimes).
+   *
+   * @param fn - Self-contained handler; see {@link WorkerUpdateFn} for the
+   * no-closure restriction.
+   * @param options - Initial state plus main-thread result/error callbacks.
+   * @returns A {@link WorkerUpdateHandle}; `dispose()` on the loop terminates
+   * all worker updates it owns.
+   * @throws Error if `fn` is a native/bound function or not expressible as
+   * source (e.g. object method shorthand).
+   * @example
+   * const loop = createFrameLoop()
+   * const sim = loop.registerWorkerUpdate(
+   *   (ctx, state) => ({ angle: state.angle + ctx.delta }),
+   *   { initialState: { angle: 0 }, onResult: s => { mesh.rotation.y = s.angle } },
+   * )
+   * // later: sim.terminate()
+   */
+  registerWorkerUpdate<S = unknown> (fn: WorkerUpdateFn<S>, options?: WorkerUpdateOptions<S>): WorkerUpdateHandle
+
+  /** Begin pumping frames (registered automatically by the first subscriber). */
   start (): void
+
+  /** Stop pumping without clearing subscribers. */
   stop (): void
 }
 

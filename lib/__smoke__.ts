@@ -332,4 +332,71 @@ assert(sky.object !== null && skyScene.children.includes(sky.object), 'gradient 
 sky.dispose()
 assert(skyScene.children.length === 0 && skyScene.background === null, 'skybox dispose restores scene')
 
+// 24. worker update bridge — fallback path (no rAF/Worker needed under Bun)
+const { createWorkerUpdateBridge } = await import('./core/frame-loop-worker.js')
+
+const microtask = (): Promise<void> => new Promise(resolve => {
+  setTimeout(resolve, 0)
+})
+
+// state round-trip: returned value replaces state, onResult sees it
+{
+  let latest = -1
+  const bridge = createWorkerUpdateBridge<number>(
+    (ctx, s) => s + ctx.delta,
+    { initialState: 0, onResult: s => {
+      latest = s
+    } },
+    { forceFallback: true },
+  )
+  bridge.tick({ delta: 0.5, elapsed: 0.5, frame: 1 })
+  await microtask()
+  assert(Math.abs(latest - 0.5) < 1e-9, 'worker fallback round-trips state')
+
+  // coalescing: ticks issued while in flight merge latest-wins with summed delta
+  bridge.tick({ delta: 0.1, elapsed: 0.6, frame: 2 })
+  bridge.tick({ delta: 0.2, elapsed: 0.8, frame: 3 })
+  bridge.tick({ delta: 0.3, elapsed: 1.1, frame: 4 })
+  await microtask()
+  await microtask()
+  // 0.5 + 0.1 (in-flight tick) + (0.2 + 0.3) (coalesced) = 1.1
+  assert(Math.abs(latest - 1.1) < 1e-9, `worker fallback coalesces deltas (got ${latest})`)
+
+  // terminate stops delivery
+  bridge.terminate()
+  bridge.tick({ delta: 9, elapsed: 10, frame: 5 })
+  await microtask()
+  assert(Math.abs(latest - 1.1) < 1e-9, 'terminated bridge stops delivering results')
+}
+
+// onError: a throwing handler reports on the main thread and keeps the loop alive
+{
+  let caught = ''
+  const bridge = createWorkerUpdateBridge<number>(
+    () => {
+      throw new Error('boom')
+    },
+    { initialState: 0, onError: e => {
+      caught = e.message
+    } },
+    { forceFallback: true },
+  )
+  bridge.tick({ delta: 0.1, elapsed: 0.1, frame: 1 })
+  await microtask()
+  assert(caught.includes('boom'), 'worker fallback routes handler errors to onError')
+  bridge.terminate()
+}
+
+// guard: native functions are rejected up front
+{
+  let threw = false
+  try {
+    createWorkerUpdateBridge(Math.max as never, {}, { forceFallback: true })
+  }
+  catch {
+    threw = true
+  }
+  assert(threw, 'native functions are rejected by registerWorkerUpdate')
+}
+
 console.log('smoke ok: all DOM-free factories resolve and behave')
