@@ -12,7 +12,7 @@
 //   // or, for tree-shaking / deep imports:
 //   import { createBloomPass } from 'threejs-scenes/raster'
 //
-// Data flows one way:  state → scaffold → compose → primitives, with view and
+// Data flows one way:  state → scaffold → compose → primitives, with core and
 // raster on the output side. WebGPU/TSL post effects and the reactive JSX layer
 // stay off this barrel (they pull in three/webgpu + three/tsl / a runtime):
 // import them from 'threejs-scenes/webgpu' and '/jsx'.
@@ -53,9 +53,9 @@ export { createGpuEmitter } from './particles/gpu-emitter.js'
 export { createNoise3D } from './procedural/noise.js'
 
 // --- domain namespaces: the whole library, grouped by concern ---
+export * as core from './core/index.js'
 export * as primitives from './primitives/index.js'
 export * as raster from './raster/index.js'
 export * as compose from './compose/index.js'
-export * as view from './view/index.js'
 export * as state from './state/index.js'
 export * as scaffold from './scaffold/index.js'

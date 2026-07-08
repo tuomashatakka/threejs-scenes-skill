@@ -140,8 +140,13 @@ const KIND: Partial<Record<ts.SyntaxKind, string>> = {
 const DESCRIPTIONS: Record<string, { title: string, desc: string, example?: string }> = {
   '.': {
     title:   'curated root',
-    desc:    'A deliberately small surface: the shared type vocabulary, a hand-picked set of the most-used factories (createApp, the scaffolds, the go-to material/geometry/light/animation/prop/particle helpers), and the six domain namespaces below. The full library is grouped by concern behind primitives / raster / compose / view / state / scaffold.',
+    desc:    'A deliberately small surface: the shared type vocabulary, a hand-picked set of the most-used factories (createApp, the scaffolds, the go-to material/geometry/light/animation/prop/particle helpers), and the six domain namespaces below. The full library is grouped by concern behind core / primitives / raster / compose / state / scaffold.',
     example: `import { createApp, raster, primitives } from 'threejs-scenes'`,
+  },
+  './core': {
+    title:   'core',
+    desc:    'The canonical runtime core: the renderer and canvas, the animation-frame loop (including worker-offloaded updates) and injectable clocks, the serializable store, the createApp shell, raw pointer-gesture input, overlay compositing, screen projection, disposal, and device-tier quality detection. Nothing in this layer knows what the scene contains.',
+    example: `import { createRenderer, createFrameLoop, createStore } from 'threejs-scenes/core'`,
   },
   './primitives': {
     title:   'primitives',
@@ -158,19 +163,14 @@ const DESCRIPTIONS: Record<string, { title: string, desc: string, example?: stri
     desc:    'Assembling and interacting with a scene: scene modules and view management, props and model loading, grouping/layout, animation, skyboxing, raycasting and declarative event binding. It decides WHAT is in the scene and how it responds, never how pixels are produced.',
     example: `import { createSkybox, createPropRegistry } from 'threejs-scenes/compose'`,
   },
-  './view': {
-    title:   'view',
-    desc:    'Binding a scene to the page: the renderer and canvas, the animation-frame loop and injectable clocks, raw pointer-gesture input, overlay compositing, screen projection, disposal, and device-tier quality detection. Nothing in this layer knows what the scene contains.',
-    example: `import { createRenderer, createFrameLoop } from 'threejs-scenes/view'`,
-  },
   './state': {
     title:   'state',
-    desc:    'Unidirectional data flow as a first-class layer: the serializable store, the controller protocol (any { get, subscribe } is a valid state source; plain objects are wrapped), and tween/lerp transition helpers so state changes animate instead of snapping. State flows one way — nothing writes back.',
-    example: `import { createStore, tweened } from 'threejs-scenes/state'`,
+    desc:    'Unidirectional data flow as a first-class layer: the controller protocol (any { get, subscribe } is a valid state source; plain objects are wrapped) and tween/lerp transition helpers so state changes animate instead of snapping. The serializable store itself lives in /core. State flows one way — nothing writes back.',
+    example: `import { toController, tweened } from 'threejs-scenes/state'`,
   },
   './scaffold': {
     title:   'scaffold',
-    desc:    'Genre-level wiring in one call. Each scaffold accepts a plain object, a store, or a { get, subscribe } controller as its state source, wraps the shared createApp runtime, and returns the app plus its genre-specific handles: iso, orbit, tpp, rails, fps.',
+    desc:    'Genre-level wiring in one call. Each scaffold accepts a plain object, a store, or a { get, subscribe } controller as its state source, wraps the shared createApp runtime (createApp itself lives in /core), and returns the app plus its genre-specific handles: iso, orbit, tpp, rails, fps.',
     example: `import { createIsoScaffold, createOrbitScaffold } from 'threejs-scenes/scaffold'`,
   },
   './webgpu': {
@@ -190,8 +190,8 @@ const DESCRIPTIONS: Record<string, { title: string, desc: string, example?: stri
   },
 }
 
-// v2: exports group by concern via the six domain subpaths (primitives /
-// raster / compose / view / state / scaffold), so the docs page renders one
+// v3: exports group by concern via the six domain subpaths (core / primitives /
+// raster / compose / state / scaffold), so the docs page renders one
 // section per module and the old keyword-category heuristic is gone.
 
 const DEMO_CATALOG = [

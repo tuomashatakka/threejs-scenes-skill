@@ -32,6 +32,7 @@ import {
   // procedural (hero)
   createNoise3D,
   // domain namespaces
+  core,
   primitives,
   raster,
   compose,
@@ -45,7 +46,8 @@ import { h, signal, Fragment } from './jsx/index.js'
 // against the same local names as before.
 const { createSeededRng, poissonDisk, VoxelChunk, greedyMesh, createNoiseTexture, createGradientToonMap, createConnectionGraph } = primitives
 const { MaterialPool, EditStack, resolveParam, resolveParams, createProceduralTexture, createViewRegistry, createModelCache, createPropRegistry, createSkybox } = compose
-const { createStore, toController, isStateController, resolveInitialState, tweened, lerpOnChange, bindStateSource, EASINGS } = state
+const { createStore } = core
+const { toController, isStateController, resolveInitialState, tweened, lerpOnChange, bindStateSource, EASINGS } = state
 const { sampleCurve, bakeCurve, tupleToVector3, vector3ToTuple, createCameraController } = raster
 
 
@@ -53,6 +55,10 @@ function assert (cond: boolean, msg: string): void {
   if (!cond)
     throw new Error(`smoke failed: ${msg}`)
 }
+
+// 0. core namespace — the canonical runtime surface is intact
+assert(typeof core.createFrameLoop === 'function', 'core.createFrameLoop exists')
+assert(typeof core.createApp === 'function', 'core.createApp exists')
 
 // 1. seeded rng — determinism + fork
 const a = createSeededRng(1234)

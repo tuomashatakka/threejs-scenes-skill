@@ -14,6 +14,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    },
     "./primitives": {
       "types": "./dist/primitives/index.d.ts",
       "import": "./dist/primitives/index.js"
@@ -25,10 +29,6 @@
     "./compose": {
       "types": "./dist/compose/index.d.ts",
       "import": "./dist/compose/index.js"
-    },
-    "./view": {
-      "types": "./dist/view/index.d.ts",
-      "import": "./dist/view/index.js"
     },
     "./state": {
       "types": "./dist/state/index.d.ts",
@@ -52,10 +52,10 @@
     },
     "./lib/*": "./lib/*.ts",
     "./lib": "./lib/index.ts",
+    "./lib/core": "./lib/core/index.ts",
     "./lib/primitives": "./lib/primitives/index.ts",
     "./lib/raster": "./lib/raster/index.ts",
     "./lib/compose": "./lib/compose/index.ts",
-    "./lib/view": "./lib/view/index.ts",
     "./lib/state": "./lib/state/index.ts",
     "./lib/scaffold": "./lib/scaffold/index.ts",
     "./lib/webgpu": "./lib/post/webgpu/index.ts",
@@ -74,7 +74,7 @@
   },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc -p tsconfig.json && bun run copy:lib && bun run docs && bun run site:build",
+    "build": "rm -rf dist && tsc -p tsconfig.json && bun run copy:lib && bun run docs && bun run site:build",
     "copy:lib": "bun run scripts/copy-lib.ts",
     "docs": "bun run scripts/generate-docs.ts",
     "site:build": "vite build",

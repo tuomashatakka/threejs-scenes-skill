@@ -287,8 +287,8 @@ const KIND_GROUPS: Array<{ id: string, label: string, kinds: string[] }> = [
   { id: 'type', label: 'Types & Interfaces', kinds: [ 'interface', 'type' ] },
 ]
 
-// Each module is already a single domain (primitives / raster / compose /
-// view / state / scaffold, plus webgpu/jsx), so within a module we only split
+// Each module is already a single domain (core / primitives / raster /
+// compose / state / scaffold, plus webgpu/jsx), so within a module we only split
 // by kind: functions & classes, constants, then types & interfaces.
 function groupsFor (module: LibraryModule): ExportGroup[] {
   return KIND_GROUPS

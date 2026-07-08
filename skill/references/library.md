@@ -55,7 +55,8 @@ Instead of exposing dozens of subpaths, the library simplifies integration into 
 - `threejs-scenes/jsx`: Declarative, reactive JSX layer.
 
 ```js
-import { createIsoScaffold, tweened, EASINGS } from 'threejs-scenes'
+import { createIsoScaffold } from 'threejs-scenes'
+import { tweened, EASINGS } from 'threejs-scenes/state'
 import { render, h } from 'threejs-scenes/jsx'
 ```
 

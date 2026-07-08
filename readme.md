@@ -63,7 +63,7 @@ project) as well-typed factories and interfaces. Build it with `bun run build`
 
 The root barrel is **curated**: a hand-picked set of the most-used factories at
 the top level, plus the full library grouped into six domain namespaces
-(`primitives`, `raster`, `compose`, `view`, `state`, `scaffold`). Every namespace
+(`core`, `primitives`, `raster`, `compose`, `state`, `scaffold`). Every namespace
 is also a tree-shakeable subpath.
 
 ```ts
@@ -72,7 +72,7 @@ import {
   createApp, bootstrapScene, createRenderer, createFrameLoop,
   createStandardMaterial, createEmitter, createInfiniteGround,
   // domain namespaces — the whole library, grouped by concern
-  primitives, raster, compose, view, state, scaffold,
+  core, primitives, raster, compose, state, scaffold,
 } from 'threejs-scenes'
 
 const app = createApp({ canvas })              // renderer + scene + camera + lighting + orbit + loop
@@ -86,11 +86,11 @@ import { createComposer, createGradePass } from 'threejs-scenes/raster'
 
 Public entry points:
 - `threejs-scenes` — curated root: hero factories + the six domain namespaces
+- `threejs-scenes/core` — renderer, frame loop (incl. worker updates), clocks, store, createApp, input, projection, disposal, quality
 - `threejs-scenes/primitives` — geometry, materials, procedural, instancing, voxels
 - `threejs-scenes/raster` — lighting, cameras, post-processing, particles
 - `threejs-scenes/compose` — scene modules, props, loaders, animation, skybox, events
-- `threejs-scenes/view` — renderer, frame loop, input, projection, disposal, quality
-- `threejs-scenes/state` — store, controller protocol, tween/lerp transitions
+- `threejs-scenes/state` — controller protocol, tween/lerp transitions (store lives in `/core`)
 - `threejs-scenes/scaffold` — one-call genre wiring (iso, orbit, tpp, rails, fps)
 - `threejs-scenes/webgpu` — dedicated WebGPU post-processing and TSL effects
 - `threejs-scenes/jsx` — declarative, reactive JSX layer
@@ -126,7 +126,7 @@ The vite site renders the full searchable API with runnable playgrounds at
 
 #### `threejs-scenes`
 
-A deliberately small surface: the shared type vocabulary, a hand-picked set of the most-used factories (createApp, the scaffolds, the go-to material/geometry/light/animation/prop/particle helpers), and the six domain namespaces below. The full library is grouped by concern behind primitives / raster / compose / view / state / scaffold.
+A deliberately small surface: the shared type vocabulary, a hand-picked set of the most-used factories (createApp, the scaffolds, the go-to material/geometry/light/animation/prop/particle helpers), and the six domain namespaces below. The full library is grouped by concern behind core / primitives / raster / compose / state / scaffold.
 
 - **`applyTaper`** *(function)* — Taper: the two axes perpendicular to `axis` scale from 1 to `factor` along it.
 
@@ -358,6 +358,113 @@ A deliberately small surface: the shared type vocabulary, a hand-picked set of t
 
   ```ts
   import { createApp, raster, primitives } from 'threejs-scenes'
+  ```
+  </details>
+
+#### `threejs-scenes/core`
+
+The canonical runtime core: the renderer and canvas, the animation-frame loop (including worker-offloaded updates) and injectable clocks, the serializable store, the createApp shell, raw pointer-gesture input, overlay compositing, screen projection, disposal, and device-tier quality detection. Nothing in this layer knows what the scene contains.
+
+- **`attachPointerGesture`** *(function)*
+
+  ```ts
+  function attachPointerGesture(el: HTMLElement, callbacks: PointerGestureCallbacks, { tapThresholdMs, tapMovePx }?: PointerGestureOptions): () => void;
+  ```
+- **`attachResizeObserver`** *(function)*
+
+  ```ts
+  function attachResizeObserver(renderer: THREE.WebGLRenderer, camera: THREE.Camera, canvas: HTMLCanvasElement, onResize?: ResizeHandler): () => void;
+  ```
+- **`bootstrapScene`** *(function)*
+
+  ```ts
+  function bootstrapScene({ canvas, onSetup }: BootstrapOptions): BootstrappedScene;
+  ```
+- **`createApp`** *(function)*
+
+  ```ts
+  function createApp<S extends object = Record<string, unknown>, A = Partial<S>>({ canvas, state, reducer, seed, clock, renderer: rendererOptions, camera: cameraOptions, background, lighting, orbit, modules, onFrame, onResize, render, }: AppOptions<S, A>): App<S, A>;
+  ```
+- **`createClock`** *(function)*
+
+  ```ts
+  function createClock({ mode, step, maxSubSteps }?: ClockOptions): Clock;
+  ```
+- **`createFrameLoop`** *(function)*
+
+  ```ts
+  function createFrameLoop({ clock: simClock, fps }?: FrameLoopOptions): FrameLoop;
+  ```
+- **`createOverlayScene`** *(function)*
+
+  ```ts
+  function createOverlayScene(camera: THREE.Camera): OverlayHandle;
+  ```
+- **`createRenderer`** *(function)*
+
+  ```ts
+  function createRenderer({ canvas, antialias, pixelRatioMax, shadows, toneMapping, toneMappingExposure, logarithmicDepthBuffer, }: RendererOptions): THREE.WebGLRenderer;
+  ```
+- **`createStore`** *(function)*
+
+  ```ts
+  function createStore<S extends object, A = Partial<S>>(initial: S, reducer?: Reducer<S, A>): Store<S, A>;
+  ```
+- **`detectTier`** *(function)*
+
+  ```ts
+  function detectTier(): QualityTier;
+  ```
+- **`disposeMaterial`** *(function)*
+
+  ```ts
+  function disposeMaterial(mat: THREE.Material): void;
+  ```
+- **`disposeScene`** *(function)*
+
+  ```ts
+  function disposeScene(root: THREE.Object3D): void;
+  ```
+- **`getQualitySettings`** *(function)*
+
+  ```ts
+  function getQualitySettings(tier?: QualityTier): QualitySettings;
+  ```
+- **`projectToScreenUv`** *(function)*
+
+  ```ts
+  function projectToScreenUv(object: THREE.Object3D, camera: THREE.Camera, out?: ScreenProjection): ScreenProjection;
+  ```
+- **`renderOverlay`** *(function)* — Composer-free path: call after renderer.render(mainScene, camera).
+
+  ```ts
+  function renderOverlay(renderer: THREE.WebGLRenderer, overlayScene: THREE.Scene, camera: THREE.Camera): void;
+  ```
+- **`QUALITY_PRESETS`** *(const)*
+- **`App`** *(interface)*
+- **`AppCameraOptions`** *(interface)*
+- **`AppModule`** *(interface)* — A scene feature in the unidirectional flow.
+- **`AppOptions`** *(interface)*
+- **`BootstrapOptions`** *(interface)*
+- **`BootstrappedScene`** *(interface)*
+- **`BootstrapSetup`** *(type)*
+- **`BootstrapSetupContext`** *(interface)*
+- **`Clock`** *(interface)* — A simulation time source.
+- **`ClockMode`** *(type)*
+- **`ClockOptions`** *(interface)*
+- **`FrameLoopOptions`** *(interface)*
+- **`OverlayHandle`** *(interface)*
+- **`Reducer`** *(type)*
+- **`RendererOptions`** *(interface)*
+- **`ResizeHandler`** *(type)*
+- **`ScreenProjection`** *(interface)*
+- **`Store`** *(interface)*
+- **`StoreListener`** *(type)*
+
+  <details><summary>Example</summary>
+
+  ```ts
+  import { createRenderer, createFrameLoop, createStore } from 'threejs-scenes/core'
   ```
   </details>
 
@@ -1087,109 +1194,14 @@ Assembling and interacting with a scene: scene modules and view management, prop
   ```
   </details>
 
-#### `threejs-scenes/view`
-
-Binding a scene to the page: the renderer and canvas, the animation-frame loop and injectable clocks, raw pointer-gesture input, overlay compositing, screen projection, disposal, and device-tier quality detection. Nothing in this layer knows what the scene contains.
-
-- **`attachPointerGesture`** *(function)*
-
-  ```ts
-  function attachPointerGesture(el: HTMLElement, callbacks: PointerGestureCallbacks, { tapThresholdMs, tapMovePx }?: PointerGestureOptions): () => void;
-  ```
-- **`attachResizeObserver`** *(function)*
-
-  ```ts
-  function attachResizeObserver(renderer: THREE.WebGLRenderer, camera: THREE.Camera, canvas: HTMLCanvasElement, onResize?: ResizeHandler): () => void;
-  ```
-- **`bootstrapScene`** *(function)*
-
-  ```ts
-  function bootstrapScene({ canvas, onSetup }: BootstrapOptions): BootstrappedScene;
-  ```
-- **`createClock`** *(function)*
-
-  ```ts
-  function createClock({ mode, step, maxSubSteps }?: ClockOptions): Clock;
-  ```
-- **`createFrameLoop`** *(function)*
-
-  ```ts
-  function createFrameLoop({ clock: simClock, fps }?: FrameLoopOptions): FrameLoop;
-  ```
-- **`createOverlayScene`** *(function)*
-
-  ```ts
-  function createOverlayScene(camera: THREE.Camera): OverlayHandle;
-  ```
-- **`createRenderer`** *(function)*
-
-  ```ts
-  function createRenderer({ canvas, antialias, pixelRatioMax, shadows, toneMapping, toneMappingExposure, logarithmicDepthBuffer, }: RendererOptions): THREE.WebGLRenderer;
-  ```
-- **`detectTier`** *(function)*
-
-  ```ts
-  function detectTier(): QualityTier;
-  ```
-- **`disposeMaterial`** *(function)*
-
-  ```ts
-  function disposeMaterial(mat: THREE.Material): void;
-  ```
-- **`disposeScene`** *(function)*
-
-  ```ts
-  function disposeScene(root: THREE.Object3D): void;
-  ```
-- **`getQualitySettings`** *(function)*
-
-  ```ts
-  function getQualitySettings(tier?: QualityTier): QualitySettings;
-  ```
-- **`projectToScreenUv`** *(function)*
-
-  ```ts
-  function projectToScreenUv(object: THREE.Object3D, camera: THREE.Camera, out?: ScreenProjection): ScreenProjection;
-  ```
-- **`renderOverlay`** *(function)* — Composer-free path: call after renderer.render(mainScene, camera).
-
-  ```ts
-  function renderOverlay(renderer: THREE.WebGLRenderer, overlayScene: THREE.Scene, camera: THREE.Camera): void;
-  ```
-- **`QUALITY_PRESETS`** *(const)*
-- **`BootstrapOptions`** *(interface)*
-- **`BootstrappedScene`** *(interface)*
-- **`BootstrapSetup`** *(type)*
-- **`BootstrapSetupContext`** *(interface)*
-- **`Clock`** *(interface)* — A simulation time source.
-- **`ClockMode`** *(type)*
-- **`ClockOptions`** *(interface)*
-- **`FrameLoopOptions`** *(interface)*
-- **`OverlayHandle`** *(interface)*
-- **`RendererOptions`** *(interface)*
-- **`ResizeHandler`** *(type)*
-- **`ScreenProjection`** *(interface)*
-
-  <details><summary>Example</summary>
-
-  ```ts
-  import { createRenderer, createFrameLoop } from 'threejs-scenes/view'
-  ```
-  </details>
-
 #### `threejs-scenes/state`
 
-Unidirectional data flow as a first-class layer: the serializable store, the controller protocol (any { get, subscribe } is a valid state source; plain objects are wrapped), and tween/lerp transition helpers so state changes animate instead of snapping. State flows one way — nothing writes back.
+Unidirectional data flow as a first-class layer: the controller protocol (any { get, subscribe } is a valid state source; plain objects are wrapped) and tween/lerp transition helpers so state changes animate instead of snapping. The serializable store itself lives in /core. State flows one way — nothing writes back.
 
 - **`bindStateSource`** *(function)*
 
   ```ts
   function bindStateSource<S extends object>(target: TargetType<S>, source: StateSource<S> | undefined): () => void;
-  ```
-- **`createStore`** *(function)*
-
-  ```ts
-  function createStore<S extends object, A = Partial<S>>(initial: S, reducer?: Reducer<S, A>): Store<S, A>;
   ```
 - **`isStateController`** *(function)*
 
@@ -1218,11 +1230,8 @@ Unidirectional data flow as a first-class layer: the serializable store, the con
   ```
 - **`EASINGS`** *(const)*
 - **`Easing`** *(type)*
-- **`Reducer`** *(type)*
 - **`StateController`** *(interface)* — Read side of a store: the minimal contract scaffolds consume state through.
 - **`StateSource`** *(type)* — What a scaffold accepts as its state input.
-- **`Store`** *(interface)*
-- **`StoreListener`** *(type)*
 - **`Tweened`** *(interface)*
 - **`TweenOptions`** *(interface)*
 - **`TweenValue`** *(type)* — Scalars and fixed-length numeric tuples — positions, scales, rgb colors.
@@ -1230,19 +1239,14 @@ Unidirectional data flow as a first-class layer: the serializable store, the con
   <details><summary>Example</summary>
 
   ```ts
-  import { createStore, tweened } from 'threejs-scenes/state'
+  import { toController, tweened } from 'threejs-scenes/state'
   ```
   </details>
 
 #### `threejs-scenes/scaffold`
 
-Genre-level wiring in one call. Each scaffold accepts a plain object, a store, or a { get, subscribe } controller as its state source, wraps the shared createApp runtime, and returns the app plus its genre-specific handles: iso, orbit, tpp, rails, fps.
+Genre-level wiring in one call. Each scaffold accepts a plain object, a store, or a { get, subscribe } controller as its state source, wraps the shared createApp runtime (createApp itself lives in /core), and returns the app plus its genre-specific handles: iso, orbit, tpp, rails, fps.
 
-- **`createApp`** *(function)*
-
-  ```ts
-  function createApp<S extends object = Record<string, unknown>, A = Partial<S>>({ canvas, state, reducer, seed, clock, renderer: rendererOptions, camera: cameraOptions, background, lighting, orbit, modules, onFrame, onResize, render, }: AppOptions<S, A>): App<S, A>;
-  ```
 - **`createFpsScaffold`** *(function)*
 
   ```ts
@@ -1268,10 +1272,6 @@ Genre-level wiring in one call. Each scaffold accepts a plain object, a store, o
   ```ts
   function createTppScaffold<S extends object = Record<string, unknown>>({ state, target, offset, lookAhead, stiffness, rotationStiffness, ...appOptions }: TppScaffoldOptions<S>): TppScaffold<S>;
   ```
-- **`App`** *(interface)*
-- **`AppCameraOptions`** *(interface)*
-- **`AppModule`** *(interface)* — A scene feature in the unidirectional flow.
-- **`AppOptions`** *(interface)*
 - **`FpsScaffold`** *(interface)*
 - **`FpsScaffoldOptions`** *(interface)*
 - **`IsoScaffold`** *(interface)*
