@@ -177,7 +177,8 @@
       const { TexturePass } = await import('three/addons/postprocessing/TexturePass.js')
       const { OutputPass } = await import('three/addons/postprocessing/OutputPass.js')
       const { UnrealBloomPass } = await import('three/addons/postprocessing/UnrealBloomPass.js')
-      const scenes = await import('@scenes')
+      // v2: the WebGL pass factories live under the `raster` domain namespace.
+      const scenes = (await import('@scenes')).raster
 
       const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -540,8 +541,9 @@
 
       engine = kind === 'webgpu' ? await createWebGPUEngine(canvas) : await createWebGLEngine(canvas)
       order = engine.reg.map(e => ({ ...e, enabled: false }))
-      // sensible default-on set per engine
-      const defaultsOn = kind === 'webgpu' ? ['bloom', 'ca'] : ['scan','hudbeam','dof','rgbshift','grain','block','bloom','grade','godrays']
+      // sensible default-on set per engine — a tasteful showcase combo, not the
+      // whole stack (all 9 WebGL passes at once washes the scene into a blur).
+      const defaultsOn = kind === 'webgpu' ? ['bloom', 'ca'] : ['bloom', 'grade', 'godrays']
       order.forEach(e => { if (defaultsOn.includes(e.id)) e.enabled = true })
 
       scopeEl.textContent = kind === 'webgpu' ? WEBGPU_OUT_OF_SCOPE : WEBGL_OUT_OF_SCOPE
