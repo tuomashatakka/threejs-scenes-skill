@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<!--
+  hearthollow.html — a living isometric town map, library-powered
+  ────────────────────────────────────────────────────────────────
+  Adapted from a standalone three.js sketch ("Hearthollow — Living Town Map")
+  and re-backed by @tuomashatakka/threejs-scenes. Fully self-contained:
+  the only network deps are esm.sh three and the local @scenes bundle.
+  Every texture (grass speckle, monogram badges, event markers) is drawn
+  procedurally to a canvas — no external images or fonts.
+
+  Library integration:
+    - createRenderer / createFrameLoop / attachResizeObserver / attachPointerGesture
+    - createIsoCamera + resizeIsoCamera  (fixed-angle orthographic town rig)
+    - setupStandardLighting              (IBL env + sun + hemi; sun/hemi driven
+                                          by the day-night sim)
+    - primitives.createSeededRng         (deterministic town from one seed)
+    - primitives.poissonDisk             (house lots + tree/bush scatter)
+    - primitives.createNoise3D           (organic per-instance foliage variation)
+    - primitives.createInstancedField    (walls, roofs, chimneys, trim, shadow
+                                          decals, roads, trees, foliage, bushes —
+                                          one draw call per repeated kind)
+    - compose.createProp / defineProp    (the three unique park landmarks)
+    - compose.createGroup                (character + event pin groups)
+    - disposeScene                       (teardown)
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>threejs-scenes · hearthollow</title>
+  <style>
+    :root {
+      --ink:      #14131d;
+      --parch:    #efe6cf;
+      --parch-dim:#c8bda0;
+      --brass:    #d8a24a;
+      --line:     rgba(216, 162, 74, 0.25);
+    }
+    html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace; color: var(--parch) }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab }
+
+    aside {
+      position: fixed; top: 12px; left: 12px; width: min(280px, calc(100vw - 24px));
+      padding: 10px 12px; background: rgba(14, 13, 22, 0.72);
+      border: 1px solid var(--line); border-radius: 8px;
+      backdrop-filter: blur(10px); font-size: 12px; line-height: 1.55;
+      pointer-events: none;
+    }
+    aside .title { font-weight: 700; letter-spacing: 0.02em; color: var(--parch) }
+    aside .title b { color: var(--brass); font-family: Georgia, "Times New Roman", serif; font-weight: 700 }
+    aside .hint { color: var(--parch-dim); margin-top: 2px }
+    aside .stats { color: var(--parch-dim); margin-top: 6px }
+    aside .stats b { color: #9fffd0; font-weight: 600 }
+    aside .sel { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line);
+      min-height: 2.6em; color: var(--parch-dim) }
+    aside .sel .name { color: var(--brass); font-weight: 700; display: block }
+    aside .controls { display: flex; gap: 6px; margin-top: 10px; pointer-events: auto }
+    aside .controls button {
+      flex: 1 1 0; font: inherit; font-size: 11px; color: var(--parch);
+      background: rgba(216, 162, 74, 0.08); border: 1px solid var(--line);
+      border-radius: 6px; padding: 5px 6px; cursor: pointer;
+    }
+    aside .controls button:hover { border-color: var(--brass); color: var(--brass) }
+    @media (prefers-reduced-motion: reduce) {
+      aside { transition: none }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene" aria-label="Interactive isometric map of the town of Hearthollow"></canvas>
+    <aside>
+      <div class="title">threejs-scenes · <b>Hearthollow</b></div>
+      <div class="hint">drag to pan · scroll / pinch to zoom · tap a building</div>
+      <div class="stats"><span id="clock">Day 1 · Morning</span> · <b id="calls">–</b> draw calls</div>
+      <div class="sel" id="sel">— tap a building or a townsfolk pin —</div>
+      <div class="controls">
+        <button id="play-pause" type="button" aria-pressed="true">⏸ Pause</button>
+        <button id="recenter" type="button">⟳ Recenter</button>
+      </div>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three":          "https://esm.sh/three@0.184.0",
+      "three/addons/":  "https://esm.sh/three@0.184.0/addons/",
+      "@tuomashatakka/canvas-loop-framecapper": "../lib/vendor/canvas-loop-framecapper/index.js",
+      "react": "https://esm.sh/react@19",
+      "@scenes":        "../lib/dist/index.js"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import {
+      createRenderer, createFrameLoop, attachResizeObserver, attachPointerGesture,
+      createIsoCamera, resizeIsoCamera, setupStandardLighting, disposeScene,
+      primitives, compose,
+    } from '@scenes'
+
+    const { createSeededRng, poissonDisk, createNoise3D, createInstancedField } = primitives
+
+    /* ================================================================
+     * SMALL MATH HELPERS
+     * ================================================================ */
+    const lerp        = (a, b, t) => a + (b - a) * t
+    const smoothstep  = (t) => { const x = Math.max(0, Math.min(1, t)); return x * x * (3 - 2 * x) }
+    const distance2D  = (a, b) => Math.hypot(a.x - b.x, a.z - b.z)
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    /* ================================================================
+     * DATA LAYER — pure data + a deterministic generator.
+     * Nothing here touches THREE beyond MathUtils; the render layer only
+     * ever reads plain objects: { id, x, z, kind, ... }.
+     * ================================================================ */
+    const TOWN_SEED = 1337
+
+    const WALL_COLORS  = ['#e8ddc3', '#d9c9a3', '#c9a68a', '#b9c7c9', '#cbb3c0', '#d8cbb0', '#c4b8d6']
+    const ROOF_COLORS  = ['#8a4a3a', '#5c4a6b', '#3f5c4a', '#6b4a2a', '#7a3a4a', '#4a5a6b']
+    const CIVIC_ROOF   = ['#4a5a63', '#5c5244', '#3f4a52']
+    const NAME_PREFIX  = ['Elm', 'Hollow', 'Bramble', 'Willow', 'Foxglove', 'Amber', 'Thistle', 'Fern', 'Ivy', 'Copper', 'Moss', 'Larkspur']
+    const NAME_SUFFIX  = ['Cottage', 'House', 'Croft', 'Row', 'Nook', 'Lodge', 'Cabin', 'Corner', 'Rest', 'Gate']
+
+    const DISTRICTS = [
+      { id: 'downtown',  name: 'Market Cross',   kind: 'downtown',    center: { x: 0,   z: 0 },   radius: 26, tint: '#b8ab8f' },
+      { id: 'north-row', name: 'North Row',      kind: 'residential', center: { x: -10, z: -70 }, radius: 28, tint: '#caa572' },
+      { id: 'west-bank', name: 'West Bank',      kind: 'residential', center: { x: -75, z: 10 },  radius: 30, tint: '#b591a8' },
+      { id: 'hillside',  name: 'Hillside',       kind: 'residential', center: { x: 68,  z: 40 },  radius: 28, tint: '#93ad84' },
+      { id: 'fernbrook', name: 'Fernbrook Park', kind: 'park',        center: { x: 55,  z: -40 }, radius: 20, tint: '#4f7a45' },
+      { id: 'millrace',  name: 'Millrace Green', kind: 'park',        center: { x: -60, z: -60 }, radius: 16, tint: '#4f7a45' },
+    ]
+
+    const DOWNTOWN_SERVICES = [
+      { id: 'town-hall',  name: 'Town Hall',               service: 'townhall', angle: 90,  dist: 4,  footprint: 7.5, height: 6.4, monogram: 'TH' },
+      { id: 'market',     name: 'Open Market',             service: 'market',   angle: 20,  dist: 13, footprint: 6.5, height: 4.4, monogram: 'MK' },
+      { id: 'tavern',     name: 'The Gilded Antler',       service: 'tavern',   angle: 158, dist: 13, footprint: 6.5, height: 4.8, monogram: 'GA' },
+      { id: 'inn',        name: "Wayfarer's Rest",         service: 'inn',      angle: 202, dist: 14, footprint: 6,   height: 5.0, monogram: 'WR' },
+      { id: 'apothecary', name: "Merit's Apothecary",      service: 'healer',   angle: 250, dist: 13, footprint: 5,   height: 4.2, monogram: 'MA' },
+      { id: 'smithy',     name: 'Ashgate Smithy',          service: 'smith',    angle: 320, dist: 14, footprint: 5.5, height: 4.0, monogram: 'AS' },
+      { id: 'scribe',     name: 'The Quiet Ledger',        service: 'scribe',   angle: 60,  dist: 13, footprint: 5,   height: 4.2, monogram: 'QL' },
+      { id: 'shrine',     name: 'Shrine of Twin Lanterns', service: 'shrine',   angle: 128, dist: 15, footprint: 5,   height: 4.6, monogram: 'SL' },
+    ]
+
+    const PARK_LANDMARKS = [
+      { id: 'fernbrook-fountain', name: 'The Weeping Fountain', districtId: 'fernbrook', model: 'fountain', offset: { x: 0, z: 0 } },
+      { id: 'fernbrook-oak',      name: 'The Old Oak',          districtId: 'fernbrook', model: 'oak',      offset: { x: 9, z: -6 } },
+      { id: 'millrace-mill',      name: 'Old Millrace Wheel',   districtId: 'millrace',  model: 'mill',     offset: { x: 0, z: 3 } },
+    ]
+
+    const CHARACTER_SEEDS = [
+      { id: 'elowen',  name: 'Elowen Marsh', role: 'Herbalist',          color: '#5c7a52', home: 'north-row-h0', start: 'apothecary',        status: 'Grinding dried yarrow for a tincture.' },
+      { id: 'brann',   name: 'Brann Cole',   role: 'Blacksmith',         color: '#b6423a', home: 'hillside-h0',  start: 'smithy',            status: 'Restocking horseshoes for the week.' },
+      { id: 'nessa',   name: 'Nessa Wrey',   role: 'Tavern Keeper',      color: '#c98a3f', home: 'west-bank-h0', start: 'tavern',            status: "Wiping down the Antler's bar." },
+      { id: 'oren',    name: 'Oren Fitch',   role: 'Town Scribe',        color: '#8f8a7c', home: 'north-row-h1', start: 'scribe',            status: "Copying this week's ledger." },
+      { id: 'thistle', name: 'Thistle Pike', role: 'Wandering Musician', color: '#9c6b8f', home: 'west-bank-h1', start: 'fernbrook-fountain', status: 'Tuning a battered lute by the fountain.' },
+      { id: 'garrow',  name: 'Garrow Vane',  role: 'Retired Guard',      color: '#3f5c4a', home: 'hillside-h1',  start: 'hillside-h1',       status: 'Watching the road from his porch.' },
+    ]
+
+    const EVENT_SEEDS = [
+      { id: 'evt-market-dispute', title: 'A Dispute at the Market',   locationId: 'market',        kind: 'incident', description: 'Two merchants argue over a scale that keeps coming up short.' },
+      { id: 'evt-shrine-omen',    title: 'Lanterns Burning Blue',     locationId: 'shrine',        kind: 'omen',     description: 'The twin lanterns have burned an unnatural blue since dawn.' },
+      { id: 'evt-oak-gathering',  title: 'Gathering Beneath the Oak', locationId: 'fernbrook-oak', kind: 'social',   description: 'Townsfolk trade gossip and cider in the shade.' },
+    ]
+
+    function pickHouseName (rand, used) {
+      for (let a = 0; a < 40; a++) {
+        const name = `${NAME_PREFIX[Math.floor(rand() * NAME_PREFIX.length)]} ${NAME_SUFFIX[Math.floor(rand() * NAME_SUFFIX.length)]}`
+        if (!used.has(name)) { used.add(name); return name }
+      }
+      const fallback = `Way House ${used.size + 1}`
+      used.add(fallback); return fallback
+    }
+
+    function generateDistrictHouses (district, seed, usedNames) {
+      const rng  = createSeededRng(seed)          // library seeded rng
+      const rand = rng.next
+      const target = 8 + Math.floor(rand() * 5)
+      const span = district.radius * 2
+      const raw  = poissonDisk({ width: span, height: span, minDist: 9, rng: rand, k: 24 })
+      const houses = []
+      for (const [rx, ry] of raw) {
+        if (houses.length >= target) break
+        const lx = rx - district.radius, ly = ry - district.radius
+        const d  = Math.hypot(lx, ly)
+        if (d > district.radius * 0.88 || d < district.radius * 0.16) continue
+        houses.push({
+          id: `${district.id}-h${houses.length}`,
+          name: pickHouseName(rand, usedNames),
+          kind: 'house', districtId: district.id,
+          x: district.center.x + lx, z: district.center.z + ly,
+          footprint: 3.4 + rand() * 1.6, height: 3.2 + rand() * 1.4,
+          wallColor: WALL_COLORS[Math.floor(rand() * WALL_COLORS.length)],
+          roofColor: ROOF_COLORS[Math.floor(rand() * ROOF_COLORS.length)],
+          hasChimney: rand() > 0.55, residents: [],
+        })
+      }
+      return houses
+    }
+
+    function buildTownConnections ({ services, districtNodes, districts }) {
+      const edges = []
+      const ring = [...services].sort((a, b) => a.angle - b.angle)
+      for (let i = 0; i < ring.length; i++)
+        edges.push({ a: ring[i].id, b: ring[(i + 1) % ring.length].id, plaza: true })
+
+      for (const district of districts) {
+        if (district.kind !== 'residential') continue
+        const nodes = districtNodes.get(district.id) ?? []
+        if (nodes.length === 0) continue
+
+        let gateway = nodes[0], gatewayService = services[0], best = Infinity
+        for (const node of nodes) for (const service of services) {
+          const dd = distance2D(node, service)
+          if (dd < best) { best = dd; gateway = node; gatewayService = service }
+        }
+        edges.push({ a: gateway.id, b: gatewayService.id, plaza: false })
+
+        const connected = [gateway]
+        const remaining = nodes.filter(n => n !== gateway)
+        while (remaining.length > 0) {
+          let bestPair = null, bestDist = Infinity
+          for (const node of remaining) for (const c of connected) {
+            const dd = distance2D(node, c)
+            if (dd < bestDist) { bestDist = dd; bestPair = [node, c] }
+          }
+          const [node, c] = bestPair
+          edges.push({ a: node.id, b: c.id, plaza: false })
+          connected.push(node)
+          remaining.splice(remaining.indexOf(node), 1)
+        }
+      }
+      return edges
+    }
+
+    function generateTown (seed) {
+      const usedNames = new Set()
+      const locations = new Map()
+
+      const services = DOWNTOWN_SERVICES.map(s => {
+        const downtown = DISTRICTS[0]
+        const rad = THREE.MathUtils.degToRad(s.angle)
+        const loc = {
+          id: s.id, name: s.name, kind: 'service', service: s.service, districtId: 'downtown',
+          x: downtown.center.x + Math.cos(rad) * s.dist,
+          z: downtown.center.z + Math.sin(rad) * s.dist,
+          footprint: s.footprint, height: s.height, monogram: s.monogram, angle: s.angle,
+          wallColor: '#c9c0ab',
+          roofColor: CIVIC_ROOF[Math.floor((s.angle / 360) * CIVIC_ROOF.length) % CIVIC_ROOF.length],
+          residents: [],
+        }
+        locations.set(loc.id, loc)
+        return loc
+      })
+
+      const districtNodes = new Map()
+      DISTRICTS.forEach((district, i) => {
+        if (district.kind === 'residential') {
+          const houses = generateDistrictHouses(district, seed + i * 97 + 11, usedNames)
+          houses.forEach(h => locations.set(h.id, h))
+          districtNodes.set(district.id, houses)
+        } else if (district.kind === 'park') {
+          const nodes = PARK_LANDMARKS.filter(p => p.districtId === district.id).map(p => ({
+            id: p.id, name: p.name, kind: 'landmark', model: p.model, districtId: district.id,
+            x: district.center.x + p.offset.x, z: district.center.z + p.offset.z,
+            footprint: 3, height: 2.4, residents: [],
+          }))
+          nodes.forEach(n => locations.set(n.id, n))
+          districtNodes.set(district.id, nodes)
+        }
+      })
+
+      const edges = buildTownConnections({ services, districtNodes, districts: DISTRICTS })
+
+      const adjacency = new Map()
+      for (const loc of locations.values()) adjacency.set(loc.id, new Set())
+      for (const e of edges) { adjacency.get(e.a).add(e.b); adjacency.get(e.b).add(e.a) }
+
+      const characters = CHARACTER_SEEDS.map(c => ({ ...c, locationId: c.start, walk: null }))
+      characters.forEach(c => { const home = locations.get(c.home); if (home) home.residents.push(c.id) })
+
+      const events = EVENT_SEEDS.map(e => ({ ...e, active: true }))
+      return { seed, districts: DISTRICTS, locations, edges, adjacency, characters, events }
+    }
+
+    const TOWN = generateTown(TOWN_SEED)
+
+    /* ================================================================
+     * PROCEDURAL CANVAS TEXTURES — fully self-contained, no image URLs.
+     * ================================================================ */
+    const ownedTextures = []
+    function trackTex (t) { ownedTextures.push(t); return t }
+
+    function speckleTexture ({ base, speckles, size = 256, count = 900, seed = 1 }) {
+      const rng = createSeededRng(seed).next
+      const c = document.createElement('canvas'); c.width = c.height = size
+      const ctx = c.getContext('2d')
+      ctx.fillStyle = base; ctx.fillRect(0, 0, size, size)
+      for (let i = 0; i < count; i++) {
+        ctx.globalAlpha = 0.05 + rng() * 0.12
+        ctx.fillStyle = speckles[Math.floor(rng() * speckles.length)]
+        ctx.beginPath(); ctx.arc(rng() * size, rng() * size, 0.6 + rng() * 1.8, 0, Math.PI * 2); ctx.fill()
+      }
+      ctx.globalAlpha = 1
+      const tex = new THREE.CanvasTexture(c)
+      tex.colorSpace = THREE.SRGBColorSpace
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+      return trackTex(tex)
+    }
+
+    function badgeTexture ({ text, background, ring = '#14131d', textColor = '#14131d', size = 128 }) {
+      const c = document.createElement('canvas'); c.width = c.height = size
+      const ctx = c.getContext('2d'); const r = size / 2
+      ctx.beginPath(); ctx.arc(r, r, r - 6, 0, Math.PI * 2); ctx.fillStyle = background; ctx.fill()
+      ctx.lineWidth = 7; ctx.strokeStyle = ring; ctx.stroke()
+      ctx.fillStyle = textColor
+      ctx.font = `800 ${Math.floor(size * 0.36)}px system-ui, -apple-system, sans-serif`
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.fillText(text, r, r + size * 0.03)
+      const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4
+      return trackTex(tex)
+    }
+
+    function exclaimTexture ({ background = '#e0573f', ring = '#14131d', mark = '#fff7ec', size = 128 }) {
+      const c = document.createElement('canvas'); c.width = c.height = size
+      const ctx = c.getContext('2d'); const r = size / 2
+      ctx.beginPath(); ctx.arc(r, r, r - 6, 0, Math.PI * 2); ctx.fillStyle = background; ctx.fill()
+      ctx.lineWidth = 7; ctx.strokeStyle = ring; ctx.stroke()
+      ctx.fillStyle = mark; const barW = size * 0.1
+      ctx.beginPath(); ctx.roundRect(r - barW / 2, size * 0.26, barW, size * 0.34, barW / 2); ctx.fill()
+      ctx.beginPath(); ctx.arc(r, size * 0.72, barW * 0.62, 0, Math.PI * 2); ctx.fill()
+      const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4
+      return trackTex(tex)
+    }
+
+    /* ================================================================
+     * SHARED GEOMETRY (unit primitives, scaled per instance)
+     * ================================================================ */
+    const unitBox      = new THREE.BoxGeometry(1, 1, 1)
+    const unitCone4    = new THREE.ConeGeometry(0.5, 1, 4); unitCone4.rotateY(Math.PI / 4)
+    const unitCylinder = new THREE.CylinderGeometry(0.5, 0.5, 1, 10)
+    const unitConeRound= new THREE.ConeGeometry(0.5, 1, 10)
+    const roadPlane    = new THREE.PlaneGeometry(1, 1); roadPlane.rotateX(-Math.PI / 2)
+    const decalCircle  = new THREE.CircleGeometry(1, 24); decalCircle.rotateX(-Math.PI / 2)
+    const ringGeom     = new THREE.RingGeometry(0.82, 1, 40); ringGeom.rotateX(-Math.PI / 2)
+
+    /* ================================================================
+     * MATERIALS — instanced-field materials keep color white and let the
+     * per-instance instanceColor carry the real hue (set in `place`).
+     * ================================================================ */
+    const white = 0xffffff
+    const wallMat    = new THREE.MeshStandardMaterial({ color: white, roughness: 0.85, metalness: 0.02 })
+    const roofMat    = new THREE.MeshStandardMaterial({ color: white, roughness: 0.7,  metalness: 0.04 })
+    const chimneyMat = new THREE.MeshStandardMaterial({ color: white, roughness: 0.85 })
+    const trimMat    = new THREE.MeshStandardMaterial({ color: white, roughness: 0.45, metalness: 0.4 })
+    const decalMat   = new THREE.MeshBasicMaterial({ color: white, transparent: true, opacity: 0.16, depthWrite: false })
+    const roadMat    = new THREE.MeshStandardMaterial({ color: '#c7b28a', roughness: 0.95 })
+    const plazaMat   = new THREE.MeshStandardMaterial({ color: '#b9ac95', roughness: 0.9 })
+    const trunkMat   = new THREE.MeshStandardMaterial({ color: white, roughness: 0.9 })
+    const foliageMat = new THREE.MeshStandardMaterial({ color: white, roughness: 0.85 })
+    const bushMat    = new THREE.MeshStandardMaterial({ color: white, roughness: 0.85 })
+    const stoneMat   = new THREE.MeshStandardMaterial({ color: '#9aa0a3', roughness: 0.6, metalness: 0.05 })
+    const waterMat   = new THREE.MeshStandardMaterial({ color: '#a9d3e0', roughness: 0.25, metalness: 0.1 })
+    const woodMat    = new THREE.MeshStandardMaterial({ color: '#5b4331', roughness: 0.9 })
+    const millMat    = new THREE.MeshStandardMaterial({ color: '#8a6a4a', roughness: 0.85 })
+    const oakLeafMat = new THREE.MeshStandardMaterial({ color: '#4f7a45', roughness: 0.85 })
+    const selectionMat = new THREE.MeshBasicMaterial({ color: '#c98a3f', transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false })
+    const hoverMat     = new THREE.MeshBasicMaterial({ color: '#f4ead0', transparent: true, opacity: 0.4,  side: THREE.DoubleSide, depthWrite: false })
+    const reachableMat = new THREE.MeshBasicMaterial({ color: '#e8ddc3', transparent: true, opacity: 0.6,  side: THREE.DoubleSide, depthWrite: false })
+
+    function tagLocation (obj, id) { obj.traverse(o => { o.userData.locationId = id }) }
+
+    /* ================================================================
+     * RENDER LAYER
+     * ================================================================ */
+    const canvas   = document.getElementById('scene')
+    const renderer = createRenderer({ canvas, shadows: false, toneMappingExposure: 1.05 })
+
+    const scene = new THREE.Scene()
+    const SKY_DAY  = new THREE.Color('#bcd4e8')
+    const SKY_DUSK = new THREE.Color('#e5b184')
+    scene.background = SKY_DAY.clone()
+
+    const noise = createNoise3D(TOWN_SEED)        // organic per-instance variation
+    const n01   = (x, z) => (noise.sample(x * 0.1, 0, z * 0.1) + 1) / 2
+
+    // ---- ground: base grass plane + per-district tint patches ----
+    function buildGround () {
+      const group = new THREE.Group()
+      const grass = speckleTexture({ base: '#6f8f5c', speckles: ['#5f7d4e', '#7fa06a'], seed: 7 })
+      grass.repeat.set(48, 48)
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(340, 340),
+        new THREE.MeshStandardMaterial({ map: grass, roughness: 1 }))
+      ground.rotation.x = -Math.PI / 2
+      group.add(ground)
+
+      for (const d of TOWN.districts) {
+        const isDown = d.kind === 'downtown'
+        let mat
+        if (isDown) {
+          const tex = speckleTexture({ base: '#b8ab8f', speckles: ['#a89877', '#c7bba0'], seed: 11 })
+          tex.repeat.set(10, 10)
+          mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95 })
+        } else {
+          mat = new THREE.MeshStandardMaterial({ color: d.tint, roughness: 1, transparent: true,
+            opacity: d.kind === 'park' ? 0.55 : 0.32 })
+        }
+        const patch = new THREE.Mesh(decalCircle, mat)
+        patch.scale.setScalar(d.radius)
+        patch.position.set(d.center.x, 0.015, d.center.z)
+        group.add(patch)
+      }
+      return group
+    }
+
+    // ---- collect building sets from the town data ----
+    const allLocs   = [...TOWN.locations.values()]
+    const services  = allLocs.filter(l => l.kind === 'service')
+    const houses    = allLocs.filter(l => l.kind === 'house')
+    const landmarks = allLocs.filter(l => l.kind === 'landmark')
+    const buildings = [...services, ...houses]          // stable order → instanceId map
+    const buildingLocIds = buildings.map(b => b.id)
+    buildings.forEach((b, i) => {
+      b.instanceIndex = i
+      b.roofH    = b.kind === 'service' ? b.height * 0.4 : b.height * 0.55
+      b.pinHeight= b.kind === 'service' ? b.height + b.roofH + 4.1 : b.height + b.roofH + 1.5
+    })
+    landmarks.forEach(l => { l.pinHeight = 6.5 })
+
+    // ---- instanced building shells (one draw call per repeated kind) ----
+    const _c = new THREE.Color()
+    const wallsMesh = createInstancedField({
+      geometry: unitBox, material: wallMat, count: buildings.length, seed: 1,
+      place: (i, _r, o, c) => {
+        const b = buildings[i]
+        o.position.set(b.x, b.height / 2, b.z); o.rotation.set(0, 0, 0)
+        o.scale.set(b.footprint, b.height, b.footprint); c.set(b.wallColor)
+      },
+    })
+    const roofsMesh = createInstancedField({
+      geometry: unitCone4, material: roofMat, count: buildings.length, seed: 2,
+      place: (i, _r, o, c) => {
+        const b = buildings[i]
+        const w = b.footprint * (b.kind === 'service' ? 0.92 : 0.86)
+        o.position.set(b.x, b.height + b.roofH / 2, b.z); o.rotation.set(0, 0, 0)
+        o.scale.set(w, b.roofH, w); c.set(b.roofColor)
+      },
+    })
+
+    const chimneyHouses = houses.filter(h => h.hasChimney)
+    const chimneysMesh = createInstancedField({
+      geometry: unitBox, material: chimneyMat, count: chimneyHouses.length, seed: 3,
+      place: (i, _r, o, c) => {
+        const b = chimneyHouses[i]
+        o.position.set(b.x + b.footprint * 0.22, b.height + b.height * 0.3, b.z - b.footprint * 0.18)
+        o.rotation.set(0, 0, 0); o.scale.set(0.5, b.height * 0.6, 0.5); c.set('#8f8578')
+      },
+    })
+
+    const trimMesh = createInstancedField({
+      geometry: unitBox, material: trimMat, count: services.length, seed: 4,
+      place: (i, _r, o, c) => {
+        const b = services[i]
+        o.position.set(b.x, b.height, b.z); o.rotation.set(0, 0, 0)
+        o.scale.set(b.footprint * 1.02, 0.28, b.footprint * 1.02)
+        c.set(b.id === 'town-hall' ? '#c98a3f' : '#8f8579')
+      },
+    })
+
+    // ---- fake AO: one instanced shadow decal under every structure ----
+    const decalEntries = [
+      ...buildings.map(b => ({ x: b.x, z: b.z, r: b.footprint * (b.kind === 'service' ? 0.85 : 0.82) })),
+      ...landmarks.map(l => ({ x: l.x, z: l.z, r: l.footprint })),
+    ]
+    const decalMesh = createInstancedField({
+      geometry: decalCircle, material: decalMat, count: decalEntries.length, seed: 5,
+      place: (i, _r, o, c) => {
+        const e = decalEntries[i]
+        o.position.set(e.x, 0.03, e.z); o.rotation.set(0, 0, 0); o.scale.setScalar(e.r); c.set('#0a1410')
+      },
+    })
+
+    // ---- roads: one instanced field per road class ----
+    function buildRoadField (edges, material, width, seed) {
+      return createInstancedField({
+        geometry: roadPlane, material, count: edges.length, seed,
+        place: (i, _r, o, c) => {
+          const e = edges[i]
+          const a = TOWN.locations.get(e.a), b = TOWN.locations.get(e.b)
+          const dx = b.x - a.x, dz = b.z - a.z, len = Math.hypot(dx, dz)
+          o.position.set((a.x + b.x) / 2, 0.05, (a.z + b.z) / 2)
+          o.rotation.set(0, -Math.atan2(dz, dx), 0)
+          o.scale.set(len, 1, width); c.setRGB(1, 1, 1)
+        },
+      })
+    }
+    const plazaEdges  = TOWN.edges.filter(e => e.plaza)
+    const normalEdges = TOWN.edges.filter(e => !e.plaza)
+
+    // ---- park scatter: poisson points → instanced trunks / foliage / bushes ----
+    const parks = TOWN.districts.filter(d => d.kind === 'park')
+    const treePoints = [], bushPoints = []
+    parks.forEach((park, i) => {
+      const rng = createSeededRng(TOWN_SEED + 500 + i), rand = rng.next
+      const span = park.radius * 2
+      for (const [rx, ry] of poissonDisk({ width: span, height: span, minDist: 5.5, rng: rand, k: 20 })) {
+        const lx = rx - park.radius, ly = ry - park.radius
+        if (Math.hypot(lx, ly) > park.radius * 0.92) continue
+        treePoints.push({ x: park.center.x + lx, z: park.center.z + ly, scale: 0.8 + rand() * 0.6, rot: rand() * Math.PI * 2 })
+      }
+      const brng = createSeededRng(TOWN_SEED + 900 + i), brand = brng.next
+      for (const [rx, ry] of poissonDisk({ width: span, height: span, minDist: 3.4, rng: brand, k: 16 })) {
+        const lx = rx - park.radius, ly = ry - park.radius
+        if (Math.hypot(lx, ly) > park.radius * 0.85) continue
+        bushPoints.push({ x: park.center.x + lx, z: park.center.z + ly, scale: 0.5 + brand() * 0.4, rot: brand() * Math.PI * 2 })
+      }
+    })
+
+    const trunksMesh = createInstancedField({
+      geometry: unitCylinder, material: trunkMat, count: treePoints.length, seed: 6,
+      place: (i, _r, o, c) => {
+        const p = treePoints[i]
+        o.position.set(p.x, 1.6 * p.scale, p.z); o.rotation.set(0, p.rot, 0); o.scale.setScalar(p.scale)
+        c.setHSL(0.08, 0.35, 0.20 + n01(p.x, p.z) * 0.08)
+      },
+    })
+    const foliageMesh = createInstancedField({
+      geometry: unitConeRound, material: foliageMat, count: treePoints.length, seed: 7,
+      place: (i, _r, o, c) => {
+        const p = treePoints[i]
+        o.position.set(p.x, 4.4 * p.scale, p.z); o.rotation.set(0, p.rot * 1.3, 0)
+        o.scale.set(p.scale * 2.1, p.scale * 2.4, p.scale * 2.1)
+        c.setHSL(0.27 + n01(p.x, p.z) * 0.05, 0.5, 0.28 + n01(p.z, p.x) * 0.08)
+      },
+    })
+    const bushesMesh = createInstancedField({
+      geometry: unitConeRound, material: bushMat, count: bushPoints.length, seed: 8,
+      place: (i, _r, o, c) => {
+        const p = bushPoints[i]
+        o.position.set(p.x, 0.5 * p.scale, p.z); o.rotation.set(0, p.rot, 0)
+        o.scale.set(p.scale * 1.6, p.scale, p.scale * 1.6)
+        c.setHSL(0.30, 0.5, 0.32 + n01(p.x, p.z) * 0.08)
+      },
+    })
+
+    // ---- unique park landmarks, built as composable props ----
+    function buildLandmarkGroup (loc) {
+      const g = new THREE.Group()
+      if (loc.model === 'fountain') {
+        const basin = new THREE.Mesh(unitCylinder, stoneMat); basin.scale.set(2.6, 0.6, 2.6); basin.position.y = 0.3; g.add(basin)
+        const water = new THREE.Mesh(unitCylinder, waterMat); water.scale.set(2.2, 0.15, 2.2); water.position.y = 0.55; g.add(water)
+        const spout = new THREE.Mesh(unitCylinder, stoneMat); spout.scale.set(0.5, 1.6, 0.5); spout.position.y = 1.1; g.add(spout)
+      } else if (loc.model === 'oak') {
+        const trunk = new THREE.Mesh(unitCylinder, woodMat); trunk.scale.set(1.4, 4.2, 1.4); trunk.position.y = 2.1; g.add(trunk)
+        const leaf  = new THREE.Mesh(unitConeRound, oakLeafMat); leaf.scale.set(6.5, 6, 6.5); leaf.position.y = 6.5; g.add(leaf)
+      } else if (loc.model === 'mill') {
+        const house = new THREE.Mesh(unitBox, millMat); house.scale.set(3, 3.2, 3); house.position.y = 1.6; g.add(house)
+        const wheel = new THREE.Mesh(new THREE.TorusGeometry(2, 0.35, 8, 20), woodMat)
+        wheel.rotation.y = Math.PI / 2; wheel.position.set(2.6, 2.2, 0); g.add(wheel)
+      }
+      return g
+    }
+    const landmarkProps = []
+    const landmarkObjects = []
+
+    // ---- character + event pins ----
+    const initials = (name) => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    const characterPins = new Map()
+    const eventPins = new Map()
+
+    function assembleScene () {
+      scene.add(buildGround())
+      scene.add(buildRoadField(plazaEdges,  plazaMat, 2.4, 20))
+      scene.add(buildRoadField(normalEdges, roadMat,  1.5, 21))
+      scene.add(decalMesh, wallsMesh, roofsMesh, chimneysMesh, trimMesh, trunksMesh, foliageMesh, bushesMesh)
+
+      // service monogram badges (few, kept as sprites)
+      for (const s of services) {
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: badgeTexture({ text: s.monogram, background: '#efe6cf' }), transparent: true, depthWrite: false,
+        }))
+        sprite.scale.setScalar(2.1)
+        sprite.position.set(s.x, s.height + s.roofH + 1.3, s.z)
+        scene.add(sprite)
+      }
+
+      // landmarks as composable props
+      for (const loc of landmarks) {
+        const factory = compose.defineProp({ name: `landmark-${loc.id}`, build: () => buildLandmarkGroup(loc) })
+        const inst = compose.createProp(factory)
+        inst.object.position.set(loc.x, 0, loc.z)
+        tagLocation(inst.object, loc.id)
+        scene.add(inst.object)
+        landmarkProps.push(inst)
+        landmarkObjects.push(inst.object)
+      }
+
+      // character pins (grouped via compose.createGroup)
+      const pinChildren = []
+      for (const c of TOWN.characters) {
+        const loc = TOWN.locations.get(c.locationId)
+        const h = loc.pinHeight ?? 3
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: badgeTexture({ text: initials(c.name), background: c.color, textColor: '#fff7ec', ring: '#14131d' }),
+          transparent: true, depthWrite: false,
+        }))
+        sprite.scale.setScalar(2.9)
+        sprite.position.set(loc.x, h + 0.4, loc.z)
+        sprite.userData.characterId = c.id
+        const stem = new THREE.Mesh(unitCylinder, new THREE.MeshBasicMaterial({ color: c.color, transparent: true, opacity: 0.55 }))
+        stem.scale.set(0.06, h - 0.4, 0.06); stem.position.set(loc.x, h / 2, loc.z)
+        pinChildren.push(stem, sprite)
+        characterPins.set(c.id, { sprite, stem, baseHeight: h })
+      }
+      scene.add(compose.createGroup(pinChildren))
+
+      // event pins
+      const eventChildren = []
+      for (const e of TOWN.events) {
+        const loc = TOWN.locations.get(e.locationId)
+        const h = (loc.pinHeight ?? 3) + 2.4
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: exclaimTexture({}), transparent: true, depthWrite: false }))
+        sprite.scale.setScalar(2.2); sprite.position.set(loc.x, h, loc.z)
+        eventChildren.push(sprite)
+        eventPins.set(e.id, { sprite, baseY: h })
+      }
+      scene.add(compose.createGroup(eventChildren))
+    }
+    assembleScene()
+
+    // ---- selection / hover / reachable overlays ----
+    const selectionRing = new THREE.Mesh(ringGeom, selectionMat); selectionRing.position.y = 0.07; selectionRing.visible = false
+    const hoverRing     = new THREE.Mesh(ringGeom, hoverMat);     hoverRing.position.y     = 0.065; hoverRing.visible = false
+    scene.add(selectionRing, hoverRing)
+    const reachablePool = []
+    for (let i = 0; i < 10; i++) {
+      const m = new THREE.Mesh(ringGeom, reachableMat)
+      m.position.y = 0.06; m.visible = false; m.scale.setScalar(2.4)
+      scene.add(m); reachablePool.push(m)
+    }
+
+    // ---- lighting: IBL env + sun + hemi (sun/hemi driven by the sim) ----
+    const lighting = setupStandardLighting(scene, renderer, {
+      sun:  { color: '#fff2d8', intensity: 2.2, position: new THREE.Vector3(70, 95, 45) },
+      hemi: { skyColor: '#bcd4f5', groundColor: '#4a3f2e', intensity: 0.72 },
+    })
+    const { sun, hemi } = lighting
+
+    /* ================================================================
+     * CAMERA — fixed-angle orthographic iso rig, target-locked pan + zoom.
+     * ================================================================ */
+    const camera = createIsoCamera(canvas.clientWidth / Math.max(1, canvas.clientHeight), { viewSize: 64, far: 800 })
+    const offset = camera.position.clone()
+    const target = new THREE.Vector3(0, 0, 0)
+    let zoom = 1
+    const yaw   = Math.atan2(offset.x, offset.z)
+    const fwd   = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw))
+    const right = new THREE.Vector3(fwd.z, 0, -fwd.x)
+
+    function updateCamera () { camera.position.copy(target).add(offset); camera.lookAt(target) }
+    function setZoom (z) { zoom = THREE.MathUtils.clamp(z, 0.42, 2.6); camera.zoom = zoom; camera.updateProjectionMatrix() }
+    updateCamera(); setZoom(1)
+
+    renderer.compile(scene, camera)
+
+    /* ================================================================
+     * PICKING
+     * ================================================================ */
+    const raycaster = new THREE.Raycaster()
+    const ndc = new THREE.Vector2()
+    function pickAt (clientX, clientY) {
+      const rect = canvas.getBoundingClientRect()
+      ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1
+      ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1
+      raycaster.setFromCamera(ndc, camera)
+      const targets = [wallsMesh, roofsMesh, ...pinSprites(), ...landmarkObjects]
+      const hits = raycaster.intersectObjects(targets, true)
+      for (const hit of hits) {
+        const o = hit.object
+        if (o.userData.characterId) return { type: 'character', id: o.userData.characterId }
+        if ((o === wallsMesh || o === roofsMesh) && hit.instanceId != null)
+          return { type: 'location', id: buildingLocIds[hit.instanceId] }
+        if (o.userData.locationId) return { type: 'location', id: o.userData.locationId }
+      }
+      return null
+    }
+    function pinSprites () { return [...characterPins.values()].map(p => p.sprite) }
+
+    /* ================================================================
+     * SIMULATION — the "living" part of the map
+     * ================================================================ */
+    const simRng = createSeededRng(TOWN_SEED + 42).next
+    let simRunning = true
+    let elapsedTime = 0
+    let selectedCharacterId = null
+    let selectedLocationId  = null
+
+    const locationPos = (id) => { const l = TOWN.locations.get(id); return { x: l.x, y: 0, z: l.z } }
+    const scheduleNextMove = (ch) => { ch.nextMoveAt = elapsedTime + 7 + simRng() * 11 }
+    TOWN.characters.forEach(scheduleNextMove)
+
+    function beginWalk (ch, toId, { manual = false } = {}) {
+      const fromLoc = TOWN.locations.get(ch.locationId)
+      const toLoc   = TOWN.locations.get(toId)
+      if (fromLoc) fromLoc.residents = fromLoc.residents.filter(id => id !== ch.id)
+      ch.walk = {
+        fromId: ch.locationId, toId,
+        from: locationPos(ch.locationId), to: locationPos(toId),
+        start: elapsedTime, duration: 1.3 + simRng() * 0.7,
+      }
+      ch.locationId = toId
+      toLoc.residents.push(ch.id)
+      scheduleNextMove(ch)
+      if (manual) setStatus(`${ch.name} heads to ${toLoc.name}.`)
+      if (selectedLocationId === ch.walk.fromId || selectedLocationId === toId) refreshSelectionInfo()
+    }
+
+    function tickSimulation (delta) {
+      elapsedTime += delta
+      if (simRunning) {
+        for (const c of TOWN.characters) {
+          if (c.walk) continue
+          if (elapsedTime >= c.nextMoveAt) {
+            const nb = [...(TOWN.adjacency.get(c.locationId) ?? [])]
+            if (nb.length && simRng() < 0.72) beginWalk(c, nb[Math.floor(simRng() * nb.length)])
+            else scheduleNextMove(c)
+          }
+        }
+      }
+      for (const c of TOWN.characters) {
+        const pin = characterPins.get(c.id)
+        if (c.walk) {
+          const t = smoothstep((elapsedTime - c.walk.start) / c.walk.duration)
+          const x = lerp(c.walk.from.x, c.walk.to.x, t), z = lerp(c.walk.from.z, c.walk.to.z, t)
+          const hop = Math.sin(t * Math.PI) * 0.6
+          pin.sprite.position.set(x, pin.baseHeight + 0.4 + hop, z)
+          pin.stem.position.set(x, pin.baseHeight / 2, z)
+          if (t >= 1) c.walk = null
+        } else if (!reducedMotion) {
+          const loc = TOWN.locations.get(c.locationId)
+          pin.sprite.position.y = pin.baseHeight + 0.4 + Math.sin(elapsedTime * 1.6 + loc.x) * 0.12
+        }
+      }
+      if (!reducedMotion) {
+        for (const pin of eventPins.values()) {
+          const s = 1 + Math.sin(elapsedTime * 2.4) * 0.08
+          pin.sprite.scale.set(2.2 * s, 2.2 * s, 1)
+        }
+        selectionRing.scale.setScalar((selectionRing.userData.baseScale ?? 1) * (1 + Math.sin(elapsedTime * 3) * 0.05))
+      }
+      // day-night: modulate the library sun + hemi and the sky colour
+      const phase  = (elapsedTime % 240) / 240
+      const warmth = 0.5 + 0.5 * Math.sin(phase * Math.PI * 2 - Math.PI / 2)
+      sun.intensity  = 1.6 + warmth * 0.9
+      hemi.intensity = 0.55 + warmth * 0.28
+      scene.background.copy(SKY_DAY).lerp(SKY_DUSK, (1 - warmth) * 0.55)
+    }
+
+    /* ================================================================
+     * SELECTION + HUD
+     * ================================================================ */
+    const selEl   = document.getElementById('sel')
+    const clockEl = document.getElementById('clock')
+    const callsEl = document.getElementById('calls')
+    const DAY_PARTS = ['Deep Night', 'Morning', 'Midday', 'Afternoon', 'Dusk', 'Night']
+
+    let statusMsg = '', statusUntil = 0
+    function setStatus (msg) { statusMsg = msg; statusUntil = elapsedTime + 3 }
+
+    const districtName = (id) => TOWN.districts.find(d => d.id === id)?.name ?? ''
+    function locationLabel (loc) {
+      if (loc.kind === 'service')  return `Service · ${districtName(loc.districtId)}`
+      if (loc.kind === 'landmark') return `Landmark · ${districtName(loc.districtId)}`
+      return `Home · ${districtName(loc.districtId)}`
+    }
+
+    function refreshSelectionInfo () {
+      if (selectedCharacterId) {
+        const c = TOWN.characters.find(ch => ch.id === selectedCharacterId)
+        const loc = TOWN.locations.get(c.locationId)
+        selEl.innerHTML = `<span class="name">${c.name}</span>${c.role} · at ${loc.name}<br>` +
+          `<span style="color:var(--brass)">tap a connected building to send them there</span>`
+        return
+      }
+      if (selectedLocationId) {
+        const loc = TOWN.locations.get(selectedLocationId)
+        const here = loc.residents.map(id => TOWN.characters.find(c => c.id === id)?.name).filter(Boolean)
+        const nb = TOWN.adjacency.get(selectedLocationId)?.size ?? 0
+        const ev = TOWN.events.find(e => e.locationId === selectedLocationId && e.active)
+        selEl.innerHTML = `<span class="name">${loc.name}</span>${locationLabel(loc)}<br>` +
+          (ev ? `<span style="color:#e0573f">⚑ ${ev.title}</span><br>` : '') +
+          `${here.length ? 'Here: ' + here.join(', ') : 'Quiet for now'} · ${nb} connected`
+        return
+      }
+      selEl.innerHTML = '— tap a building or a townsfolk pin —'
+    }
+
+    function clearReachable () { reachablePool.forEach(r => { r.visible = false }) }
+    function showReachableFrom (id) {
+      clearReachable()
+      const nb = [...(TOWN.adjacency.get(id) ?? [])]
+      nb.forEach((nid, i) => {
+        if (i >= reachablePool.length) return
+        const loc = TOWN.locations.get(nid), ring = reachablePool[i]
+        ring.visible = true; ring.position.set(loc.x, 0.06, loc.z)
+        ring.scale.setScalar(Math.max(2, loc.footprint * 0.8))
+      })
+    }
+
+    function panTo (loc) { target.set(loc.x, 0, loc.z); updateCamera() }
+
+    function selectLocation (id, { pan = false } = {}) {
+      const loc = TOWN.locations.get(id); if (!loc) return
+      selectedLocationId = id
+      selectionRing.visible = true
+      selectionRing.position.set(loc.x, 0.07, loc.z)
+      const s = Math.max(2.2, loc.footprint * 0.95)
+      selectionRing.scale.setScalar(s); selectionRing.userData.baseScale = s
+      if (pan) panTo(loc)
+      refreshSelectionInfo()
+    }
+
+    function selectCharacter (id) {
+      selectedCharacterId = id
+      const c = TOWN.characters.find(ch => ch.id === id); if (!c) return
+      showReachableFrom(c.locationId)
+      panTo(TOWN.locations.get(c.locationId))
+      refreshSelectionInfo()
+    }
+    function deselectCharacter () { selectedCharacterId = null; clearReachable(); refreshSelectionInfo() }
+
+    /* ================================================================
+     * INPUT — library pointer gesture (drag/pinch/wheel/tap) + a small
+     * dedicated hover listener (the gesture layer has no hover callback).
+     * ================================================================ */
+    const disposeGesture = attachPointerGesture(canvas, {
+      onDrag (dx, dy) {
+        const rect = canvas.getBoundingClientRect()
+        const wpp = (camera.right - camera.left) / (camera.zoom * Math.max(1, rect.width))
+        target.addScaledVector(right, -dx * wpp)
+        target.addScaledVector(fwd,    dy * wpp)
+        updateCamera()
+      },
+      onPinch (deltaScale) { setZoom(zoom * deltaScale) },
+      onWheel (deltaY)     { setZoom(zoom * (1 - deltaY * 0.001)) },
+      onTap (x, y) {
+        const pick = pickAt(x, y)
+        if (!pick) return
+        if (pick.type === 'character') {
+          if (pick.id === selectedCharacterId) deselectCharacter(); else selectCharacter(pick.id)
+          return
+        }
+        const id = pick.id
+        if (selectedCharacterId) {
+          const ch = TOWN.characters.find(c => c.id === selectedCharacterId)
+          if (id === ch.locationId) { selectLocation(id); return }
+          const nb = TOWN.adjacency.get(ch.locationId) ?? new Set()
+          if (nb.has(id)) { beginWalk(ch, id, { manual: true }); showReachableFrom(id) }
+          else { setStatus(`${ch.name} can't reach that directly.`); selectLocation(id) }
+          return
+        }
+        selectLocation(id)
+      },
+    }, { tapMovePx: 10 })
+
+    function onHover (e) {
+      const pick = pickAt(e.clientX, e.clientY)
+      if (pick && pick.type === 'location') {
+        const loc = TOWN.locations.get(pick.id)
+        hoverRing.visible = true
+        hoverRing.position.set(loc.x, 0.065, loc.z)
+        hoverRing.scale.setScalar(Math.max(2.4, loc.footprint * 1.05))
+        canvas.style.cursor = 'pointer'
+      } else if (pick && pick.type === 'character') {
+        hoverRing.visible = false; canvas.style.cursor = 'pointer'
+      } else {
+        hoverRing.visible = false; canvas.style.cursor = 'grab'
+      }
+    }
+    const onPointerMoveHover = (e) => { if (e.buttons === 0) onHover(e) }
+    canvas.addEventListener('pointermove', onPointerMoveHover)
+
+    /* ---- HUD buttons ---- */
+    const playPauseBtn = document.getElementById('play-pause')
+    const recenterBtn  = document.getElementById('recenter')
+    playPauseBtn.addEventListener('click', () => {
+      simRunning = !simRunning
+      playPauseBtn.textContent = simRunning ? '⏸ Pause' : '▶ Play'
+      playPauseBtn.setAttribute('aria-pressed', String(simRunning))
+    })
+    recenterBtn.addEventListener('click', () => { target.set(0, 0, 0); updateCamera(); setZoom(1) })
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { selectedLocationId = null; selectionRing.visible = false; deselectCharacter() }
+    })
+
+    /* ================================================================
+     * RESIZE (ResizeObserver on the canvas parent) + FRAME LOOP
+     * ================================================================ */
+    const disposeResize = attachResizeObserver(renderer, camera, canvas, (w, h) => resizeIsoCamera(camera, w / (h || 1)))
+
+    function updateClock () {
+      const total = Math.floor(elapsedTime * 4)
+      const day = Math.floor(total / 240) + 1
+      const part = DAY_PARTS[Math.floor((total % 240) / 40)]
+      clockEl.textContent = statusMsg && elapsedTime < statusUntil ? statusMsg : `Day ${day} · ${part}`
+    }
+
+    let ready = false
+    const loop = createFrameLoop()
+    loop.onFrame(({ delta }) => {
+      tickSimulation(delta)
+      renderer.render(scene, camera)
+      updateClock()
+      callsEl.textContent = renderer.info.render.calls
+      if (!ready) { ready = true; window.__SCENE_READY__ = true }
+    })
+
+    refreshSelectionInfo()
+
+    /* ================================================================
+     * TEARDOWN — dispose everything we own.
+     * ================================================================ */
+    window.addEventListener('pagehide', () => {
+      loop.dispose()
+      disposeGesture()
+      disposeResize()
+      canvas.removeEventListener('pointermove', onPointerMoveHover)
+      for (const inst of landmarkProps) inst.dispose?.()
+      lighting.dispose()
+      disposeScene(scene)
+      for (const t of ownedTextures) t.dispose()
+      renderer.dispose()
+    }, { once: true })
+  </script>
+</body>
+</html>

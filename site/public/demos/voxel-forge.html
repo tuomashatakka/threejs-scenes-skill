@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<!--
+  voxel-forge.html — paint a 2D footprint, watch it extrude into a voxel tower
+  ─────────────────────────────────────────────────────────────────────────
+  Library-powered. One createApp('@scenes') call = renderer + scene + camera +
+  lighting + pointer-orbit + resize + frame loop + dispose. The voxel geometry
+  is the library's headline feature: paint a footprint, each column extrudes to
+  a seeded height into a primitives.VoxelChunk, then primitives.greedyMesh()
+  merges coplanar faces into the fewest possible quads. Editing is live —
+  every paint bumps app state, and the module re-meshes on the next tick.
+
+  Unidirectional flow: pointer -> app.setState({ rev }) -> module.update sees
+  the new rev -> rebuild VoxelChunk + greedyMesh. The loop never writes state.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>threejs-scenes · voxel forge</title>
+  <style>
+    :root {
+      --bg:      #0d1117;
+      --surface: rgba(13, 17, 23, 0.72);
+      --line:    #2a3441;
+      --ink:     #d6e0ea;
+      --dim:     #7d8b9c;
+      --accent:  #9fd0ff;
+      --cell:    11px;
+      --font:    ui-monospace, 'Courier New', monospace;
+    }
+
+    * { box-sizing: border-box }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font);
+      overflow: hidden;
+    }
+
+    main { position: fixed; inset: 0 }
+
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+
+    aside.label {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      max-width: 34ch;
+      padding: 8px 12px;
+      color: var(--ink);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.6;
+      pointer-events: none;
+    }
+
+    aside.label b { color: var(--accent) }
+    aside.label .dim { color: var(--dim) }
+
+    /* ---- footprint editor panel ---- */
+
+    .editor {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      padding: 10px 12px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    .editor h2 {
+      margin: 0;
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(var(--cols), var(--cell));
+      gap: 1px;
+      padding: 3px;
+      border: 1px solid var(--line);
+      background: #0a0e14;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .grid i {
+      width: var(--cell);
+      height: var(--cell);
+      background: #1a2029;
+      transition: background .08s;
+    }
+
+    .grid i[data-on] { background: var(--accent) }
+
+    .row { display: flex; gap: 6px }
+
+    button {
+      flex: 1;
+      font-family: var(--font);
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: .5rem .35rem;
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+
+    button:hover { border-color: var(--accent) }
+
+    button[data-primary] {
+      color: var(--accent);
+      border-color: #2f4a63;
+      background: rgba(159, 208, 255, 0.08);
+    }
+
+    .status {
+      font-size: 11px;
+      color: var(--dim);
+      line-height: 1.5;
+      max-width: calc(var(--cols) * (var(--cell) + 1px));
+    }
+
+    .status b { color: #8fffa8 }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+
+    <aside class="label">
+      <div>threejs-scenes · <b>voxel forge</b></div>
+      <div class="dim">primitives.VoxelChunk + greedyMesh · createApp</div>
+      <div class="dim">drag scene to orbit · paint the footprint →</div>
+    </aside>
+
+    <div class="editor">
+      <h2>footprint</h2>
+      <div class="grid" id="grid" aria-label="2d voxel footprint editor"></div>
+      <div class="row">
+        <button id="clear">clear</button>
+        <button id="random">random</button>
+        <button id="reroll" data-primary>reroll seed</button>
+      </div>
+      <div class="status" id="status">painting…</div>
+    </div>
+  </main>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three":          "https://esm.sh/three@0.184.0",
+      "three/addons/":  "https://esm.sh/three@0.184.0/addons/",
+      "@tuomashatakka/canvas-loop-framecapper": "../lib/vendor/canvas-loop-framecapper/index.js",
+      "react": "https://esm.sh/react@19",
+      "@scenes":        "../lib/dist/index.js"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { createApp, primitives } from '@scenes'
+
+    const { VoxelChunk, greedyMesh } = primitives
+
+    // ── grid / volume params ──────────────────────────────────────────────────
+    const COLS = 16          // footprint width  (x)
+    const ROWS = 16          // footprint depth  (z)
+    const MAX_HEIGHT = 10    // tallest column   (y)
+    const CHUNK = 16         // VoxelChunk is cubic; must hold COLS/ROWS/MAX_HEIGHT
+
+    // ── seeded rng + coherent value noise (ported from the r128 original) ─────
+    function mulberry32 (seed) {
+      let a = seed >>> 0
+      return () => {
+        a |= 0; a = (a + 0x6d2b79f5) | 0
+        let t = Math.imul(a ^ (a >>> 15), 1 | a)
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+      }
+    }
+
+    function makeNoise2D (rng) {
+      const size = 8
+      const lat = new Float32Array((size + 1) * (size + 1))
+      for (let i = 0; i < lat.length; i++) lat[i] = rng()
+      const smooth = t => t * t * (3 - 2 * t)
+      return (x, y) => {
+        const xi = Math.min(Math.floor(x), size - 1)
+        const yi = Math.min(Math.floor(y), size - 1)
+        const xf = x - xi, yf = y - yi
+        const a = lat[yi * (size + 1) + xi]
+        const b = lat[yi * (size + 1) + xi + 1]
+        const c = lat[(yi + 1) * (size + 1) + xi]
+        const d = lat[(yi + 1) * (size + 1) + xi + 1]
+        const u = smooth(xf), v = smooth(yf)
+        return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v
+      }
+    }
+
+    // ── shared editing surface: 1 byte per footprint cell ─────────────────────
+    const footprint = new Uint8Array(COLS * ROWS)
+    let rev = 0   // bumped on every edit; the module re-meshes when it changes
+
+    // Extrude the 2D footprint into a voxel volume with seeded per-column height.
+    // Every solid voxel gets id 1 so greedyMesh can merge the tall side faces
+    // into single quads; the height gradient is applied afterward per-vertex.
+    function buildChunk (seed) {
+      const rng = mulberry32(seed)
+      const noise = makeNoise2D(rng)
+      const chunk = new VoxelChunk(CHUNK)
+      let maxH = 1, solid = 0
+      for (let z = 0; z < ROWS; z++)
+        for (let x = 0; x < COLS; x++) {
+          if (!footprint[z * COLS + x]) continue
+          const n = noise((x / COLS) * 8, (z / ROWS) * 8)
+          let h = 1 + Math.round(n * (MAX_HEIGHT - 2) + rng() * 1.6)
+          h = Math.max(1, Math.min(MAX_HEIGHT, h))
+          if (h > maxH) maxH = h
+          for (let y = 0; y < h; y++) { chunk.set(x, y, z, 1); solid++ }
+        }
+      return { chunk, maxH, solid }
+    }
+
+    // Overwrite greedyMesh's id-hashed colors with a seeded height gradient.
+    // Runs before geo.translate() so vertex.y is still the raw 0..maxH height —
+    // tall merged side quads get a smooth low→top gradient for free.
+    function recolorByHeight (geo, seed, maxH) {
+      const rng = mulberry32(seed ^ 0x9e3779b9)
+      const top = new THREE.Color().setHSL(rng(), 0.10, 0.92)
+      const low = new THREE.Color().setHSL(rng(), 0.16, 0.16)
+      const pos = geo.getAttribute('position')
+      const out = new Float32Array(pos.count * 3)
+      const c = new THREE.Color()
+      for (let i = 0; i < pos.count; i++) {
+        const t = Math.pow(Math.min(1, pos.getY(i) / maxH), 1.3)
+        c.copy(low).lerp(top, t)
+        out[i * 3] = c.r; out[i * 3 + 1] = c.g; out[i * 3 + 2] = c.b
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(out, 3))
+    }
+
+    // ── the scene module: build once, re-mesh when app state.rev changes ──────
+    function forgeModule () {
+      let group, mesh, material, grid, ground
+      let lastRev = -1
+
+      function rebuild (seed) {
+        const { chunk, maxH, solid } = buildChunk(seed)
+        const geo = greedyMesh(chunk)               // library headline feature
+        recolorByHeight(geo, seed, maxH)
+        geo.translate(-CHUNK / 2, 0, -CHUNK / 2)     // center footprint on origin
+        mesh.geometry.dispose()
+        mesh.geometry = geo
+
+        const greedy = geo.index ? geo.index.count / 3 : 0
+        const naive = solid * 12                     // 6 quads × 2 tris per voxel
+        const ratio = greedy ? (naive / greedy).toFixed(1) : '0'
+        statusEl.innerHTML = solid
+          ? `seed <b>${(seed >>> 0).toString(16)}</b> · greedy ${greedy} tris · <b>${ratio}×</b> fewer than naive`
+          : 'empty footprint — paint some cells →'
+      }
+
+      return {
+        name: 'forge',
+        build (ctx) {
+          ctx.scene.fog = new THREE.Fog(0x0d1117, 24, 82)
+          ctx.scene.environmentIntensity = 0.5     // tame the IBL for a moody look
+
+          material = new THREE.MeshStandardMaterial({
+            vertexColors: true, roughness: 0.9, metalness: 0.0, flatShading: true,
+          })
+          mesh = new THREE.Mesh(new THREE.BufferGeometry(), material)
+          mesh.castShadow = true
+          mesh.receiveShadow = true
+
+          group = new THREE.Group()
+          group.add(mesh)
+          ctx.scene.add(group)
+
+          grid = new THREE.GridHelper(40, 40, 0x2a3441, 0x161c26)
+          ctx.scene.add(grid)
+
+          ground = new THREE.Mesh(
+            new THREE.PlaneGeometry(60, 60),
+            new THREE.ShadowMaterial({ opacity: 0.35 }),
+          )
+          ground.rotation.x = -Math.PI / 2
+          ground.position.y = 0.002
+          ground.receiveShadow = true
+          ctx.scene.add(ground)
+        },
+        update (state, frame) {
+          if (state.rev !== lastRev) {
+            lastRev = state.rev
+            rebuild(state.seed)
+          }
+          group.rotation.y += frame.delta * 0.15   // slow turntable
+        },
+        dispose () {
+          mesh.geometry.dispose()
+          material.dispose()
+          grid.geometry.dispose()
+          grid.material.dispose()
+          ground.geometry.dispose()
+          ground.material.dispose()
+        },
+      }
+    }
+
+    // ── 2D footprint editor (DOM) — the interactive voxel-editing surface ─────
+    const gridEl = document.getElementById('grid')
+    const statusEl = document.getElementById('status')
+    gridEl.style.setProperty('--cols', COLS)
+
+    const cellEls = []
+    for (let i = 0; i < COLS * ROWS; i++) {
+      const el = document.createElement('i')
+      el.dataset.idx = i
+      gridEl.appendChild(el)
+      cellEls.push(el)
+    }
+
+    function syncDom () {
+      for (let i = 0; i < cellEls.length; i++) {
+        if (footprint[i]) cellEls[i].setAttribute('data-on', '')
+        else cellEls[i].removeAttribute('data-on')
+      }
+    }
+
+    // A friendly default blob so the first frame isn't empty.
+    ;(function seedDefault () {
+      const rng = mulberry32(1337)
+      const cx = COLS / 2 - 0.5, cy = ROWS / 2 - 0.5
+      for (let y = 0; y < ROWS; y++)
+        for (let x = 0; x < COLS; x++) {
+          const d = Math.hypot(x - cx, y - cy)
+          if (d < 5.5 + rng() * 1.5 && rng() > d / 9) footprint[y * COLS + x] = 1
+        }
+      syncDom()
+    })()
+
+    // ── boot the library app: renderer+scene+camera+lighting+orbit+loop ───────
+    const app = createApp({
+      canvas:     document.querySelector('#scene'),
+      background: '#0d1117',
+      seed:       7,
+      state:      { seed: (Math.random() * 0xffffffff) >>> 0, rev: 1 },
+      camera:     { fov: 46, near: 0.1, far: 200, position: [14, 16, 14], lookAt: [0, 0, 0] },
+      modules:    [forgeModule()],
+    })
+
+    // input -> state. the module re-meshes on its next update; multiple edits in
+    // one frame coalesce into a single rebuild (only the latest rev is read).
+    let painting = false, paintValue = 1
+    const paintAt = (clientX, clientY) => {
+      const el = document.elementFromPoint(clientX, clientY)
+      if (!el || el.tagName !== 'I' || el.parentElement !== gridEl) return
+      const idx = Number(el.dataset.idx)
+      if (footprint[idx] === paintValue) return
+      footprint[idx] = paintValue
+      if (paintValue) el.setAttribute('data-on', ''); else el.removeAttribute('data-on')
+      app.setState({ rev: ++rev })
+    }
+
+    const onDown = e => {
+      painting = true
+      const idx = Number(e.target.dataset?.idx)
+      paintValue = Number.isInteger(idx) && footprint[idx] ? 0 : 1
+      gridEl.setPointerCapture(e.pointerId)
+      paintAt(e.clientX, e.clientY)
+    }
+    const onMove = e => { if (painting) paintAt(e.clientX, e.clientY) }
+    const onUp = () => { painting = false }
+    gridEl.addEventListener('pointerdown', onDown)
+    gridEl.addEventListener('pointermove', onMove)
+    gridEl.addEventListener('pointerup', onUp)
+    gridEl.addEventListener('pointercancel', onUp)
+
+    const onClear = () => { footprint.fill(0); syncDom(); app.setState({ rev: ++rev }) }
+    const onRandom = () => {
+      const rng = mulberry32((Math.random() * 0xffffffff) >>> 0)
+      for (let i = 0; i < footprint.length; i++) footprint[i] = rng() < 0.45 ? 1 : 0
+      syncDom(); app.setState({ rev: ++rev })
+    }
+    const onReroll = () => app.setState({ seed: (Math.random() * 0xffffffff) >>> 0, rev: ++rev })
+    document.getElementById('clear').addEventListener('click', onClear)
+    document.getElementById('random').addEventListener('click', onRandom)
+    document.getElementById('reroll').addEventListener('click', onReroll)
+
+    // Force one full sim step + render so the mesh exists and a frame is on
+    // screen before the headless screenshot tooling looks for the ready flag.
+    app.tick()
+    window.__SCENE_READY__ = true
+    app.start()
+
+    // teardown for hot-reload / screenshot harnesses.
+    window.__disposeScene = () => {
+      app.dispose()   // renderer, scene, lights, orbit, resize, loop, module
+      gridEl.removeEventListener('pointerdown', onDown)
+      gridEl.removeEventListener('pointermove', onMove)
+      gridEl.removeEventListener('pointerup', onUp)
+      gridEl.removeEventListener('pointercancel', onUp)
+      document.getElementById('clear').removeEventListener('click', onClear)
+      document.getElementById('random').removeEventListener('click', onRandom)
+      document.getElementById('reroll').removeEventListener('click', onReroll)
+    }
+  </script>
+</body>
+</html>

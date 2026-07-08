@@ -1,6 +1,6 @@
 {
   "name": "@tuomashatakka/threejs-scenes",
-  "version": "1.7.3",
+  "version": "2.0.0",
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
   },
@@ -13,6 +13,30 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./primitives": {
+      "types": "./dist/primitives/index.d.ts",
+      "import": "./dist/primitives/index.js"
+    },
+    "./raster": {
+      "types": "./dist/raster/index.d.ts",
+      "import": "./dist/raster/index.js"
+    },
+    "./compose": {
+      "types": "./dist/compose/index.d.ts",
+      "import": "./dist/compose/index.js"
+    },
+    "./view": {
+      "types": "./dist/view/index.d.ts",
+      "import": "./dist/view/index.js"
+    },
+    "./state": {
+      "types": "./dist/state/index.d.ts",
+      "import": "./dist/state/index.js"
+    },
+    "./scaffold": {
+      "types": "./dist/scaffold/index.d.ts",
+      "import": "./dist/scaffold/index.js"
     },
     "./webgpu": {
       "types": "./dist/post/webgpu/index.d.ts",
@@ -29,6 +53,7 @@
   },
   "files": [
     "dist",
+    "!dist/**/*.map",
     "readme.md"
   ],
   "sideEffects": false,
@@ -80,12 +105,12 @@
   "devDependencies": {
     "@tuomashatakka/eslint-config": "^4.0.1",
     "@types/three": "^0.184.1",
+    "eslint": "^10.6.0",
     "three": "^0.184.0",
     "typescript": "^6.0.3",
     "vite": "^8.1.3"
   },
   "dependencies": {
-    "@tuomashatakka/canvas-loop-framecapper": "^1.0.0",
-    "eslint": "^10.6.0"
+    "@tuomashatakka/canvas-loop-framecapper": "^1.0.0"
   }
 }

@@ -4,6 +4,7 @@
   <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/library/</loc></url>
   <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/skill/</loc></url>
   <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/api/</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/</loc></url>
   <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/api.html</loc></url>
   <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/llms.txt</loc></url>
   <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/animation.html</loc></url>
@@ -28,6 +29,10 @@
   <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/post-processing.html</loc></url>
   <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/procedural.html</loc></url>
   <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/props.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/rural-village.html</loc></url>
   <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/shader-material.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/vallila.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/voxel-forge.html</loc></url>
   <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/voxels.html</loc></url>
+  <url><loc>https://tuomashatakka.github.io/threejs-scenes-skill/demos/hearthollow.html</loc></url>
 </urlset>

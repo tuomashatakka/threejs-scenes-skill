@@ -20,15 +20,7 @@ export interface LibraryExport {
   coverage:      'playground' | 'type-reference'
   sample:        string
   relatedDemos:  string[]
-  category:      string
-  categoryLabel: string
   playSeed?:     PlaySeed
-}
-
-export interface LibraryCategory {
-  id:    string
-  label: string
-  count: number
 }
 
 export interface LibraryModule {
@@ -40,7 +32,6 @@ export interface LibraryModule {
   entry:      string
   importUrl:  string
   example?:   string
-  categories: LibraryCategory[]
   exports:    LibraryExport[]
 }
 

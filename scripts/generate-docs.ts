@@ -37,15 +37,7 @@ interface DocExport {
   coverage:      'playground' | 'type-reference'
   sample:        string
   relatedDemos:  string[]
-  category:      string
-  categoryLabel: string
   playSeed?:     PlaySeed
-}
-
-interface LibraryCategory {
-  id:    string
-  label: string
-  count: number
 }
 
 interface LibraryData {
@@ -58,7 +50,7 @@ interface LibraryData {
     playable: number
     typeReferences: number
   }
-  modules: Array<ModuleMeta & { exports: DocExport[], categories: LibraryCategory[] }>
+  modules: Array<ModuleMeta & { exports: DocExport[] }>
 }
 
 interface ParsedParam {
@@ -147,9 +139,39 @@ const KIND: Partial<Record<ts.SyntaxKind, string>> = {
 
 const DESCRIPTIONS: Record<string, { title: string, desc: string, example?: string }> = {
   '.': {
-    title:   'core library',
-    desc:    'The unified WebGL API: app scaffolding, renderer loops, cameras, materials, geometry, instancing, loaders, animation, props, lighting, particles, post-processing, voxels, procedural helpers, state, and architecture utilities.',
-    example: `import { createApp, createIsoScaffold, createToonMaterial } from '@tuomashatakka/threejs-scenes'`,
+    title:   'curated root',
+    desc:    'A deliberately small surface: the shared type vocabulary, a hand-picked set of the most-used factories (createApp, the scaffolds, the go-to material/geometry/light/animation/prop/particle helpers), and the six domain namespaces below. The full library is grouped by concern behind primitives / raster / compose / view / state / scaffold.',
+    example: `import { createApp, raster, primitives } from '@tuomashatakka/threejs-scenes'`,
+  },
+  './primitives': {
+    title:   'primitives',
+    desc:    'Things you can put in a scene: geometry construction (shapes, extrusion, lathe, tubes), vertex manipulation and merging, materials and procedural textures, seeded noise/scatter, instanced and batched high-count meshes, and voxel storage + meshing. Everything that takes a seed is deterministic.',
+    example: `import { createExtrudedMesh, VoxelChunk } from '@tuomashatakka/threejs-scenes/primitives'`,
+  },
+  './raster': {
+    title:   'raster',
+    desc:    'How the scene turns into pixels: lighting rigs, cameras, color correction and post-processing chains, and particle emitters (render-technique-bound: billboards, GPGPU, blending). WebGPU/TSL node effects stay off this barrel — import them from /webgpu.',
+    example: `import { createBloomPass, createCameraController } from '@tuomashatakka/threejs-scenes/raster'`,
+  },
+  './compose': {
+    title:   'compose',
+    desc:    'Assembling and interacting with a scene: scene modules and view management, props and model loading, grouping/layout, animation, skyboxing, raycasting and declarative event binding. It decides WHAT is in the scene and how it responds, never how pixels are produced.',
+    example: `import { createSkybox, createPropRegistry } from '@tuomashatakka/threejs-scenes/compose'`,
+  },
+  './view': {
+    title:   'view',
+    desc:    'Binding a scene to the page: the renderer and canvas, the animation-frame loop and injectable clocks, raw pointer-gesture input, overlay compositing, screen projection, disposal, and device-tier quality detection. Nothing in this layer knows what the scene contains.',
+    example: `import { createRenderer, createFrameLoop } from '@tuomashatakka/threejs-scenes/view'`,
+  },
+  './state': {
+    title:   'state',
+    desc:    'Unidirectional data flow as a first-class layer: the serializable store, the controller protocol (any { get, subscribe } is a valid state source; plain objects are wrapped), and tween/lerp transition helpers so state changes animate instead of snapping. State flows one way — nothing writes back.',
+    example: `import { createStore, tweened } from '@tuomashatakka/threejs-scenes/state'`,
+  },
+  './scaffold': {
+    title:   'scaffold',
+    desc:    'Genre-level wiring in one call. Each scaffold accepts a plain object, a store, or a { get, subscribe } controller as its state source, wraps the shared createApp runtime, and returns the app plus its genre-specific handles: iso, orbit, tpp, rails, fps.',
+    example: `import { createIsoScaffold, createOrbitScaffold } from '@tuomashatakka/threejs-scenes/scaffold'`,
   },
   './webgpu': {
     title:   'webgpu effects',
@@ -168,38 +190,9 @@ const DESCRIPTIONS: Record<string, { title: string, desc: string, example?: stri
   },
 }
 
-// First matching rule wins. Tuned against the root barrel (326 exports) so
-// the api/library page can group by topic instead of one flat alphabetical
-// list — order matters, more specific keywords come before generic ones.
-const CATEGORY_RULES: Array<{ id: string, label: string, pattern: RegExp }> = [
-  { id: 'app-lifecycle',    label: 'App & Lifecycle',      pattern: /app|clock|store|renderer|frame|resize|pointer|dispose|quality|overlay|projection|bootstrap|loop|reducer|state|controller/ },
-  { id: 'camera',           label: 'Camera & Rigs',        pattern: /camera|iso|follow|target|path|orbit|scaffold|rails|tpp|fps|fly/ },
-  { id: 'instancing',       label: 'Instancing',           pattern: /instance|batched|building/ },
-  { id: 'geometry',         label: 'Geometry',             pattern: /shape|extrude|lathe|geometry|mesh|graph|ground|tube|merge|layout|twist|bend|taper|edge|normal|bounds|group\b/ },
-  { id: 'materials',        label: 'Materials',            pattern: /material|toon|matcap|holographic|shader|triplanar|quad/ },
-  { id: 'lighting',         label: 'Lighting & Environment', pattern: /light|sun|environment|hemisphere|sky/ },
-  { id: 'particles',        label: 'Particles',            pattern: /particle|emitter|curve|spawn/ },
-  { id: 'post-processing',  label: 'Post-processing',      pattern: /post|pass|composer|bloom|glitch|rays|dof|film|grain|stereo|lut|chromatic|radial|outline|ssr|smaa|fxaa|retro|crt|lensing|burn|hud|beam|afterimage|anamorphic|motionblur|pixel|sobel|traa|ssao|ssgi|sss|transition|masking|mask|difference|scenepass/ },
-  { id: 'voxels',           label: 'Voxels',                pattern: /voxel|chunk|greedy/ },
-  { id: 'props',            label: 'Props & Loading',      pattern: /prop|registry|gltf|model|format_loaders/ },
-  { id: 'animation',        label: 'Animation',             pattern: /animation|clip|track|mixer|tween|easing/ },
-  { id: 'architecture',     label: 'Architecture & State',  pattern: /module\b|pool|param|pick|view|edit|event|composite|disposable|click.?guard/ },
-  { id: 'procedural-math',  label: 'Procedural & Math',     pattern: /rng|noise|poisson|procedural|body|texture|segment|hash|lerp|smoothstep|mulberry|vector3|tuple|point2|axis|transform/ },
-]
-const FALLBACK_CATEGORY = { id: 'core-utilities', label: 'Core & Misc' }
-
-// Only group a module's exports by topic once it's large enough to need it —
-// small modules (webgpu/jsx/jsx-runtime) mostly miss these three.js-domain
-// keywords and would just pile into the fallback bucket.
-const CATEGORY_GROUPING_THRESHOLD = 100
-
-function categorize (name: string, kind: string): { id: string, label: string } {
-  const lower = `${name} ${kind}`.toLowerCase()
-  for (const rule of CATEGORY_RULES)
-    if (rule.pattern.test(lower))
-      return { id: rule.id, label: rule.label }
-  return FALLBACK_CATEGORY
-}
+// v2: exports group by concern via the six domain subpaths (primitives /
+// raster / compose / view / state / scaffold), so the docs page renders one
+// section per module and the old keyword-category heuristic is gone.
 
 const DEMO_CATALOG = [
   { slug: 'bootstrap', label: 'Bootstrap', caption: 'createApp state flow, fixed-step clock, seeded emitter, and click-to-reseed interaction.' },
@@ -226,6 +219,10 @@ const DEMO_CATALOG = [
   { slug: 'voxels', label: 'Voxels', caption: 'VoxelChunk storage and greedy meshing terrain.' },
   { slug: 'architecture', label: 'Architecture', caption: 'Scene modules, material pools, pick introspection, and cleanup ownership.' },
   { slug: 'icaras-foundry', label: 'Icaras Foundry', caption: 'A complete stylized ship-forge scene with bloom, beams, particles, and blueprint mode.' },
+  { slug: 'rural-village', label: 'Rural village', caption: 'A seeded isometric hamlet — barns, cobblestone paths linking neighborhoods, fences, animals, and scattered trees, all instanced.' },
+  { slug: 'voxel-forge', label: 'Voxel forge', caption: 'Interactive voxel sculpting — paint blocks into a chunk and watch the primitives greedy-mesher rebuild one draw call.' },
+  { slug: 'hearthollow', label: 'Hearthollow', caption: 'A living town map — procedurally scattered houses, roads, and props under a library isometric camera.' },
+  { slug: 'vallila', label: 'Vallila', caption: 'Slow Burn in Vallila — an isometric narrative diorama driven by the library camera, lighting, and props.' },
 ] as const
 
 const SKILL_CASES: SkillCase[] = [
@@ -257,7 +254,7 @@ const SKILL_CASES: SkillCase[] = [
     summary: 'choose InstancedMesh, BatchedMesh, billboards, chunk managers, and origin rebasing for large worlds.',
     demoMode: 'live',
     tags: [ 'instancing', 'billboards', 'infinite' ],
-    demos: [ 'instanced-field', 'batched-buildings', 'isometric-infinite' ],
+    demos: [ 'instanced-field', 'batched-buildings', 'isometric-infinite', 'rural-village' ],
     refs: [ 'instancing.md', 'billboards.md', 'isometric-and-infinite-scenes.md', 'performance.md' ],
     scripts: [ 'instancing-grass.js', 'batched-buildings.js', 'sprite-batch.js', 'chunk-manager.js', 'iso-camera.js' ],
     checklist: [ 'one geometry repeated -> InstancedMesh', 'varied geometry same material -> BatchedMesh', 'rebase open worlds' ],
@@ -1051,7 +1048,6 @@ function extractLibrary (): LibraryData {
         ts.displayPartsToString(sym.getDocumentationComment(checker))
       const name = sym.getName()
       const kind = KIND[decls[0]!.kind] ?? 'value'
-      const cat  = categorize(name, kind)
       const entry: DocExport = {
         name,
         kind,
@@ -1061,8 +1057,6 @@ function extractLibrary (): LibraryData {
         coverage:      'type-reference',
         sample:        '',
         relatedDemos:  [],
-        category:      cat.id,
-        categoryLabel: cat.label,
       }
       const seed = createPlaySeed(module, entry)
       entry.playSeed = seed
@@ -1075,13 +1069,7 @@ function extractLibrary (): LibraryData {
     const rank = (k: string): number => k === 'function' || k === 'class' ? 0 : k === 'const' || k === 'enum' ? 1 : 2
     exports.sort((a, b) => rank(a.kind) - rank(b.kind) || a.name.localeCompare(b.name))
 
-    const categories: LibraryCategory[] = exports.length > CATEGORY_GROUPING_THRESHOLD
-      ? [ ...CATEGORY_RULES.map(rule => ({ id: rule.id, label: rule.label })), FALLBACK_CATEGORY ]
-        .map(cat => ({ ...cat, count: exports.filter(e => e.category === cat.id).length }))
-        .filter(cat => cat.count > 0)
-      : []
-
-    return { ...module, exports, categories }
+    return { ...module, exports }
   })
 
   const flat = modulesWithExports.flatMap(module => module.exports)

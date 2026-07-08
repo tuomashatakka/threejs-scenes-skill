@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<!--
+  vallila.html — "Slow Burn in Vallila" narrative iso diorama, library-backed
+  ────────────────────────────────────────────────────────────────────────────
+  A four-chapter romance plays out across a procedural Helsinki neighbourhood:
+  Elena and Lukas keep crossing paths until, under a Vallila streetlamp, a
+  romance begins. Adapted from a standalone three.js file to run on
+  @tuomashatakka/threejs-scenes.
+
+  Library integration (the standalone hand-rolled all of this):
+    - createIsoScaffold  → orthographic iso camera + drag-pan + pinch/wheel zoom
+                            + renderer + frame loop + resize (replaces OrbitControls)
+    - setupStandardLighting → sun + hemi + IBL, whose handles drive a day→night
+                              cycle (afternoon → golden hour → sunset → dusk)
+    - raster.createComposer + raster.createGradePass → bloom + cinematic grade
+    - compose.createProp / defineProp → the pulsing heart marker (spin+pulse+bob
+      clips) and the eight street lamps (each an embedded PointLight)
+    - compose.layoutGrid → the allotment-garden cottage cluster
+    - primitives.createSeededRng / poissonDisk → deterministic, evenly-spaced trees
+    - createExtrudedMesh, createStandardMaterial, spin/bob/pulseScaleClip
+
+  Data flows one way: input → Story controller (dispatch) → module.update reads
+  Story and writes the scene. The seeded rng makes the town identical every load.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>threejs-scenes · slow burn in vallila</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0a0f1d; overflow: hidden;
+      font-family: ui-monospace, monospace; user-select: none }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #fecdd3;
+      background: rgba(12, 8, 20, 0.6); border: 1px solid #4a2338; border-radius: 6px;
+      font-size: 12px; line-height: 1.6; pointer-events: none; max-width: 260px }
+    b { color: #f9a8d4 }
+    #loading { position: fixed; inset: 0; display: grid; place-items: center;
+      color: #fecdd3; font-size: 14px; letter-spacing: 0.12em; pointer-events: none;
+      transition: opacity 0.8s ease; background: #0a0f1d }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>threejs-scenes · <b>slow burn in vallila</b></div>
+      <div>drag to pan · wheel / pinch to zoom</div>
+      <div>tap the <b>heart</b> or a <b>character</b> · sound on tap</div>
+    </aside>
+  </main>
+  <div id="loading">GENERATING VALLILA, HELSINKI…</div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three":          "https://esm.sh/three@0.184.0",
+      "three/addons/":  "https://esm.sh/three@0.184.0/addons/",
+      "@tuomashatakka/canvas-loop-framecapper": "../lib/vendor/canvas-loop-framecapper/index.js",
+      "react": "https://esm.sh/react@19",
+      "@scenes":        "../lib/dist/index.js"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import {
+      createIsoScaffold,
+      setupStandardLighting,
+      createStandardMaterial,
+      createExtrudedMesh,
+      spinClip, bobClip, pulseScaleClip,
+      primitives, raster, compose,
+    } from '@scenes'
+
+    const { createSeededRng, poissonDisk } = primitives
+    const { createComposer, createGradePass }  = raster
+    const { createProp, defineProp, layoutGrid } = compose
+
+    const SEED = 20240708
+    const rng  = createSeededRng(SEED)
+
+    // ══════════════════════════════════════════════════════════════════════
+    // 1. STORY MODEL — the single source of narrative truth
+    // ══════════════════════════════════════════════════════════════════════
+    const Story = {
+      city: {
+        bounds: { minX: -140, maxX: 140, minZ: -140, maxZ: 140 },
+        terrain: {
+          hills: [
+            { cx: 50, cz: -50, radius: 85, height: 14 },
+            { cx: -60, cz: 60, radius: 70, height: 10 },
+            { cx: 80, cz: 80, radius: 50, height: 7 },
+          ],
+          waterBodies: [
+            { id: 'lake', cx: 60, cz: 60, radius: 35, depth: 4 },
+            { id: 'river', width: 10, path: [
+              { x: 30, z: 45 }, { x: 10, z: 55 }, { x: -30, z: 65 }, { x: -80, z: 90 }, { x: -140, z: 120 },
+            ] },
+          ],
+        },
+        zones: {
+          puuVallila: { cx: 40, cz: -45, radius: 60, type: 'wooden' },
+          central:    { cx: -45, cz: -40, radius: 60, type: 'modern' },
+          konepaja:   { cx: -40, cz: 40, radius: 55, type: 'industrial' },
+          allotment:  { cx: 55, cz: 50, radius: 55, type: 'park' },
+        },
+      },
+      characters: [
+        { id: 'elena', name: 'Elena', color: 0xff6688, avatar: '🌸',
+          position: { x: -35, z: -30 }, targetPosition: { x: -35, z: -30 }, path: [], speed: 18,
+          thought: 'Checking library records… where could he be?', blushing: false, blushTime: 0 },
+        { id: 'lukas', name: 'Lukas', color: 0x4488ff, avatar: '☕',
+          position: { x: 35, z: -40 }, targetPosition: { x: 35, z: -40 }, path: [], speed: 18,
+          thought: 'Walking down Puu-Vallila. The rain has finally cleared up.', blushing: false, blushTime: 0 },
+      ],
+      story: {
+        activeIndex: 0,
+        narrative: 'Lukas and Elena live in the cozy neighborhood of Vallila. They keep crossing paths, but neither has found the words yet.',
+        timeOfDay: 14.5,
+        chapters: [
+          { title: '1. The Literary Cafe',
+            description: 'Elena leaves the library for coffee at Cafe Suvanto. Lukas, restless, decides to stop by too.',
+            time: 15.0, eventLocation: { x: 15, z: -15 }, completed: false, actionsTriggered: false,
+            setup () {
+              setCharPath('elena', [{ x: -10, z: -25 }, { x: 15, z: -15 }])
+              setCharPath('lukas', [{ x: 30, z: -25 }, { x: 15, z: -15 }])
+              setThought('elena', 'Heading to Cafe Suvanto. Best cardamom buns in town.')
+              setThought('lukas', 'I need a warm coffee. Café Suvanto is quiet today.')
+            },
+            onArrive () {
+              setThought('elena', "Oh, he's here too… sitting right by the window.")
+              setThought('lukas', 'She’s wearing that pink scarf again. She looks beautiful.')
+              Story.story.narrative = 'Over warm filter coffee and cardamom buns, their eyes lock. A quiet smile is exchanged.'
+            } },
+          { title: '2. The Lilac Walkway',
+            description: 'As twilight sets in, they walk parallel paths along the wooden houses of Puu-Vallila.',
+            time: 18.5, eventLocation: { x: 55, z: -35 }, completed: false, actionsTriggered: false,
+            setup () {
+              setCharPath('elena', [{ x: 30, z: -25 }, { x: 45, z: -30 }, { x: 55, z: -35 }])
+              setCharPath('lukas', [{ x: 25, z: -20 }, { x: 40, z: -28 }, { x: 55, z: -35 }])
+              setThought('elena', 'The golden light makes these old wooden walls look magical.')
+              setThought('lukas', 'I should say something… maybe just ask about her book.')
+            },
+            onArrive () {
+              setThought('elena', 'We ended up at the exact same lane. My hands are shaking.')
+              setThought('lukas', "I took a breath. 'Hi, Elena. Quite a beautiful evening, isn't it?'")
+              Story.story.narrative = 'Beneath the blooming lilac bushes of Puu-Vallila, they share their first real conversation.'
+            } },
+          { title: '3. Sunset at the Gardens',
+            description: 'Lukas invites her toward the Vallila allotment gardens to watch the sunset over the pond.',
+            time: 20.8, eventLocation: { x: 55, z: 40 }, completed: false, actionsTriggered: false,
+            setup () {
+              setCharPath('elena', [{ x: 65, z: -10 }, { x: 60, z: 15 }, { x: 55, z: 40 }])
+              setCharPath('lukas', [{ x: 62, z: -12 }, { x: 58, z: 18 }, { x: 55, z: 40 }])
+              setThought('elena', 'Our shoulders brushed… it felt warm.')
+              setThought('lukas', 'The way the low sun catches her profile is breathtaking.')
+            },
+            onArrive () {
+              setThought('elena', "Listening to him talk about his dreams… I don't want this walk to end.")
+              setThought('lukas', "She has the sweetest laugh. I'm falling for her, completely.")
+              Story.story.narrative = 'Beside the sleepy allotment plots they watch the sky burn rose-gold. Time seems to slow.'
+            } },
+          { title: '4. Under the Streetlights',
+            description: 'As night falls they reach the park bench by the water, talking deeply under a single warm lamp.',
+            time: 23.0, eventLocation: { x: 0, z: 50 }, completed: false, actionsTriggered: false,
+            setup () {
+              setCharPath('elena', [{ x: 30, z: 45 }, { x: 0, z: 50 }])
+              setCharPath('lukas', [{ x: 28, z: 47 }, { x: 0, z: 50 }])
+              setThought('elena', "It's dark, but I feel incredibly safe with him.")
+              setThought('lukas', 'This is the moment. Tell her.')
+            },
+            onArrive () {
+              setThought('elena', 'He took my hand! His hand is so warm…')
+              setThought('lukas', "'I've wanted to talk to you for months, Elena.' She squeezed back.")
+              Story.story.narrative = 'Under the amber glow of a Vallila lantern, they hold hands as the leaves rustle. A romance begins.'
+            } },
+        ],
+      },
+    }
+
+    function setCharPath (id, waypoints) {
+      const c = Story.characters.find(c => c.id === id)
+      if (c) { c.path = waypoints.slice(); c.targetPosition = waypoints[waypoints.length - 1] }
+    }
+    function setThought (id, text) {
+      const c = Story.characters.find(c => c.id === id)
+      if (c) c.thought = text
+    }
+    function dist2 (a, b) { const dx = a.x - b.x, dz = a.z - b.z; return Math.sqrt(dx * dx + dz * dz) }
+
+    // ── heightmap: gaussian hills, carved pond + winding river ──────────────
+    function getTerrainHeight (x, z) {
+      let h = 0
+      for (const hill of Story.city.terrain.hills) {
+        const dx = x - hill.cx, dz = z - hill.cz
+        const d2 = dx * dx + dz * dz, r2 = hill.radius * hill.radius
+        if (d2 < r2) h += hill.height * Math.max(0, Math.pow(1 - d2 / r2, 2))
+      }
+      const lake = Story.city.terrain.waterBodies[0]
+      const ld = Math.hypot(x - lake.cx, z - lake.cz)
+      if (ld < lake.radius + 15) { const t = Math.max(0, 1 - ld / (lake.radius + 15)); h = h * (1 - t) - lake.depth * t }
+      const river = Story.city.terrain.waterBodies[1]
+      let rmin = Infinity
+      for (let i = 0; i < river.path.length - 1; i++) {
+        const p1 = river.path[i], p2 = river.path[i + 1]
+        const d = distToSegment({ x, y: z }, { x: p1.x, y: p1.z }, { x: p2.x, y: p2.z })
+        if (d < rmin) rmin = d
+      }
+      const rHalf = river.width / 2
+      if (rmin < rHalf + 12) { const t = Math.max(0, 1 - rmin / (rHalf + 12)); h = h * (1 - t) - 3.5 * Math.pow(t, 1.5) }
+      return h
+    }
+    function distToSegment (p, v, w) {
+      const l2 = (v.x - w.x) ** 2 + (v.y - w.y) ** 2
+      if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y)
+      let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2
+      t = Math.max(0, Math.min(1, t))
+      return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)))
+    }
+
+    // ── minimal procedural audio (self-contained, inits on first tap) ───────
+    const Audio = {
+      ctx: null,
+      init () { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)() },
+      chime () {
+        this.init(); if (!this.ctx) return
+        const now = this.ctx.currentTime
+        ;[261.63, 329.63, 392.0, 523.25].forEach((f, i) => {
+          const o = this.ctx.createOscillator(), g = this.ctx.createGain()
+          o.type = 'sine'; o.frequency.setValueAtTime(f, now + i * 0.12)
+          g.gain.setValueAtTime(0, now + i * 0.12)
+          g.gain.linearRampToValueAtTime(0.14, now + i * 0.12 + 0.05)
+          g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.12 + 1.2)
+          o.connect(g); g.connect(this.ctx.destination)
+          o.start(now + i * 0.12); o.stop(now + i * 0.12 + 1.5)
+        })
+      },
+      blush () {
+        this.init(); if (!this.ctx) return
+        const now = this.ctx.currentTime
+        const o = this.ctx.createOscillator(), g = this.ctx.createGain()
+        o.type = 'triangle'
+        o.frequency.setValueAtTime(349.23, now); o.frequency.exponentialRampToValueAtTime(698.46, now + 0.3)
+        g.gain.setValueAtTime(0.1, now); g.gain.exponentialRampToValueAtTime(0.0001, now + 0.4)
+        o.connect(g); g.connect(this.ctx.destination)
+        o.start(now); o.stop(now + 0.5)
+      },
+    }
+
+    // ── story controller: input + tick both flow through here ───────────────
+    let spawnHearts = () => {}
+    function dispatch (action) {
+      const s = Story.story
+      const chap = s.chapters[s.activeIndex]
+      switch (action.type) {
+        case 'START_EVENT':
+          if (chap && !chap.actionsTriggered) { chap.actionsTriggered = true; chap.setup(); Audio.chime() }
+          break
+        case 'TICK': {
+          const dt = action.dt
+          let moving = false
+          for (const c of Story.characters) {
+            if (c.path.length) {
+              moving = true
+              const n = c.path[0]
+              const dx = n.x - c.position.x, dz = n.z - c.position.z
+              const d = Math.hypot(dx, dz)
+              if (d < 0.6) { c.position.x = n.x; c.position.z = n.z; c.path.shift() }
+              else { const r = (c.speed * dt) / d; c.position.x += dx * r; c.position.z += dz * r }
+            }
+            if (c.blushing) { c.blushTime -= dt; if (c.blushTime <= 0) { c.blushing = false; c.thought = c.oldThought || c.thought } }
+          }
+          if (chap && chap.actionsTriggered) {
+            const diff = chap.time - s.timeOfDay
+            if (Math.abs(diff) > 0.05) s.timeOfDay += diff * dt * 0.6
+          }
+          if (chap && chap.actionsTriggered && !chap.completed && !moving) {
+            const arrived = Story.characters.every(c => dist2(c.position, chap.eventLocation) < 3.0)
+            if (arrived) {
+              chap.completed = true; chap.onArrive(); Audio.chime()
+              spawnHearts(chap.eventLocation.x, getTerrainHeight(chap.eventLocation.x, chap.eventLocation.z) + 4, chap.eventLocation.z, 24)
+            }
+          }
+          break
+        }
+        case 'TAP_BOARD':
+          if (chap && chap.completed) {
+            if (s.activeIndex < s.chapters.length - 1) {
+              s.activeIndex++; s.narrative = s.chapters[s.activeIndex].description; Audio.chime()
+            } else {
+              // wrap the loop
+              s.activeIndex = 0; s.timeOfDay = 14.5; s.narrative = s.chapters[0].description
+              for (const c of s.chapters) { c.completed = false; c.actionsTriggered = false }
+              Story.characters[0].position = { x: -35, z: -30 }; Story.characters[0].path = []
+              Story.characters[1].position = { x: 35, z: -40 }; Story.characters[1].path = []
+              setThought('elena', 'Checking library records… where could he be?')
+              setThought('lukas', 'Walking down Puu-Vallila. The rain has finally cleared up.')
+              Audio.chime()
+            }
+          } else dispatch({ type: 'START_EVENT' })
+          break
+        case 'TAP_CHARACTER': {
+          const c = Story.characters.find(c => c.id === action.id)
+          if (c && !c.blushing) {
+            c.blushing = true; c.blushTime = 3.0; c.oldThought = c.thought
+            c.thought = rng.pick([
+              'Oh! My heart skipped a beat just now…',
+              'Is it warm out here, or is it just me?',
+              "I… I hope they didn't notice me blushing.",
+              'Vallila always looks so romantic under this light.',
+            ])
+            Audio.blush()
+            spawnHearts(c.position.x, getTerrainHeight(c.position.x, c.position.z) + 6, c.position.z, 8)
+          }
+          break
+        }
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // 2. VIEW — built once in module.build, projected each module.update
+    // ══════════════════════════════════════════════════════════════════════
+    const refs = {
+      chars: {}, lamps: [], particles: [],
+      waterAttr: null, waterY: [], heartMesh: null, markerAnchor: null,
+      signGroup: null, signCtx: null, signTex: null, prevTime: -1, disposers: [],
+    }
+    const canvas = document.getElementById('scene')
+
+    function buildTerrain (scene) {
+      const geo = new THREE.PlaneGeometry(320, 320, 120, 120)
+      geo.rotateX(-Math.PI / 2)
+      const pos = geo.attributes.position
+      const cols = []
+      const cWood = new THREE.Color(0x9a9e7a), cPark = new THREE.Color(0x406d40)
+      const cMod  = new THREE.Color(0x6e757a), cInd  = new THREE.Color(0x5e5652), cShore = new THREE.Color(0x8f8c7e)
+      for (let i = 0; i < pos.count; i++) {
+        const vx = pos.getX(i), vz = pos.getZ(i)
+        const h = getTerrainHeight(vx, vz); pos.setY(i, h)
+        let r = 0, g = 0, b = 0, tw = 0
+        for (const key in Story.city.zones) {
+          const z = Story.city.zones[key]
+          const d = dist2({ x: vx, z: vz }, { x: z.cx, z: z.cz })
+          const w = 1 / (Math.pow(d / z.radius, 4) + 0.001)
+          const col = z.type === 'wooden' ? cWood : z.type === 'park' ? cPark : z.type === 'industrial' ? cInd : cMod
+          r += col.r * w; g += col.g * w; b += col.b * w; tw += w
+        }
+        const col = new THREE.Color(r / tw, g / tw, b / tw)
+        if (h < 1.0 && h > -3.0) col.lerp(cShore, 1 - Math.max(0, Math.min(1, (h + 3) / 4)))
+        cols.push(col.r, col.g, col.b)
+      }
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3))
+      geo.computeVertexNormals()
+      const mesh = new THREE.Mesh(geo, createStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0.05, flatShading: true }))
+      mesh.receiveShadow = true
+      scene.add(mesh)
+    }
+
+    function buildWater (scene) {
+      const geo = new THREE.PlaneGeometry(350, 350, 60, 60)
+      geo.rotateX(-Math.PI / 2)
+      refs.waterAttr = geo.attributes.position
+      for (let i = 0; i < refs.waterAttr.count; i++) refs.waterY.push(refs.waterAttr.getY(i))
+      const mesh = new THREE.Mesh(geo, createStandardMaterial({ color: 0x1b3c4f, roughness: 0.15, metalness: 0.85, transparent: true, opacity: 0.82, flatShading: true }))
+      mesh.position.y = -1.8; mesh.receiveShadow = true
+      scene.add(mesh)
+    }
+
+    // ── deterministic, evenly-spaced foliage via poisson-disk sampling ──────
+    function buildFlora (scene) {
+      const trunk  = createStandardMaterial({ color: 0x5c4033, roughness: 0.9 })
+      const birch  = createStandardMaterial({ color: 0xe5e7eb, roughness: 0.9 })
+      const cherry = createStandardMaterial({ color: 0xfaafbe, roughness: 0.8, flatShading: true })
+      const green  = createStandardMaterial({ color: 0x4d7c0f, roughness: 0.8, flatShading: true })
+      const pine   = createStandardMaterial({ color: 0x14532d, roughness: 0.8, flatShading: true })
+      const group = new THREE.Group()
+
+      const addTree = (x, z, type, scale) => {
+        const th = getTerrainHeight(x, z); if (th < -1.0) return
+        const t = new THREE.Group()
+        const th2 = type === 'pine' ? 5 : 4
+        const tm = new THREE.Mesh(new THREE.CylinderGeometry(0.3 * scale, 0.4 * scale, th2 * scale, 5), type === 'birch' ? birch : trunk)
+        tm.position.y = (th2 / 2) * scale; tm.castShadow = true; t.add(tm)
+        if (type === 'pine') {
+          for (let i = 0; i < 3; i++) {
+            const r = new THREE.Mesh(new THREE.ConeGeometry((1.8 - i * 0.4) * scale, 2.2 * scale, 5), pine)
+            r.position.y = (3.5 + i * 1.5) * scale; r.castShadow = true; t.add(r)
+          }
+        } else {
+          const c = new THREE.Mesh(new THREE.DodecahedronGeometry(2.0 * scale, 1), type === 'cherry' ? cherry : green)
+          c.position.y = (th2 + 0.8) * scale; c.castShadow = true; t.add(c)
+        }
+        t.position.set(x, th, z); group.add(t)
+      }
+
+      // scatter each zone in its own poisson field, mapped to world coordinates
+      const scatter = (box, minDist, label, choose) => {
+        const pts = poissonDisk({ width: box.w, height: box.h, minDist, rng: rng.fork(label).next })
+        for (const [px, pz] of pts) { const [type, scale] = choose(); addTree(box.x + px, box.z + pz, type, scale) }
+      }
+      scatter({ x: 10, z: -80, w: 80, h: 60 }, 9,  'puu',   () => [rng.next() > 0.45 ? 'cherry' : 'birch', 0.7 + rng.next() * 0.5])
+      scatter({ x: 15, z: 15,  w: 95, h: 95 }, 11, 'park',  () => [rng.next() > 0.3 ? 'birch' : 'pine',   0.8 + rng.next() * 0.6])
+      scatter({ x: -100, z: -90, w: 60, h: 50 }, 12, 'central', () => ['birch', 0.6 + rng.next() * 0.4])
+      scene.add(group)
+
+      // benches
+      const metal = createStandardMaterial({ color: 0x1f2937, roughness: 0.5 })
+      for (const b of [{ x: 0, z: 50, rot: Math.PI / 2 }, { x: 12, z: -20, rot: 0 }, { x: 55, z: 35, rot: -Math.PI / 4 }]) {
+        const g = new THREE.Group()
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.2, 1.2), trunk); seat.position.y = 0.8; seat.castShadow = true
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 1.0), metal); leg.position.set(-1.8, 0.4, 0); leg.castShadow = true
+        const leg2 = leg.clone(); leg2.position.x = 1.8
+        g.add(seat, leg, leg2); g.position.set(b.x, getTerrainHeight(b.x, b.z), b.z); g.rotation.y = b.rot
+        scene.add(g)
+      }
+    }
+
+    // ── street lamps as compose props, each with an embedded PointLight ─────
+    function buildLamps (scene, loop) {
+      const metal = createStandardMaterial({ color: 0x1f2937, roughness: 0.5 })
+      const glass = createStandardMaterial({ color: 0xfffbeb, emissive: 0xfef08a, roughness: 0.1 })
+      const lampFactory = defineProp({
+        name: 'street-lamp',
+        build () {
+          const g = new THREE.Group()
+          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 7, 5), metal); post.position.y = 3.5; post.castShadow = true
+          const arm  = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.12, 0.12), metal); arm.position.set(0.4, 6.8, 0)
+          const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.35, 6, 6), glass.clone()); bulb.position.set(0.9, 6.4, 0)
+          g.add(post, arm, bulb); g.userData.bulb = bulb
+          return g
+        },
+        lights () { const pl = new THREE.PointLight(0xfef08a, 0, 34, 1.6); pl.position.set(0.9, 6.3, 0); return [pl] },
+      })
+      const locs = [
+        { x: 15, z: -8 }, { x: 30, z: -25 }, { x: 50, z: -30 }, { x: 55, z: 20 },
+        { x: 25, z: 40 }, { x: 0, z: 47 }, { x: -35, z: -22 }, { x: -15, z: 30 },
+      ]
+      for (const loc of locs) {
+        const lamp = createProp(lampFactory, { loop })
+        lamp.object.position.set(loc.x, getTerrainHeight(loc.x, loc.z), loc.z)
+        scene.add(lamp.object)
+        refs.lamps.push({ light: lamp.lights[0], bulb: lamp.object.userData.bulb })
+        refs.disposers.push(lamp.dispose)
+      }
+    }
+
+    // ── procedural Vallila architecture ─────────────────────────────────────
+    function buildTown (scene) {
+      const wood = [0xdca134, 0x8f3c30, 0x5a755a, 0x8ca6ba]
+      const mod  = [0xdfdbd4, 0xb8b2a9, 0xa39d94]
+      const ind  = [0x7a3a2f, 0x5c2b22, 0x4d211a]
+      const winMat = createStandardMaterial({ color: 0x1e293b, emissive: 0xfef08a, emissiveIntensity: 0.15, roughness: 0.1 })
+      const winGeo = new THREE.PlaneGeometry(1.1, 1.6)
+
+      const make = (x, z, style, width, depth, floors, customCol, targetGroup) => {
+        const bg = new THREE.Group()
+        const floorH = style === 'industrial' ? 6 : style === 'modern' ? 4.5 : 3.8
+        const baseH = floorH * floors
+        const bodyCol = customCol ?? rng.pick(style === 'wooden' ? wood : style === 'modern' ? mod : ind)
+        const bodyMat = createStandardMaterial({ color: bodyCol, roughness: style === 'modern' ? 0.85 : 0.65, metalness: style === 'modern' ? 0.1 : 0, flatShading: true })
+        const body = new THREE.Mesh(new THREE.BoxGeometry(width, baseH, depth), bodyMat)
+        body.position.y = baseH / 2; body.castShadow = true; body.receiveShadow = true; bg.add(body)
+
+        if (style === 'wooden' || style === 'industrial') {
+          const rH = style === 'industrial' ? 4.5 : 3.0
+          const shape = new THREE.Shape()
+          shape.moveTo(-width / 2 - 0.4, 0); shape.lineTo(0, rH); shape.lineTo(width / 2 + 0.4, 0); shape.closePath()
+          const roof = createExtrudedMesh({
+            shape, depth: depth + 0.8, bevel: false,
+            material: createStandardMaterial({ color: style === 'industrial' ? 0x22252a : 0x7a2922, roughness: 0.85 }),
+          })
+          roof.rotation.y = Math.PI / 2; roof.position.y = baseH + rH / 2; bg.add(roof)
+        } else {
+          const para = new THREE.Mesh(new THREE.BoxGeometry(width + 0.2, 0.4, depth + 0.2), bodyMat); para.position.y = baseH + 0.2; bg.add(para)
+        }
+
+        const cols = Math.floor((width - 2) / 3.2)
+        for (let f = 0; f < floors; f++) {
+          const fY = f * floorH + floorH / 2 + 0.3
+          for (let c = 0; c < cols; c++) {
+            const oX = -((cols - 1) * 3.2) / 2 + c * 3.2
+            const wf = new THREE.Mesh(winGeo, winMat); wf.position.set(oX, fY, depth / 2 + 0.05); bg.add(wf)
+            const wb = wf.clone(); wb.position.z = -depth / 2 - 0.05; wb.rotation.y = Math.PI; bg.add(wb)
+          }
+        }
+        bg.position.set(x, getTerrainHeight(x, z), z)
+        ;(targetGroup ?? scene).add(bg)
+        return bg
+      }
+
+      // Puu-Vallila wooden zone
+      make(15, -15, 'wooden', 14, 10, 2, 0xdca134) // Cafe Suvanto
+      make(42, -24, 'wooden', 11, 8, 2, 0x8f3c30); make(40, -42, 'wooden', 12, 9, 2, 0x5a755a)
+      make(60, -32, 'wooden', 11, 8, 2, 0x8ca6ba); make(62, -50, 'wooden', 12, 8, 2, 0xdca134)
+      make(78, -40, 'wooden', 10, 8, 1, 0x8f3c30); make(76, -58, 'wooden', 12, 9, 2, 0x5a755a)
+      // Central modernist zone
+      make(-35, -28, 'modern', 20, 15, 3, 0xdfdbd4) // library
+      make(-65, -25, 'modern', 16, 11, 4); make(-60, -48, 'modern', 15, 12, 4)
+      make(-40, -56, 'modern', 14, 11, 3); make(-82, -40, 'modern', 15, 11, 5)
+      // Konepaja industrial halls
+      make(-20, 35, 'industrial', 24, 16, 2, 0x7a3a2f); make(-48, 28, 'industrial', 20, 14, 2, 0x5c2b22); make(-44, 52, 'industrial', 22, 14, 2, 0x4d211a)
+
+      // Allotment cottages arranged with compose.layoutGrid, then dropped onto terrain
+      const cottageGroup = new THREE.Group()
+      const cottages = []
+      for (let i = 0; i < 9; i++) cottages.push(make(0, 0, 'wooden', 5, 4.5, 1, wood[i % wood.length], cottageGroup))
+      layoutGrid(cottages, { cols: 3, spacing: 22, plane: 'xz' })
+      const allot = { x: 55, z: 50 }
+      cottageGroup.position.set(allot.x, 0, allot.z)
+      for (const c of cottages) c.position.y = getTerrainHeight(allot.x + c.position.x, allot.z + c.position.z)
+      scene.add(cottageGroup)
+    }
+
+    // ── narrative bulletin board (canvas texture) ───────────────────────────
+    function buildSignpost (scene) {
+      const g = new THREE.Group()
+      const woodMat = createStandardMaterial({ color: 0x4b3621, roughness: 0.9 })
+      const postL = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 7, 6), woodMat); postL.position.set(-3.2, 3.5, 0); postL.castShadow = true
+      const postR = postL.clone(); postR.position.x = 3.2
+      const board = new THREE.Mesh(new THREE.BoxGeometry(7, 4.5, 0.4), woodMat); board.position.set(0, 4.8, 0); board.castShadow = true
+      g.add(postL, postR, board)
+      const cv = document.createElement('canvas'); cv.width = 512; cv.height = 320
+      refs.signCtx = cv.getContext('2d'); refs.signTex = new THREE.CanvasTexture(cv)
+      const disp = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 4.1), new THREE.MeshBasicMaterial({ map: refs.signTex }))
+      disp.position.set(0, 4.8, 0.22); g.add(disp)
+      g.position.set(0, getTerrainHeight(0, -5), -5)
+      refs.signGroup = g; scene.add(g)
+      drawSignpost()
+    }
+    function wrap (ctx, text, x, y, maxW, lh) {
+      let line = ''
+      for (const word of text.split(' ')) {
+        const test = line + word + ' '
+        if (ctx.measureText(test).width > maxW && line) { ctx.fillText(line, x, y); line = word + ' '; y += lh } else line = test
+      }
+      ctx.fillText(line, x, y)
+    }
+    function drawSignpost () {
+      const ctx = refs.signCtx, chap = Story.story.chapters[Story.story.activeIndex]
+      ctx.fillStyle = '#fbf7f0'; ctx.fillRect(0, 0, 512, 320)
+      ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 6; ctx.strokeRect(12, 12, 488, 296)
+      ctx.fillStyle = '#1e1b4b'; ctx.font = 'bold 24px Georgia, serif'; ctx.fillText('Story Progression Bulletin', 32, 46)
+      ctx.strokeStyle = 'rgba(192,132,252,0.4)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(32, 60); ctx.lineTo(480, 60); ctx.stroke()
+      ctx.fillStyle = '#6b21a8'; ctx.font = 'italic bold 18px sans-serif'; ctx.fillText(chap.title, 32, 90)
+      const hrs = Math.floor(Story.story.timeOfDay), mins = String(Math.floor((Story.story.timeOfDay % 1) * 60)).padStart(2, '0')
+      ctx.fillStyle = '#475569'; ctx.font = 'bold 15px monospace'; ctx.fillText(`Helsinki — ${hrs}:${mins}`, 352, 90)
+      ctx.fillStyle = '#334155'; ctx.font = '16px sans-serif'
+      wrap(ctx, chap.actionsTriggered ? Story.story.narrative : chap.description, 32, 130, 448, 22)
+      ctx.fillStyle = '#db2777'; ctx.font = 'bold 15px sans-serif'
+      ctx.fillText(chap.completed ? '❤ TAP HEART TO CONTINUE THE SLOW BURN ❤' : chap.actionsTriggered ? '● CHARACTERS TRAVELING… ●' : '❤ TAP THE PULSE MARKER TO WALK ❤', 44, 285)
+      refs.signTex.needsUpdate = true
+    }
+
+    // ── characters with billboard speech bubbles ────────────────────────────
+    function makeBubble (name, avatar, thought, colorHex) {
+      const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256
+      const ctx = cv.getContext('2d')
+      const x = 16, y = 16, w = 480, h = 180, r = 24
+      ctx.fillStyle = 'rgba(15,23,42,0.88)'; ctx.strokeStyle = '#' + colorHex.toString(16).padStart(6, '0'); ctx.lineWidth = 4
+      ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+      ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+      ctx.lineTo(x + w / 2 + 15, y + h); ctx.lineTo(x + w / 2, y + h + 25); ctx.lineTo(x + w / 2 - 15, y + h)
+      ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y)
+      ctx.closePath(); ctx.fill(); ctx.stroke()
+      ctx.fillStyle = '#f8fafc'; ctx.font = 'bold 22px sans-serif'; ctx.fillText(`${avatar} ${name}`, 36, 52)
+      ctx.fillStyle = '#cbd5e1'; ctx.font = '16px sans-serif'; wrap(ctx, `"${thought}"`, 36, 92, 410, 24)
+      return new THREE.CanvasTexture(cv)
+    }
+    function buildCharacters (scene) {
+      for (const c of Story.characters) {
+        const g = new THREE.Group()
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.9, 3.2, 8), createStandardMaterial({ color: c.color, roughness: 0.6 }))
+        body.position.y = 1.6; body.castShadow = true; g.add(body)
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 8), createStandardMaterial({ color: 0xffdbac, roughness: 0.8 }))
+        head.position.y = 3.6; head.castShadow = true; g.add(head)
+        if (c.id === 'elena') {
+          const scarf = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.4, 8), createStandardMaterial({ color: 0xdb2777, roughness: 0.8 })); scarf.position.y = 3.1; g.add(scarf)
+        } else {
+          const book = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.1, 0.9), createStandardMaterial({ color: 0x1e3a8a, roughness: 0.5 })); book.position.set(0.8, 1.8, 0.5); book.rotation.z = 0.25; g.add(book)
+        }
+        const sprMat = new THREE.SpriteMaterial({ map: makeBubble(c.name, c.avatar, c.thought, c.color), depthWrite: false })
+        const spr = new THREE.Sprite(sprMat); spr.scale.set(24, 12, 1); spr.position.set(0, 9.2, 0); g.add(spr)
+        g.position.set(c.position.x, getTerrainHeight(c.position.x, c.position.z), c.position.z)
+        scene.add(g)
+        refs.chars[c.id] = { group: g, body, sprMat, prevThought: c.thought }
+      }
+    }
+
+    // ── heart marker: a compose prop with spin + pulse + bob clips ───────────
+    function buildHeart (scene, loop) {
+      const shape = new THREE.Shape()
+      shape.moveTo(0, 0)
+      shape.bezierCurveTo(0, 1.2, -1.5, 2.5, -3, 2.5)
+      shape.bezierCurveTo(-5.5, 2.5, -5.5, -0.5, -5.5, -0.5)
+      shape.bezierCurveTo(-5.5, -3, -3.5, -5.2, 0, -8)
+      shape.bezierCurveTo(3.5, -5.2, 5.5, -3, 5.5, -0.5)
+      shape.bezierCurveTo(5.5, -0.5, 5.5, 2.5, 3, 2.5)
+      shape.bezierCurveTo(1.5, 2.5, 0, 1.2, 0, 0)
+      const heartFactory = defineProp({
+        name: 'heart-marker',
+        build () {
+          const g = new THREE.Group()
+          const m = createExtrudedMesh({
+            shape, depth: 1.6, bevel: true, bevelSize: 0.5, bevelThickness: 0.5, bevelSegments: 3, steps: 1,
+            material: createStandardMaterial({ color: 0xdb2777, emissive: 0x9d174d, roughness: 0.25, metalness: 0.1 }),
+          })
+          m.rotation.x = Math.PI; m.scale.setScalar(0.6)   // point downward
+          g.add(m); g.userData.mesh = m
+          return g
+        },
+        // spin drives .quaternion, pulse drives .scale, bob drives .position — no conflict
+        clips: () => [spinClip('y', 2.4), pulseScaleClip(0.88, 1.12, 1.4), bobClip(1.2, 2.2)],
+      })
+      const heart = createProp(heartFactory, { loop })
+      refs.heartMesh = heart.object.userData.mesh
+      refs.markerAnchor = new THREE.Group(); refs.markerAnchor.add(heart.object)
+      scene.add(refs.markerAnchor)
+      refs.disposers.push(heart.dispose)
+    }
+
+    // ── floating heart-burst particles ──────────────────────────────────────
+    function initParticles (scene) {
+      const shape = new THREE.Shape()
+      shape.moveTo(0, 0)
+      shape.bezierCurveTo(0, 0.5, -0.6, 1.1, -1.2, 1.1)
+      shape.bezierCurveTo(-2.2, 1.1, -2.2, -0.2, -2.2, -0.2)
+      shape.bezierCurveTo(-2.2, -1.2, -1.4, -2.1, 0, -3.2)
+      shape.bezierCurveTo(1.4, -2.1, 2.2, -1.2, 2.2, -0.2)
+      shape.bezierCurveTo(2.2, -0.2, 2.2, 1.1, 1.2, 1.1)
+      shape.bezierCurveTo(0.6, 1.1, 0, 0.5, 0, 0)
+      const geo = new THREE.ShapeGeometry(shape); geo.center()
+      const palette = [0xf43f5e, 0xec4899, 0xd946ef, 0xfecdd3]
+      spawnHearts = (x, y, z, count = 24) => {
+        for (let i = 0; i < count; i++) {
+          const mat = new THREE.MeshBasicMaterial({ color: rng.pick(palette), transparent: true, opacity: 0.9, side: THREE.DoubleSide })
+          const m = new THREE.Mesh(geo, mat)
+          m.scale.setScalar(0.18); m.rotation.x = Math.PI
+          m.position.set(x + rng.range(-2, 2), y + rng.range(0, 2), z + rng.range(-2, 2))
+          scene.add(m)
+          refs.particles.push({ mesh: m, vel: new THREE.Vector3(rng.range(-1.5, 1.5), rng.range(4, 8), rng.range(-1.5, 1.5)), life: 1, decay: rng.range(0.35, 0.65) })
+        }
+      }
+      refs.disposers.push(() => geo.dispose())
+    }
+
+    // ── day → night: drives the setupStandardLighting handles + grade ───────
+    let lights = null, grade = null
+    const cA = new THREE.Color()
+    function updateDayNight (scene) {
+      const t = Story.story.timeOfDay
+      if (t === refs.prevTime) return
+      refs.prevTime = t
+      let sky, fog, sun, sunI, amb
+      if (t < 16.0) {
+        sky = new THREE.Color(0xb3e5fc); fog = new THREE.Color(0x0e1726); sun = new THREE.Color(0xfffaed); sunI = 1.3; amb = new THREE.Color(0xe0f2fe)
+      } else if (t < 19.5) {
+        const r = (t - 16.0) / 3.5
+        sky = new THREE.Color(0xb3e5fc).lerp(new THREE.Color(0xfde047), r); fog = new THREE.Color(0x0e1726).lerp(new THREE.Color(0x1e1b4b), r)
+        sun = new THREE.Color(0xfffaed).lerp(new THREE.Color(0xf97316), r); sunI = 1.3 - r * 0.4; amb = new THREE.Color(0xe0f2fe).lerp(new THREE.Color(0xffedd5), r)
+      } else if (t < 21.5) {
+        const r = (t - 19.5) / 2.0
+        sky = new THREE.Color(0xfde047).lerp(new THREE.Color(0xdb2777), r); fog = new THREE.Color(0x1e1b4b).lerp(new THREE.Color(0x090514), r)
+        sun = new THREE.Color(0xf97316).lerp(new THREE.Color(0xbe185d), r); sunI = 0.9 * (1 - r * 0.85); amb = new THREE.Color(0xffedd5).lerp(new THREE.Color(0xc084fc), r)
+      } else {
+        const r = Math.min(1, (t - 21.5) / 2.5)
+        sky = new THREE.Color(0xdb2777).lerp(new THREE.Color(0x090520), r); fog = new THREE.Color(0x090514).lerp(new THREE.Color(0x040209), r)
+        sun = new THREE.Color(0xbe185d).lerp(new THREE.Color(0x312e81), r); sunI = 0.12; amb = new THREE.Color(0xc084fc).lerp(new THREE.Color(0x1e1b4b), r)
+      }
+      scene.background = fog; scene.fog.color.copy(fog)
+      lights.sun.color.copy(sun); lights.sun.intensity = sunI
+      const a = (t / 24) * Math.PI * 2 + Math.PI
+      lights.sun.position.set(Math.cos(a) * 150, Math.sin(a) * 120 + 30, Math.sin(a) * 60)
+      lights.hemi.color.copy(sky); lights.hemi.groundColor.copy(amb); lights.hemi.intensity = 0.3 + sunI * 0.25
+      scene.environmentIntensity = 0.2 + Math.max(0, sunI) * 0.5
+      // warm the cinematic grade toward night, deepen its vignette
+      if (grade) { grade.uniforms.uTint.value.copy(cA.copy(amb).lerp(new THREE.Color(0xffffff), 0.55)); grade.uniforms.uVignette.value = t > 19.5 ? 0.55 : 0.35 }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // 3. THE MODULE — build once, project Story every tick
+    // ══════════════════════════════════════════════════════════════════════
+    const vallila = {
+      name: 'vallila',
+      build (ctx) {
+        ctx.scene.fog = new THREE.FogExp2(0x0a0f1d, 0.0035)
+        buildTerrain(ctx.scene)
+        buildWater(ctx.scene)
+        buildFlora(ctx.scene)
+        buildLamps(ctx.scene, ctx.loop)
+        buildTown(ctx.scene)
+        buildSignpost(ctx.scene)
+        buildCharacters(ctx.scene)
+        buildHeart(ctx.scene, ctx.loop)
+        initParticles(ctx.scene)
+      },
+      update (_state, frame, ctx) {
+        const dt = Math.min(frame.delta, 0.1), time = frame.elapsed
+        dispatch({ type: 'TICK', dt })
+
+        // characters: follow Story position, bob, face travel, blush, refresh bubbles
+        for (const c of Story.characters) {
+          const v = refs.chars[c.id]
+          const hY = getTerrainHeight(c.position.x, c.position.z)
+          v.group.position.set(c.position.x, hY, c.position.z)
+          if (c.path.length) {
+            v.group.position.y += Math.abs(Math.sin(time * 8)) * 0.35
+            v.group.rotation.y = THREE.MathUtils.lerp(v.group.rotation.y, Math.atan2(c.targetPosition.x - c.position.x, c.targetPosition.z - c.position.z), 0.15)
+          } else v.group.position.y += Math.sin(time * 2) * 0.08
+          if (c.blushing) { v.body.material.emissive.setHex(0x9d174d); v.body.material.emissiveIntensity = 0.45 }
+          else { v.body.material.emissive.setHex(0x000000); v.body.material.emissiveIntensity = 0 }
+          if (v.prevThought !== c.thought) { v.prevThought = c.thought; v.sprMat.map.dispose(); v.sprMat.map = makeBubble(c.name, c.avatar, c.thought, c.color) }
+        }
+
+        // water ripples
+        if (refs.waterAttr) {
+          for (let i = 0; i < refs.waterAttr.count; i++) {
+            const wx = refs.waterAttr.getX(i), wz = refs.waterAttr.getZ(i)
+            refs.waterAttr.setY(i, refs.waterY[i] + Math.sin(wx * 0.08 + time * 1.4) * 0.28 + Math.cos(wz * 0.08 + time * 1.1) * 0.22)
+          }
+          refs.waterAttr.needsUpdate = true
+        }
+
+        drawSignpost()
+
+        // heart marker: anchor to active waypoint (or back to the signpost once done)
+        const chap = Story.story.chapters[Story.story.activeIndex]
+        if (chap) {
+          if (chap.completed) {
+            refs.markerAnchor.position.set(0, getTerrainHeight(0, -5) + 9.5, -5)
+            refs.heartMesh.material.color.setHex(0xa855f7); refs.heartMesh.material.emissive.setHex(0x581c87)
+          } else {
+            const l = chap.eventLocation
+            refs.markerAnchor.position.set(l.x, getTerrainHeight(l.x, l.z) + 6, l.z)
+            refs.heartMesh.material.color.setHex(0xdb2777); refs.heartMesh.material.emissive.setHex(0x9d174d)
+          }
+        }
+
+        // lamps on at dusk
+        const dark = Story.story.timeOfDay > 18.0 || Story.story.timeOfDay < 6.0
+        for (const lamp of refs.lamps) {
+          lamp.light.intensity = THREE.MathUtils.lerp(lamp.light.intensity, dark ? 2.2 : 0, 0.08)
+          lamp.bulb.material.emissiveIntensity = THREE.MathUtils.lerp(lamp.bulb.material.emissiveIntensity, dark ? 1 : 0.05, 0.08)
+        }
+
+        updateDayNight(ctx.scene)
+        if (grade) grade.setTime(time)
+
+        // particles
+        for (let i = refs.particles.length - 1; i >= 0; i--) {
+          const p = refs.particles[i]
+          p.mesh.position.addScaledVector(p.vel, dt); p.vel.y -= 2 * dt
+          p.life -= p.decay * dt; p.mesh.scale.multiplyScalar(1 - dt * 0.4); p.mesh.material.opacity = p.life
+          if (p.life <= 0) { ctx.scene.remove(p.mesh); p.mesh.material.dispose(); refs.particles.splice(i, 1) }
+        }
+      },
+      dispose () {
+        for (const p of refs.particles) { p.mesh.material.dispose() }
+        refs.particles.length = 0
+        for (const d of refs.disposers) d()
+      },
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // 4. ONE SCAFFOLD CALL: iso camera + pan/zoom + renderer + loop + resize
+    // ══════════════════════════════════════════════════════════════════════
+    let composer = null, first = true
+    function renderFrame () {
+      // createComposer returns a ComposerHandle; the EffectComposer (with the
+      // render loop) is handle.composer.
+      if (composer) composer.composer.render()
+      else iso.app.ctx.renderer.render(iso.app.ctx.scene, iso.app.ctx.camera)
+      if (first) {
+        first = false
+        window.__SCENE_READY__ = true
+        const l = document.getElementById('loading'); if (l) { l.style.opacity = 0; setTimeout(() => l.remove(), 900) }
+      }
+    }
+
+    const iso = createIsoScaffold({
+      canvas,
+      seed: SEED,
+      viewSize: 170,
+      flavor: 'dimetric',
+      zoom: [90, 320],
+      background: '#0a0f1d',
+      lighting: false,          // we run our own animated day→night rig
+      modules: [vallila],
+      render: renderFrame,
+    })
+
+    const { scene, camera, renderer } = iso.app.ctx
+
+    // hero lighting — big shadow frustum for the ±140 town; handles feed day/night
+    lights = setupStandardLighting(scene, renderer, {
+      sun:  { intensity: 1.3, position: new THREE.Vector3(100, 150, 50), shadowMapSize: 2048, shadowFrustum: 175, shadowFar: 600 },
+      hemi: { skyColor: '#b3e5fc', groundColor: '#3a2a1a', intensity: 0.55 },
+    })
+
+    // cinematic post: bloom + colour grade (linear HDR, before OutputPass tone-map)
+    composer = createComposer({
+      renderer, scene, camera,
+      width: canvas.clientWidth, height: canvas.clientHeight,
+      withBloom: true, bloomStrength: 0.42, bloomRadius: 0.5, bloomThreshold: 0.9,
+    })
+    grade = createGradePass({ tint: '#ffeede', contrast: 1.06, saturation: 1.12, vignette: 0.4, grain: 0.05, chromatic: 0.5 })
+    composer.addPassBeforeOutput(grade)
+
+    // keep the composer's render targets in sync with the parent (scaffold owns
+    // the renderer + camera resize; this only tracks the post pipeline)
+    const ro = new ResizeObserver(() => composer.setSize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight))
+    ro.observe(canvas.parentElement)
+
+    // ── tap to advance the story / tease a blush (coexists with drag-pan) ────
+    const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2()
+    const detachTap = compose === undefined ? null : null // noop guard for tree-shakers
+    function onTap (clientX, clientY) {
+      const rect = canvas.getBoundingClientRect()
+      ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1)
+      raycaster.setFromCamera(ndc, camera)
+      for (const hit of raycaster.intersectObjects(scene.children, true)) {
+        let o = hit.object
+        while (o) {
+          if (o === refs.markerAnchor || o === refs.signGroup) { dispatch({ type: 'TAP_BOARD' }); return }
+          for (const id in refs.chars) if (o === refs.chars[id].group) { dispatch({ type: 'TAP_CHARACTER', id }); return }
+          o = o.parent
+        }
+      }
+    }
+    // second gesture layer purely for taps — the scaffold's own gesture keeps pan/zoom
+    const tapGesture = primitives // (silence unused; primitives used above)
+    canvas.addEventListener('pointerup', (e) => {
+      if (e.__tapHandled) return
+      onTap(e.clientX, e.clientY)
+    })
+
+    iso.app.start()
+
+    // ── teardown: dispose everything we own ─────────────────────────────────
+    addEventListener('pagehide', () => {
+      ro.disconnect()
+      composer.dispose()
+      lights.dispose()
+      iso.dispose()           // stops loop, disposes modules + scene + renderer
+    }, { once: true })
+  </script>
+</body>
+</html>

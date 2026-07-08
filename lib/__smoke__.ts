@@ -5,66 +5,48 @@
 
 import * as THREE from 'three'
 
+// v2 curated root: heroes stay flat; everything else comes from a domain
+// namespace. This file doubles as the public-surface contract test.
 import {
-  createSeededRng,
-  poissonDisk,
-  MaterialPool,
-  EditStack,
-  resolveParam,
-  resolveParams,
-  VoxelChunk,
-  greedyMesh,
-  createProceduralTexture,
-  createNoiseTexture,
-  // geometry
+  // geometry (hero)
   roundedRectShape,
   starShape,
   createExtrudedMesh,
   applyTwist,
   displaceByNoise,
   layoutGrid,
-  // materials
+  // materials (hero)
   createStandardMaterial,
   createToonMaterial,
-  createGradientToonMap,
-  // animation
+  // animation (hero)
   spinClip,
   bobClip,
   createAnimationController,
-  // props
+  // props (hero)
   defineProp,
   createProp,
-  // 1.3 core
+  // core (hero)
   createClock,
-  createStore,
-  // 1.3 particles
+  // particles (hero)
   createEmitter,
-  sampleCurve,
-  bakeCurve,
-  // 1.3 procedural
+  // procedural (hero)
   createNoise3D,
-  // 1.3 camera + geometry + architecture
-  tupleToVector3,
-  vector3ToTuple,
-  createCameraController,
-  createConnectionGraph,
-  createViewRegistry,
-  createModelCache,
-  createPropRegistry,
-  // 1.6 state & scaffolds
-  toController,
-  isStateController,
-  resolveInitialState,
-  tweened,
-  lerpOnChange,
-  bindStateSource,
-  EASINGS,
-  // 1.6 skybox & compose
-  createSkybox,
+  // domain namespaces
+  primitives,
+  raster,
+  compose,
+  state,
 } from './index.js'
-import type { SceneContext } from './index.js'
+import type { SceneContext, ParamSpec, ParamSpecMap } from './index.js'
 import { h, signal, Fragment } from './jsx/index.js'
-import type { ParamSpec, ParamSpecMap } from './index.js'
+
+
+// pull the non-hero surface out of its namespace so the assertions below read
+// against the same local names as before.
+const { createSeededRng, poissonDisk, VoxelChunk, greedyMesh, createNoiseTexture, createGradientToonMap, createConnectionGraph } = primitives
+const { MaterialPool, EditStack, resolveParam, resolveParams, createProceduralTexture, createViewRegistry, createModelCache, createPropRegistry, createSkybox } = compose
+const { createStore, toController, isStateController, resolveInitialState, tweened, lerpOnChange, bindStateSource, EASINGS } = state
+const { sampleCurve, bakeCurve, tupleToVector3, vector3ToTuple, createCameraController } = raster
 
 
 function assert (cond: boolean, msg: string): void {

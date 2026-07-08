@@ -363,12 +363,31 @@
   [data-panel],
   [data-export-card],
   [data-case-card],
+  [data-demo-card],
   [data-list-grid] article {
     min-width: 0;
     border: 1px solid var(--border-strong);
     border-radius: var(--radius);
     background: var(--bg-card);
     padding: 1rem;
+  }
+
+  [data-demo-card] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  [data-demo-card] h3 {
+    margin: 0;
+  }
+
+  [data-demo-card] p {
+    margin: 0;
+  }
+
+  [data-demo-card] [data-actions] {
+    margin-top: auto;
   }
 
   [data-panel] {

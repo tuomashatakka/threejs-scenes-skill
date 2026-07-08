@@ -19,6 +19,7 @@ export default defineConfig({
       input: {
         main:    resolve(siteDir, 'index.html'),
         library: resolve(siteDir, 'library/index.html'),
+        demos:   resolve(siteDir, 'demos/index.html'),
         skill:   resolve(siteDir, 'skill/index.html'),
         api:     resolve(siteDir, 'api/index.html'),
       },

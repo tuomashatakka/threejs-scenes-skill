@@ -23,7 +23,9 @@ function pathFromBase (path: string): string {
   return path
 }
 
-function currentRoute (): 'home' | 'library' | 'skill' | 'api' {
+type Route = 'home' | 'library' | 'demos' | 'skill' | 'api'
+
+function currentRoute (): Route {
   const path = pathFromBase(window.location.pathname)
   if (path.startsWith('/skill'))
     return 'skill'
@@ -31,6 +33,8 @@ function currentRoute (): 'home' | 'library' | 'skill' | 'api' {
     return 'api'
   if (path.startsWith('/library'))
     return 'library'
+  if (path.startsWith('/demos'))
+    return 'demos'
   return 'home'
 }
 
@@ -62,11 +66,12 @@ function slug (value: string): string {
 
 function nav (): string {
   const route = currentRoute()
-  const link = (target: 'home' | 'library' | 'skill' | 'api', path: string, label: string) =>
+  const link = (target: Route, path: string, label: string) =>
     `<a href="${href(path)}"${route === target ? ' aria-current="page"' : ''}>${label}</a>`
   return `<nav aria-label="primary">
     ${link('home', '/', 'overview')}
     ${link('library', '/library/', 'library')}
+    ${link('demos', '/demos/', 'demos')}
     ${link('skill', '/skill/', 'skill')}
     ${link('api', '/api/', 'api')}
     <a href="${asset('llms.txt')}">llms.txt</a>
@@ -117,6 +122,52 @@ function demoPreview (demos = demoData.demos.slice(0, 9)): string {
       <figcaption data-demo-caption>${escapeHtml(first.caption)}</figcaption>
     </figure>
   </section>`
+}
+
+function demoCard (demo: DemoInfo): string {
+  return `<article data-demo-card>
+    <h3>${escapeHtml(demo.label)}</h3>
+    <p>${escapeHtml(demo.caption)}</p>
+    <p data-actions><a href="${asset(`demos/${demo.slug}.html`)}" target="_blank" rel="noopener">open demo ↗</a></p>
+  </article>`
+}
+
+function featuredStrip (slugs: readonly string[]): string {
+  const featured = slugs
+    .map(slugValue => demoData.demos.find(demo => demo.slug === slugValue))
+    .filter((demo): demo is DemoInfo => Boolean(demo))
+  return `<section aria-labelledby="featured-title" data-featured>
+    <div data-section-head>
+      <p>demos</p>
+      <h2 id="featured-title">live, standalone, no build step</h2>
+      <p>every feature ships a runnable page that imports the library from a local, version-pinned copy. <a href="${href('/demos/')}">browse all ${demoData.demos.length} live demos →</a></p>
+    </div>
+    <div data-card-grid>${featured.map(demoCard).join('')}</div>
+  </section>`
+}
+
+function renderDemos (): string {
+  const body = `<section aria-labelledby="demos-intro">
+    <div data-section-head>
+      <p>demos</p>
+      <h2 id="demos-intro">every live demo in one place</h2>
+      <p>pick a scene in the tab bar to load it inline, or open any card as its own full-screen page. each demo is self-contained and imports the library from a local, version-pinned copy via importmap.</p>
+    </div>
+    <dl data-stats>
+      <div><dt>${demoData.demos.length}</dt><dd>standalone demos</dd></div>
+      <div><dt>${libraryData.totals.playable}</dt><dd>export playgrounds</dd></div>
+      <div><dt>${libraryData.totals.modules}</dt><dd>package entrypoints</dd></div>
+    </dl>
+  </section>
+  ${demoPreview(demoData.demos)}
+  <section aria-labelledby="gallery-title">
+    <div data-section-head>
+      <p>gallery</p>
+      <h2 id="gallery-title">all ${demoData.demos.length} demos</h2>
+    </div>
+    <div data-card-grid>${demoData.demos.map(demoCard).join('')}</div>
+  </section>`
+  return shell('live demos', `${demoData.demos.length} standalone, library-backed pages`, body)
 }
 
 function quickstartExample (): string {
@@ -197,7 +248,7 @@ function renderHome (): string {
   </section>
   ${quickstartSection()}
   ${statList()}
-  ${demoPreview(demoData.demos.slice(0, 12))}
+  ${featuredStrip([ 'rural-village', 'icaras-foundry', 'effects', 'voxels' ])}
   <section aria-labelledby="downloads-title">
     <div data-section-head>
       <p>downloads</p>
@@ -236,16 +287,10 @@ const KIND_GROUPS: Array<{ id: string, label: string, kinds: string[] }> = [
   { id: 'type', label: 'Types & Interfaces', kinds: [ 'interface', 'type' ] },
 ]
 
-// Big modules (root) come pre-grouped by topic from generate-docs.ts. Small
-// modules mostly miss those three.js-domain keywords, so they fall back to a
-// plain function/class vs const vs type split instead.
+// Each module is already a single domain (primitives / raster / compose /
+// view / state / scaffold, plus webgpu/jsx), so within a module we only split
+// by kind: functions & classes, constants, then types & interfaces.
 function groupsFor (module: LibraryModule): ExportGroup[] {
-  if (module.categories.length)
-    return module.categories.map(cat => ({
-      id:      cat.id,
-      label:   cat.label,
-      exports: module.exports.filter(entry => entry.category === cat.id),
-    }))
   return KIND_GROUPS
     .map(group => ({ id: group.id, label: group.label, exports: module.exports.filter(entry => group.kinds.includes(entry.kind)) }))
     .filter(group => group.exports.length > 0)
@@ -283,7 +328,7 @@ function exportCard (module: LibraryModule, entry: LibraryExport): string {
   const sample = entry.coverage === 'type-reference'
     ? `<pre><code>${escapeHtml(entry.sample)}</code></pre>`
     : ''
-  return `<article id="${id}" data-export-card data-search-text="${escapeHtml(`${module.specifier} ${entry.name} ${entry.kind} ${entry.doc} ${entry.signature} ${entry.categoryLabel}`)}">
+  return `<article id="${id}" data-export-card data-search-text="${escapeHtml(`${module.specifier} ${entry.name} ${entry.kind} ${entry.doc} ${entry.signature}`)}">
     <header>
       <p>${escapeHtml(module.specifier)}</p>
       <h4><code>${escapeHtml(entry.name)}</code> <span>${escapeHtml(entry.kind)}</span></h4>
@@ -363,7 +408,7 @@ function renderSkill (): string {
       <div><dt>${skillData.cases.length}</dt><dd>cases</dd></div>
       <div><dt>${skillData.coverage.references.covered}/${skillData.coverage.references.total}</dt><dd>references covered</dd></div>
       <div><dt>${skillData.coverage.scripts.covered}/${skillData.coverage.scripts.total}</dt><dd>scripts covered</dd></div>
-      <div><dt>${demoData.demos.length}</dt><dd>public demos reused</dd></div>
+      <div><dt>${demoData.demos.length}</dt><dd><a href="${href('/demos/')}">live demos →</a></dd></div>
     </dl>
   </section>
   <section aria-labelledby="cases-title">
@@ -375,7 +420,6 @@ function renderSkill (): string {
       ${skillData.cases.map(caseArticle).join('')}
     </div>
   </section>
-  ${demoPreview(demoData.demos)}
   <section aria-labelledby="refs-title">
     <div data-section-head>
       <p>references</p>
@@ -458,20 +502,23 @@ function setupSearch (): void {
 
 function render (): void {
   const route = currentRoute()
-  document.title = route === 'skill'
-    ? 'skill - threejs-scenes'
-    : route === 'library'
-      ? 'library - threejs-scenes'
-      : route === 'api'
-        ? 'api - threejs-scenes'
-        : 'threejs-scenes'
+  const titles: Record<Route, string> = {
+    home:    'threejs-scenes',
+    library: 'library - threejs-scenes',
+    demos:   'demos - threejs-scenes',
+    skill:   'skill - threejs-scenes',
+    api:     'api - threejs-scenes',
+  }
+  document.title = titles[route]
   app.innerHTML = route === 'skill'
     ? renderSkill()
     : route === 'library'
       ? renderLibrary()
       : route === 'api'
         ? renderLibrary(true)
-        : renderHome()
+        : route === 'demos'
+          ? renderDemos()
+          : renderHome()
   setupDemoTabs()
   setupSearch()
   window.__SITE_READY__ = true

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<!--
+  rural-village.html — a seeded isometric hamlet, library-powered
+  ──────────────────────────────────────────────────────────────────────────
+  Everything is deterministic (one seed) and instanced:
+    - createInfiniteGround + createNoise3D  → gentle grass terrain, heightAt()
+    - createIsoCamera / resizeIsoCamera     → orthographic isometric framing
+    - createBatchedBuildings                → varied barns, one BatchedMesh
+    - createInstancedField                  → cobblestone paths linking the
+                                              neighborhoods, fence rings, tree
+                                              foliage + trunks — one draw call each
+    - poissonDisk + createSeededRng         → deterministic tree scatter
+    - setupStandardLighting                 → sun + hemisphere fill
+  A small instanced herd bobs on the frame loop. Drag to pan, wheel/pinch to zoom.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>threejs-scenes · rural village</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #dcecf5; overflow: hidden; font-family: ui-monospace, monospace }
+    main { position: fixed; inset: 0 }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none }
+    aside { position: fixed; top: 12px; left: 12px; padding: 8px 12px; color: #2c3a22;
+      background: rgba(244, 248, 235, 0.72); border: 1px solid #b7c79a; border-radius: 6px;
+      font-size: 12px; line-height: 1.6; pointer-events: none }
+    b { color: #6a8f3c }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="scene"></canvas>
+    <aside>
+      <div>threejs-scenes · rural village</div>
+      <div>drag to pan · wheel / pinch to zoom · <b id="stat">–</b></div>
+    </aside>
+  </main>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://esm.sh/three@0.184.0",
+      "three/addons/": "https://esm.sh/three@0.184.0/addons/",
+      "@tuomashatakka/canvas-loop-framecapper": "../lib/vendor/canvas-loop-framecapper/index.js",
+      "react": "https://esm.sh/react@19",
+      "@scenes": "../lib/dist/index.js"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
+    import {
+      createRenderer, createFrameLoop, attachResizeObserver, attachPointerGesture,
+      createIsoCamera, resizeIsoCamera,
+      createInfiniteGround, createNoise3D,
+      setupStandardLighting, disposeScene,
+      primitives,
+    } from '@scenes'
+
+    const { createBatchedBuildings, createInstancedField, poissonDisk, createSeededRng } = primitives
+
+    const canvas = document.getElementById('scene')
+    const statEl = document.getElementById('stat')
+
+    const renderer = createRenderer({ canvas })
+    const scene    = new THREE.Scene()
+    scene.background = new THREE.Color('#dcecf5')
+    scene.fog        = new THREE.Fog('#dcecf5', 90, 180)
+
+    const rng = createSeededRng(1789)
+
+    // ── gentle grass terrain; heightAt() seats everything on the surface ──────
+    const noise = createNoise3D(1789)
+    const heightAt = (x, z) => noise.fbm(x * 0.012, 0, z * 0.012, 3) * 2.4
+    const ground = createInfiniteGround({
+      tileSize:   40,
+      gridRadius: 3,
+      segments:   28,
+      displace:   heightAt,
+      material:   new THREE.MeshStandardMaterial({ color: '#7fae52', roughness: 0.97, flatShading: true }),
+    })
+    scene.add(ground.object)
+
+    setupStandardLighting(scene, renderer)
+    const sun = new THREE.DirectionalLight('#fff2d6', 1.5)
+    sun.position.set(40, 60, 20)
+    scene.add(sun)
+
+    // ── four neighborhoods ────────────────────────────────────────────────────
+    const clusters = [
+      new THREE.Vector2(-34, -30),
+      new THREE.Vector2(32, -34),
+      new THREE.Vector2(40, 30),
+      new THREE.Vector2(-30, 36),
+    ]
+    const seat = (x, z, drop = 0) => heightAt(x, z) - drop
+
+    // ── barns: varied merged (body + gable-ish pyramid roof) geometries in one
+    //    BatchedMesh, one timber material ───────────────────────────────────────
+    const timber = new THREE.MeshStandardMaterial({ color: '#b0552f', roughness: 0.85, flatShading: true })
+    function barnGeometry () {
+      const w = rng.range(3, 5), h = rng.range(2.2, 3.2), d = rng.range(4, 7)
+      const body = new THREE.BoxGeometry(w, h, d)
+      body.translate(0, h / 2, 0)
+      const roof = new THREE.ConeGeometry(Math.max(w, d) * 0.62, h * 0.7, 4)
+      roof.rotateY(Math.PI / 4)
+      roof.translate(0, h + h * 0.35, 0)
+      const geo = mergeGeometries([ body, roof ], false)
+      body.dispose(); roof.dispose()
+      return geo
+    }
+
+    const barnGeos = [], barnXforms = []
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(1, 1, 1), up = new THREE.Vector3(0, 1, 0)
+    for (const c of clusters) {
+      const n = rng.int(4, 6)
+      for (let i = 0; i < n; i++) {
+        const ang = rng.range(0, Math.PI * 2), rad = rng.range(3, 11)
+        const x = c.x + Math.cos(ang) * rad, z = c.y + Math.sin(ang) * rad
+        barnGeos.push(barnGeometry())
+        q.setFromAxisAngle(up, rng.range(0, Math.PI * 2))
+        barnXforms.push(m4.clone().compose(new THREE.Vector3(x, seat(x, z, 0.15), z), q, s))
+      }
+    }
+    const barns = createBatchedBuildings({ geometries: barnGeos, material: timber, transforms: barnXforms })
+    barns.castShadow = true
+    scene.add(barns)
+
+    // ── cobblestone paths connecting consecutive neighborhoods ─────────────────
+    const cobblePts = []
+    for (let i = 0; i < clusters.length; i++) {
+      const a = clusters[i], b = clusters[(i + 1) % clusters.length]
+      const steps = Math.ceil(a.distanceTo(b) / 1.4)
+      for (let t = 0; t <= steps; t++) {
+        const p = a.clone().lerp(b, t / steps)
+        // a little wobble + width so the path reads as laid stones, not a line
+        const perp = b.clone().sub(a).normalize().set(0, 0)
+        const dir = b.clone().sub(a).normalize()
+        for (const off of [ -0.9, 0, 0.9 ]) {
+          cobblePts.push(new THREE.Vector2(
+            p.x - dir.y * off + rng.range(-0.25, 0.25),
+            p.y + dir.x * off + rng.range(-0.25, 0.25),
+          ))
+        }
+      }
+    }
+    const cobbles = createInstancedField({
+      geometry: new THREE.CylinderGeometry(0.5, 0.5, 0.14, 6),
+      material: new THREE.MeshStandardMaterial({ color: '#9a938a', roughness: 1, flatShading: true }),
+      count:    cobblePts.length,
+      seed:     3,
+      scaleMin: 0.75, scaleMax: 1.15,
+      hueBase:  0.09, hueSpread: 0.04,
+      place (i, r, object) {
+        const p = cobblePts[i]
+        object.position.set(p.x, seat(p.x, p.y) + 0.05, p.y)
+        object.rotation.y = r() * Math.PI
+      },
+    })
+    scene.add(cobbles)
+
+    // ── fence rings around each neighborhood (instanced posts) ─────────────────
+    const fencePts = []
+    for (const c of clusters) {
+      const ringR = 15, posts = 40
+      for (let i = 0; i < posts; i++) {
+        const a = (i / posts) * Math.PI * 2
+        if (i % 10 === 0) continue                 // leave gate gaps
+        fencePts.push(new THREE.Vector2(c.x + Math.cos(a) * ringR, c.y + Math.sin(a) * ringR))
+      }
+    }
+    const fence = createInstancedField({
+      geometry: new THREE.BoxGeometry(0.22, 1.3, 0.22),
+      material: new THREE.MeshStandardMaterial({ color: '#7a5a36', roughness: 0.9 }),
+      count:    fencePts.length,
+      seed:     5,
+      scaleMin: 0.9, scaleMax: 1.1,
+      hueBase:  0.08, hueSpread: 0.03,
+      place (i, r, object) {
+        const p = fencePts[i]
+        object.position.set(p.x, seat(p.x, p.y) + 0.6, p.y)
+        object.rotation.y = r() * 0.4
+      },
+    })
+    scene.add(fence)
+
+    // ── trees: deterministic poisson scatter, skipping houses + paths ──────────
+    const near = (x, z, list, min) => list.some(p => (p.x - x) ** 2 + ((p.y ?? p.z) - z) ** 2 < min * min)
+    const raw = poissonDisk({ width: 150, height: 150, minDist: 9, rng: rng.fork('trees').next })
+    const treePts = raw
+      .map(([ px, pz ]) => new THREE.Vector2(px - 75, pz - 75))
+      .filter(p => !near(p.x, p.y, clusters, 19) && !near(p.x, p.y, cobblePts, 2.5))
+    const foliageMat = new THREE.MeshStandardMaterial({ color: '#3f7d3a', roughness: 0.95, flatShading: true })
+    const trunkMat   = new THREE.MeshStandardMaterial({ color: '#5a3f26', roughness: 0.95 })
+    const foliage = createInstancedField({
+      geometry: new THREE.ConeGeometry(1.5, 4, 6),
+      material: foliageMat, count: treePts.length, seed: 7,
+      scaleMin: 0.7, scaleMax: 1.5, hueBase: 0.33, hueSpread: 0.08,
+      place (i, r, object) {
+        const p = treePts[i]
+        object.position.set(p.x, seat(p.x, p.y) + 3.1, p.y)
+      },
+    })
+    const trunks = createInstancedField({
+      geometry: new THREE.CylinderGeometry(0.28, 0.36, 1.6, 5),
+      material: trunkMat, count: treePts.length, seed: 7,
+      scaleMin: 0.7, scaleMax: 1.5, hueBase: 0.08, hueSpread: 0.02,
+      place (i, r, object) {
+        const p = treePts[i]
+        object.position.set(p.x, seat(p.x, p.y) + 0.8, p.y)
+      },
+    })
+    scene.add(foliage, trunks)
+
+    // ── a small instanced herd that bobs on the frame loop ─────────────────────
+    const herd = []
+    for (const c of clusters)
+      for (let i = 0; i < 4; i++) {
+        const x = c.x + rng.range(-9, 9), z = c.y + rng.range(-9, 9)
+        herd.push({ x, z, phase: rng.range(0, Math.PI * 2), turn: rng.range(0, Math.PI * 2) })
+      }
+    const animalGeo = mergeGeometries([
+      new THREE.SphereGeometry(0.6, 8, 6).scale(1.3, 0.9, 1),
+      new THREE.SphereGeometry(0.32, 6, 5).translate(0.85, 0.2, 0),
+    ], false)
+    const animals = new THREE.InstancedMesh(
+      animalGeo, new THREE.MeshStandardMaterial({ color: '#f2efe6', roughness: 1, flatShading: true }), herd.length)
+    animals.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+    scene.add(animals)
+    const dummy = new THREE.Object3D()
+    function bobHerd (t) {
+      herd.forEach((a, i) => {
+        dummy.position.set(a.x, seat(a.x, a.z) + 0.6 + Math.sin(t * 1.6 + a.phase) * 0.08, a.z)
+        dummy.rotation.set(0, a.turn + Math.sin(t * 0.4 + a.phase) * 0.3, 0)
+        dummy.updateMatrix()
+        animals.setMatrixAt(i, dummy.matrix)
+      })
+      animals.instanceMatrix.needsUpdate = true
+    }
+
+    // ── iso camera locked to a movable world target ────────────────────────────
+    const camera = createIsoCamera(canvas.clientWidth / Math.max(1, canvas.clientHeight), { viewSize: 60, far: 600 })
+    const offset = camera.position.clone()
+    const target = new THREE.Vector3()
+    let zoom = 1
+    const yaw   = Math.atan2(offset.x, offset.z)
+    const fwd   = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw))
+    const right = new THREE.Vector3(fwd.z, 0, -fwd.x)
+    const updateCamera = () => { camera.position.copy(target).add(offset); camera.lookAt(target) }
+    const setZoom = (z) => { zoom = Math.max(0.45, Math.min(2.6, z)); camera.zoom = 1 / zoom; camera.updateProjectionMatrix() }
+    updateCamera()
+
+    attachPointerGesture(canvas, {
+      onDrag (dx, dy) {
+        target.addScaledVector(right, -dx * 0.06 * zoom)
+        target.addScaledVector(fwd, dy * 0.06 * zoom)
+      },
+      onPinch (deltaScale) { setZoom(zoom / deltaScale) },
+      onWheel (delta)      { setZoom(zoom * (1 + delta * 0.001)) },
+    })
+    attachResizeObserver(renderer, camera, canvas, (w, h) => resizeIsoCamera(camera, w / (h || 1)))
+
+    const loop = createFrameLoop()
+    loop.onFrame(({ elapsed }) => {
+      updateCamera()
+      ground.update(target)
+      bobHerd(elapsed)
+      statEl.textContent = `${clusters.length} neighborhoods · ${treePts.length} trees · ${herd.length} animals`
+      renderer.render(scene, camera)
+    })
+
+    window.__SCENE_READY__ = true
+
+    window.addEventListener('pagehide', () => {
+      loop.dispose()
+      ground.dispose()
+      disposeScene(scene)
+      renderer.dispose()
+    }, { once: true })
+  </script>
+</body>
+</html>
