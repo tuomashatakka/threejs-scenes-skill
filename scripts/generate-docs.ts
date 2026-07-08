@@ -195,7 +195,7 @@ const SKILL_CASES: SkillCase[] = [
     demoMode: 'live',
     tags: [ 'core', 'renderer', 'lifecycle' ],
     demos: [ 'minimal-scene', 'bootstrap' ],
-    refs: [ 'core-principles.md', 'project-architecture.md', 'fundamentals.md', 'library-local.md', 'production-lessons.md', 'code-style.md', 'anti-patterns.md' ],
+    refs: [ 'core-principles.md', 'project-architecture.md', 'fundamentals.md', 'library.md', 'production-lessons.md', 'code-style.md', 'anti-patterns.md' ],
     scripts: [ 'frame-loop.js', 'renderer-setup.js', 'scene-bootstrap.js', 'pointer-gesture.js', 'dispose-scene.js', 'quality-tier.js' ],
     checklist: [ 'single loop', 'pixel ratio <= 2', 'resize observer on parent', 'dispose all owned resources' ],
   },

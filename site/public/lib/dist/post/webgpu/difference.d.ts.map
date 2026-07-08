@@ -1,1 +1,0 @@
-{"version":3,"file":"difference.d.ts","sourceRoot":"","sources":["../../../lib/post/webgpu/difference.ts"],"names":[],"mappings":"AAQA,OAAO,KAAK,EAAE,QAAQ,EAAE,MAAM,cAAc,CAAA;AAG5C,MAAM,WAAW,iBAAiB;IAEhC,IAAI,CAAC,EAAW,MAAM,CAAA;IAEtB,aAAa,CAAC,EAAE,MAAM,CAAA;CACvB;AAID,wBAAgB,gBAAgB,CAAE,SAAS,EAAE,QAAQ,EAAE,OAAO,GAAE,iBAAsB,uCAQrF"}

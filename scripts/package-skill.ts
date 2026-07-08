@@ -5,7 +5,7 @@
 // ship. Run `bun run package:skill` (builds first); CI uses the same script.
 
 import { existsSync } from 'node:fs'
-import { readFile, rm, cp } from 'node:fs/promises'
+import { readFile, readdir, rm, cp } from 'node:fs/promises'
 import { $ } from 'bun'
 
 
@@ -24,9 +24,18 @@ const skillVersion = frontmatter[1]!.match(/^version:\s*([^\n]+)$/m)?.[1]?.trim(
 if (skillVersion !== packageJson.version)
   throw new Error(`package-skill: SKILL.md version (${skillVersion ?? 'missing'}) must match package.json version (${packageJson.version ?? 'missing'})`)
 
-// 2. the local lib copy the templates import must be built
-if (!existsSync(`${root}skill/lib/dist/index.js`))
-  throw new Error('package-skill: skill/lib/dist missing — run `bun run build` first')
+// 2. the skill must not vendor the library — templates import the published
+//    package from esm.sh, pinned to the current version
+if (existsSync(`${root}skill/lib`))
+  throw new Error('package-skill: skill/lib exists — the skill must not bundle the library; delete it')
+const pin = `@tuomashatakka/threejs-scenes@${packageJson.version}`
+for (const f of await readdir(`${root}skill/templates`)) {
+  if (!f.endsWith('.html'))
+    continue
+  const html = await readFile(`${root}skill/templates/${f}`, 'utf8')
+  if (html.includes('esm.sh/@tuomashatakka/threejs-scenes@') && !html.includes(pin))
+    throw new Error(`package-skill: templates/${f} pins a stale library version — expected ${pin} (run scripts/sync-version.ts)`)
+}
 
 // 3. stage as threejs-scenes/ and zip
 const staging = `${root}threejs-scenes`

@@ -2,8 +2,8 @@
 // AnimationMixer convenience layer: build programmatic clips, wire them into the
 // frame loop, and crossfade between them. createAnimationController + clip
 // builders come from the library's animation module.
-// '@tuomashatakka/threejs-scenes' maps to the local './lib/dist/' copy in an
-// artifact (see references/library-local.md).
+// '@tuomashatakka/threejs-scenes' maps to the esm.sh package (version-pinned) in an
+// artifact (see references/library.md).
 
 import * as THREE from 'three'
 

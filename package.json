@@ -43,7 +43,7 @@
     "site:build": "vite build",
     "site:preview": "vite preview --host 0.0.0.0",
     "package:skill": "bun run build && bun run scripts/package-skill.ts",
-    "version": "bun run scripts/sync-version.ts && git add skill/SKILL.md",
+    "version": "bun run scripts/sync-version.ts && git add skill",
     "docs:query": "node skill/scripts/query-threejs-docs.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint lib",

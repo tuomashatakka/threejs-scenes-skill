@@ -1,1 +1,0 @@
-{"version":3,"file":"afterimage.d.ts","sourceRoot":"","sources":["../../../lib/post/webgpu/afterimage.ts"],"names":[],"mappings":"AAMA,OAAO,KAAK,EAAE,SAAS,EAAE,MAAM,YAAY,CAAA;AAG3C,MAAM,WAAW,iBAAiB;IAEhC,IAAI,CAAC,EAAE,MAAM,CAAA;CACd;AAED,wBAAgB,gBAAgB,CAAE,KAAK,EAAE,SAAS,EAAE,OAAO,GAAE,iBAAsB,gEAGlF"}

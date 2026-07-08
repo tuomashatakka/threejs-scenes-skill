@@ -1,7 +1,7 @@
 // scripts/geometry-modifiers.js
 // Vertex deformers + static-batch merging from the library's geometry module.
-// '@tuomashatakka/threejs-scenes' maps to the local './lib/dist/' copy in an
-// artifact (see references/library-local.md).
+// '@tuomashatakka/threejs-scenes' maps to the esm.sh package (version-pinned) in an
+// artifact (see references/library.md).
 
 import * as THREE from 'three'
 

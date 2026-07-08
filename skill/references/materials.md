@@ -2,7 +2,7 @@
 
 Tuned starting materials so you don't hand-set `metalness`/`roughness` every time.
 From the core package (`@tuomashatakka/threejs-scenes`, or `@scenes`).
-See [library-local.md](./library-local.md) for the importmap.
+See [library.md](./library.md) for the importmap.
 
 ## PBR presets
 

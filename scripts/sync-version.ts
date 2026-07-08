@@ -22,4 +22,25 @@ if (!/^version:\s*[^\n]+$/m.test(frontmatter[1]!))
 const updated = skillMd.replace(/^version:\s*[^\n]+$/m, `version: ${packageJson.version}`)
 await writeFile(skillMdPath, updated)
 
-console.log(`sync-version: skill/SKILL.md -> ${packageJson.version}`)
+// Templates and references import the published package from esm.sh pinned to
+// the skill version — rewrite every pin so the CDN URLs stay in lockstep.
+// package-skill.ts refuses to bundle a stale pin.
+const { readdir } = await import('node:fs/promises')
+const pinPattern  = /@tuomashatakka\/threejs-scenes@\d+\.\d+\.\d+(?:-[\w.]+)?/g
+
+const pinFiles = [ skillMdPath ]
+for (const dir of [ 'skill/templates', 'skill/references' ])
+  for (const f of await readdir(`${root}${dir}`))
+    if (f.endsWith('.html') || f.endsWith('.md'))
+      pinFiles.push(`${root}${dir}/${f}`)
+
+let repinned = 0
+for (const path of pinFiles) {
+  const source = await readFile(path, 'utf8')
+  if (!source.match(pinPattern))
+    continue
+  await writeFile(path, source.replace(pinPattern, `@tuomashatakka/threejs-scenes@${packageJson.version}`))
+  repinned++
+}
+
+console.log(`sync-version: skill/SKILL.md -> ${packageJson.version} (${repinned} files repinned)`)

@@ -56,7 +56,7 @@ Load only what the current task needs. Don't read every file by default.
 | `references/props-and-factories.md` | prop factory — meshes with clips/lights/instancing, registry, composites |
 | `references/animation-system.md` | AnimationMixer/AnimationClip — controller + programmatic clip builders |
 | `references/jsx-layer.md` | declarative reactive JSX layer over the lib (frame-loop driven) |
-| `references/library-local.md` | importing the bundled local lib via importmap; subpath entry points |
+| `references/library.md` | importing the published lib from esm.sh via importmap; subpath entry points |
 
 **Minimal scene:** `core-principles.md` + `project-architecture.md` + `camera-handling.md`.
 **Isometric game:** add `isometric-and-infinite-scenes.md` + `instancing.md` + `billboards.md`.
@@ -65,7 +65,7 @@ Load only what the current task needs. Don't read every file by default.
 **LLM-driven content:** add `prompt-handling-flow.md` + `llm-function-definitions.md`.
 **Multi-module / shipping scene:** always read `production-lessons.md` first.
 **Mesh / material / prop authoring:** `geometry.md` + `materials.md` + `props-and-factories.md`.
-**Animation:** `animation-system.md`. **Declarative scenes:** `jsx-layer.md` + `library-local.md`.
+**Animation:** `animation-system.md`. **Declarative scenes:** `jsx-layer.md` + `library.md`.
 
 ## Querying the three.js docs
 
@@ -96,8 +96,8 @@ specific request — the scripts are templates, not black boxes.
 
 The 1.1 scripts (`extruded-mesh.js`, `geometry-modifiers.js`, `material-presets.js`,
 `prop-factory.js`, `prop-composite.js`, `animation-controller.js`, `gltf-prop.js`,
-`jsx-scene.js`) import the **local library** (`@tuomashatakka/threejs-scenes`)
-rather than inlining helpers — see **Using the Local Library** below.
+`jsx-scene.js`) import the **library** (`@tuomashatakka/threejs-scenes`)
+rather than inlining helpers — see **Using the Library** below.
 
 ## Runnable Templates
 
@@ -120,7 +120,7 @@ For multi-module projects, graduate to the `scripts/` modules + an importmap.
 | `templates/post-processing.html` | `EffectComposer`: `RenderPass → UnrealBloom → grade(ShaderPass) → OutputPass`; grade in linear HDR, tone-map once. |
 | `templates/isometric.html` | Orthographic true-iso camera + instanced height-grid terrain (value-noise) + pan/zoom. |
 | `templates/particles.html` | Particles v2 — `createEmitter` shapes/curves/bursts + 65k GPGPU field toggle (`createGpuEmitter`); cadence-independent determinism. |
-| `templates/geometry.html` | Library demo — extrusion + vertex modifiers + grid layout via the local lib (`@scenes`). |
+| `templates/geometry.html` | Library demo — extrusion + vertex modifiers + grid layout via the lib (`@scenes`). |
 | `templates/materials.html` | Library demo — PBR / toon / matcap presets. |
 | `templates/props.html` | Library demo — `defineProp` crystal (mesh + light + clips) + instanced forest + composite. |
 | `templates/animation.html` | Library demo — `createAnimationController` + programmatic clips; tap to crossfade. |
@@ -128,19 +128,20 @@ For multi-module projects, graduate to the `scripts/` modules + an importmap.
 
 The first six templates are self-contained (inlined helpers, esm.sh `three`). The
 five **library-backed** templates (`geometry`, `materials`, `props`, `animation`,
-`jsx-scene`) instead import a **local copy of the lib** via importmap (`@scenes` →
-`./lib/dist/index.js`, `@scenes/jsx` → `.../jsx/index.js`, `three` from esm.sh) —
-see `references/library-local.md`. The skill ships that copy under `lib/dist/`;
-rebuild it with `bun run copy:lib`.
+`jsx-scene`) instead import the published package via importmap (`@scenes` →
+esm.sh `@tuomashatakka/threejs-scenes`, pinned to this skill's version; `three`
+from esm.sh) — see `references/library.md`. The skill does not bundle a copy of
+the library.
 
 These templates encode the patterns in `references/production-lessons.md` — read
 that doc when adapting them into anything multi-module.
 
-## Using the Local Library
+## Using the Library
 
-For multi-module scenes prefer importing the bundled library over copy-pasting
-scripts. The skill ships a local, version-pinned copy at `lib/dist/` (mirrored to
-the showcase at `public/lib/dist/`; regenerate with `bun run copy:lib`). Import it
+For multi-module scenes prefer importing the library over copy-pasting scripts.
+Artifacts import the published npm package from esm.sh, version-pinned to this
+skill. The `?external=three,…` query keeps the library's `three` imports bare so
+the page importmap resolves them — exactly one three.js instance. Import it
 through an importmap so artifacts stay self-contained:
 
 ```html
@@ -149,8 +150,9 @@ through an importmap so artifacts stay self-contained:
   "imports": {
     "three":         "https://esm.sh/three@0.184.0",
     "three/addons/": "https://esm.sh/three@0.184.0/examples/jsm/",
-    "@scenes":       "./lib/dist/index.js",
-    "@scenes/jsx":   "./lib/dist/jsx/index.js"
+    "@tuomashatakka/canvas-loop-framecapper": "https://esm.sh/@tuomashatakka/canvas-loop-framecapper@1.0.0",
+    "@scenes":       "https://esm.sh/@tuomashatakka/threejs-scenes@1.7.2?external=three,@tuomashatakka/canvas-loop-framecapper",
+    "@scenes/jsx":   "https://esm.sh/@tuomashatakka/threejs-scenes@1.7.2/jsx?external=three,@tuomashatakka/canvas-loop-framecapper"
   }
 }
 </script>
@@ -165,7 +167,7 @@ The library is structured into three main, tree-shakeable public entry points:
 - `@tuomashatakka/threejs-scenes/webgpu` (Dedicated WebGPU post-processing and TSL effects)
 - `@tuomashatakka/threejs-scenes/jsx` (Declarative, reactive JSX layer)
 
-See `references/library-local.md` for local integration details.
+See `references/library.md` for integration details.
 
 ### JSX layer (declarative, reactive)
 

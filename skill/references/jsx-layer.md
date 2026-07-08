@@ -3,7 +3,7 @@
 A higher-level declarative layer over the library, à la react-three-fiber but
 coarser-grained (props, lights, whole scenes are single elements). Import from
 `@tuomashatakka/threejs-scenes/jsx` (the `@scenes/jsx` importmap entry — see
-[library-local.md](./library-local.md)).
+[library.md](./library.md)).
 
 ## The big idea: the loop IS the scheduler
 

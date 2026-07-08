@@ -3,7 +3,7 @@
 // mounts the tree and drives reactivity from the main frame loop — function
 // props are accessors re-read every frame, so reconciliation IS the render tick.
 // In an artifact '@tuomashatakka/threejs-scenes/jsx' maps to the local
-// './lib/dist/jsx/index.js' copy (see references/library-local.md).
+// esm.sh package's /jsx entry (version-pinned) (see references/library.md).
 
 import * as THREE from 'three'
 

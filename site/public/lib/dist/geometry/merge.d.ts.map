@@ -1,1 +1,0 @@
-{"version":3,"file":"merge.d.ts","sourceRoot":"","sources":["../../lib/geometry/merge.ts"],"names":[],"mappings":"AAKA,OAAO,KAAK,KAAK,MAAM,OAAO,CAAA;AAI9B;;;;GAIG;AACH,wBAAgB,WAAW,CAAE,MAAM,EAAE,KAAK,CAAC,IAAI,EAAE,GAAG,KAAK,CAAC,QAAQ,CA4BjE;AAED,0EAA0E;AAC1E,wBAAgB,iBAAiB,CAAE,UAAU,EAAE,KAAK,CAAC,cAAc,EAAE,EAAE,SAAS,UAAQ,GAAG,KAAK,CAAC,cAAc,CAE9G"}

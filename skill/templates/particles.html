@@ -5,7 +5,7 @@
   createEmitter: emitter shapes, rate + burst emission, colour/alpha/size
   curves over lifetime, deterministic (seed + tick sequence -> identical runs).
   createGpuEmitter: GPGPU steady-state field for six-figure particle counts.
-  Library-backed: imports @scenes from the local lib/dist via importmap.
+  Library-backed: imports @scenes from esm.sh (version-pinned) via importmap.
 -->
 <html lang="en">
 <head>
@@ -43,9 +43,9 @@
     "imports": {
       "three":          "https://esm.sh/three@0.184.0",
       "three/addons/":  "https://esm.sh/three@0.184.0/addons/",
-      "@tuomashatakka/canvas-loop-framecapper": "../lib/vendor/canvas-loop-framecapper/index.js",
+      "@tuomashatakka/canvas-loop-framecapper": "https://esm.sh/@tuomashatakka/canvas-loop-framecapper@1.0.0",
       "react": "https://esm.sh/react@19",
-      "@scenes":        "../lib/dist/index.js"
+      "@scenes":        "https://esm.sh/@tuomashatakka/threejs-scenes@1.7.2?external=three,@tuomashatakka/canvas-loop-framecapper"
     }
   }
   </script>

@@ -1,7 +1,7 @@
 // scripts/extruded-mesh.js
 // Programmatic extruded + lathe meshes built from the library's geometry module.
 // In a live artifact the '@tuomashatakka/threejs-scenes' specifier maps via
-// importmap to the local copy './lib/dist/index.js' (see references/library-local.md).
+// importmap to the version-pinned esm.sh package (see references/library.md).
 
 import {
   createExtrudedMesh, createLatheMesh, createStandardMaterial,

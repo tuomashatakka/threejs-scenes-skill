@@ -1,1 +1,0 @@
-{"version":3,"file":"afterimage.js","sourceRoot":"","sources":["../../../lib/post/webgl/afterimage.ts"],"names":[],"mappings":"AAAA,+BAA+B;AAC/B,+EAA+E;AAC/E,wEAAwE;AACxE,0CAA0C;AAE1C,OAAO,EAAE,cAAc,EAAE,MAAM,+CAA+C,CAAA;AAQ9E,MAAM,UAAU,gBAAgB,CAAE,UAA6B,EAAE;IAC/D,MAAM,EAAE,IAAI,GAAG,IAAI,EAAE,GAAG,OAAO,CAAA;IAC/B,OAAO,IAAI,cAAc,CAAC,IAAI,CAAC,CAAA;AACjC,CAAC;AAED,sEAAsE"}

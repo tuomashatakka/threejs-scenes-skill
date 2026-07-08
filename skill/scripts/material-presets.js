@@ -1,7 +1,7 @@
 // scripts/material-presets.js
 // Common starting materials from the library's materials module — a sphere per
 // PBR preset plus toon and matcap. '@tuomashatakka/threejs-scenes' maps to the
-// local './lib/dist/' copy in an artifact (see references/library-local.md).
+// version-pinned esm.sh package in an artifact (see references/library.md).
 
 import * as THREE from 'three'
 

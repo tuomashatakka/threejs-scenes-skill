@@ -1,8 +1,8 @@
 // scripts/prop-composite.js
 // Prop composite: assemble several props into one group with relative
 // transforms and aggregate disposal. Builds a lamp = post + bulb + point light.
-// '@tuomashatakka/threejs-scenes' maps to the local './lib/dist/' copy in an
-// artifact (see references/library-local.md).
+// '@tuomashatakka/threejs-scenes' maps to the esm.sh package (version-pinned) in an
+// artifact (see references/library.md).
 
 import * as THREE from 'three'
 
