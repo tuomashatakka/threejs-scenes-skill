@@ -1,6 +1,6 @@
 {
   "name": "threejs-scenes",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
   },
@@ -49,7 +49,18 @@
     "./jsx/jsx-runtime": {
       "types": "./dist/jsx/jsx-runtime.d.ts",
       "import": "./dist/jsx/jsx-runtime.js"
-    }
+    },
+    "./lib/*": "./lib/*.ts",
+    "./lib": "./lib/index.ts",
+    "./lib/primitives": "./lib/primitives/index.ts",
+    "./lib/raster": "./lib/raster/index.ts",
+    "./lib/compose": "./lib/compose/index.ts",
+    "./lib/view": "./lib/view/index.ts",
+    "./lib/state": "./lib/state/index.ts",
+    "./lib/scaffold": "./lib/scaffold/index.ts",
+    "./lib/webgpu": "./lib/post/webgpu/index.ts",
+    "./lib/jsx": "./lib/jsx/index.ts",
+    "./lib/jsx/jsx-runtime": "./lib/jsx/jsx-runtime.ts"
   },
   "files": [
     "dist",

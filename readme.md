@@ -94,6 +94,7 @@ Public entry points:
 - `threejs-scenes/scaffold` — one-call genre wiring (iso, orbit, tpp, rails, fps)
 - `threejs-scenes/webgpu` — dedicated WebGPU post-processing and TSL effects
 - `threejs-scenes/jsx` — declarative, reactive JSX layer
+- `threejs-scenes/lib/*` — raw, uncompiled TypeScript source (bundler-resolved; mirrors `dist/*` 1:1)
 
 ### hooks (`/jsx`)
 

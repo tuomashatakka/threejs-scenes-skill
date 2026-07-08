@@ -376,7 +376,7 @@ function moduleSpecifier (subpath: string): string {
 }
 
 function modulesFromPackage (): ModuleMeta[] {
-  return Object.entries(packageJson.exports).map(([ subpath, config ]) => {
+  return Object.entries(packageJson.exports).filter(([ subpath ]) => !subpath.startsWith('./lib')).map(([ subpath, config ]) => {
     const meta = DESCRIPTIONS[subpath] ?? {
       title: subpath,
       desc:  `Generated documentation for ${moduleSpecifier(subpath)}.`,
