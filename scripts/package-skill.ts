@@ -28,12 +28,12 @@ if (skillVersion !== packageJson.version)
 //    package from esm.sh, pinned to the current version
 if (existsSync(`${root}skill/lib`))
   throw new Error('package-skill: skill/lib exists — the skill must not bundle the library; delete it')
-const pin = `@tuomashatakka/threejs-scenes@${packageJson.version}`
+const pin = `threejs-scenes@${packageJson.version}`
 for (const f of await readdir(`${root}skill/templates`)) {
   if (!f.endsWith('.html'))
     continue
   const html = await readFile(`${root}skill/templates/${f}`, 'utf8')
-  if (html.includes('esm.sh/@tuomashatakka/threejs-scenes@') && !html.includes(pin))
+  if (html.includes('esm.sh/threejs-scenes@') && !html.includes(pin))
     throw new Error(`package-skill: templates/${f} pins a stale library version — expected ${pin} (run scripts/sync-version.ts)`)
 }
 

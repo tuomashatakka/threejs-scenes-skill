@@ -26,7 +26,7 @@ await writeFile(skillMdPath, updated)
 // the skill version — rewrite every pin so the CDN URLs stay in lockstep.
 // package-skill.ts refuses to bundle a stale pin.
 const { readdir } = await import('node:fs/promises')
-const pinPattern  = /@tuomashatakka\/threejs-scenes@\d+\.\d+\.\d+(?:-[\w.]+)?/g
+const pinPattern  = /threejs-scenes@\d+\.\d+\.\d+(?:-[\w.]+)?/g
 
 const pinFiles = [ skillMdPath ]
 for (const dir of [ 'skill/templates', 'skill/references' ])
@@ -39,7 +39,7 @@ for (const path of pinFiles) {
   const source = await readFile(path, 'utf8')
   if (!source.match(pinPattern))
     continue
-  await writeFile(path, source.replace(pinPattern, `@tuomashatakka/threejs-scenes@${packageJson.version}`))
+  await writeFile(path, source.replace(pinPattern, `threejs-scenes@${packageJson.version}`))
   repinned++
 }
 

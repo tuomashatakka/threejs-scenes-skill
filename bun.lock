@@ -3,14 +3,14 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@tuomashatakka/threejs-scenes",
+      "name": "threejs-scenes",
       "dependencies": {
         "@tuomashatakka/canvas-loop-framecapper": "^1.0.0",
-        "eslint": "^10.6.0",
       },
       "devDependencies": {
         "@tuomashatakka/eslint-config": "^4.0.1",
         "@types/three": "^0.184.1",
+        "eslint": "^10.6.0",
         "three": "^0.184.0",
         "typescript": "^6.0.3",
         "vite": "^8.1.3",

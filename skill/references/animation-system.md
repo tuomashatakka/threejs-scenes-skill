@@ -6,7 +6,7 @@ and the API pages [AnimationMixer](https://threejs.org/docs/pages/AnimationMixer
 [AnimationClip](https://threejs.org/docs/pages/AnimationClip.html.md),
 [AnimationAction](https://threejs.org/docs/pages/AnimationAction.html.md)).
 From the core package
-(`@tuomashatakka/threejs-scenes`, or `@scenes`).
+(`threejs-scenes`, or `@scenes`).
 
 ## Controller
 

@@ -1,12 +1,12 @@
 // scripts/gltf-prop.js
 // Load a glTF model and wire its baked animations into the frame loop. loadGLTF
 // + createAnimationController come from the library's loaders/animation modules.
-// '@tuomashatakka/threejs-scenes' maps to the esm.sh package (version-pinned) in an
+// 'threejs-scenes' maps to the esm.sh package (version-pinned) in an
 // artifact (see references/library.md).
 
 import {
   loadGLTF, createAnimationController,
-} from '@tuomashatakka/threejs-scenes'
+} from 'threejs-scenes'
 
 
 export async function loadGltfProp (url, ctx) {

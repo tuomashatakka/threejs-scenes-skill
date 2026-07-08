@@ -1,7 +1,7 @@
 # Materials — common starting points
 
 Tuned starting materials so you don't hand-set `metalness`/`roughness` every time.
-From the core package (`@tuomashatakka/threejs-scenes`, or `@scenes`).
+From the core package (`threejs-scenes`, or `@scenes`).
 See [library.md](./library.md) for the importmap.
 
 ## PBR presets

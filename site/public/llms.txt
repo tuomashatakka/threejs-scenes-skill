@@ -1,6 +1,6 @@
 # threejs-scenes
 
-> Strictly-typed factories and interfaces for building production-quality vanilla three.js (WebGL2) scenes: renderer/loop/dispose scaffolding, cameras, geometry, materials, props, animation, instancing, lighting, particles, post-processing (WebGL + WebGPU/TSL), procedural generation, voxels, infinite worlds, a context-injection module architecture, and a reactive JSX layer. Ships both as an npm package (`@tuomashatakka/threejs-scenes`) and as an installable Claude skill bundle.
+> Strictly-typed factories and interfaces for building production-quality vanilla three.js (WebGL2) scenes: renderer/loop/dispose scaffolding, cameras, geometry, materials, props, animation, instancing, lighting, particles, post-processing (WebGL + WebGPU/TSL), procedural generation, voxels, infinite worlds, a context-injection module architecture, and a reactive JSX layer. Ships both as an npm package (`threejs-scenes`) and as an installable Claude skill bundle.
 
 Everything on this site is public and may be fetched by LLMs and agents. No
 authentication is required for any URL listed here.

@@ -2,7 +2,7 @@
 
 A higher-level declarative layer over the library, à la react-three-fiber but
 coarser-grained (props, lights, whole scenes are single elements). Import from
-`@tuomashatakka/threejs-scenes/jsx` (the `@scenes/jsx` importmap entry — see
+`threejs-scenes/jsx` (the `@scenes/jsx` importmap entry — see
 [library.md](./library.md)).
 
 ## The big idea: the loop IS the scheduler
@@ -48,7 +48,7 @@ app.loop.onFrame(({ delta }) => setAngle(a => a + delta * 0.6))  // signal drive
 ```
 
 For `.tsx` JSX syntax, set `tsconfig`: `"jsx": "react-jsx"`,
-`"jsxImportSource": "@tuomashatakka/threejs-scenes/jsx"`. The runtime also exports
+`"jsxImportSource": "threejs-scenes/jsx"`. The runtime also exports
 `jsx`/`jsxs`/`Fragment`.
 
 ## Reactivity

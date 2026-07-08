@@ -1,7 +1,7 @@
 # Geometry — programmatic meshes & grouping
 
 Build bespoke geometry in code instead of importing models. All factories live in
-the core package (`@tuomashatakka/threejs-scenes`, or the `@scenes`
+the core package (`threejs-scenes`, or the `@scenes`
 barrel — see [library.md](./library.md) for the importmap).
 
 ## Shape builders

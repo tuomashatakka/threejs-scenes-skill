@@ -141,52 +141,52 @@ const DESCRIPTIONS: Record<string, { title: string, desc: string, example?: stri
   '.': {
     title:   'curated root',
     desc:    'A deliberately small surface: the shared type vocabulary, a hand-picked set of the most-used factories (createApp, the scaffolds, the go-to material/geometry/light/animation/prop/particle helpers), and the six domain namespaces below. The full library is grouped by concern behind primitives / raster / compose / view / state / scaffold.',
-    example: `import { createApp, raster, primitives } from '@tuomashatakka/threejs-scenes'`,
+    example: `import { createApp, raster, primitives } from 'threejs-scenes'`,
   },
   './primitives': {
     title:   'primitives',
     desc:    'Things you can put in a scene: geometry construction (shapes, extrusion, lathe, tubes), vertex manipulation and merging, materials and procedural textures, seeded noise/scatter, instanced and batched high-count meshes, and voxel storage + meshing. Everything that takes a seed is deterministic.',
-    example: `import { createExtrudedMesh, VoxelChunk } from '@tuomashatakka/threejs-scenes/primitives'`,
+    example: `import { createExtrudedMesh, VoxelChunk } from 'threejs-scenes/primitives'`,
   },
   './raster': {
     title:   'raster',
     desc:    'How the scene turns into pixels: lighting rigs, cameras, color correction and post-processing chains, and particle emitters (render-technique-bound: billboards, GPGPU, blending). WebGPU/TSL node effects stay off this barrel — import them from /webgpu.',
-    example: `import { createBloomPass, createCameraController } from '@tuomashatakka/threejs-scenes/raster'`,
+    example: `import { createBloomPass, createCameraController } from 'threejs-scenes/raster'`,
   },
   './compose': {
     title:   'compose',
     desc:    'Assembling and interacting with a scene: scene modules and view management, props and model loading, grouping/layout, animation, skyboxing, raycasting and declarative event binding. It decides WHAT is in the scene and how it responds, never how pixels are produced.',
-    example: `import { createSkybox, createPropRegistry } from '@tuomashatakka/threejs-scenes/compose'`,
+    example: `import { createSkybox, createPropRegistry } from 'threejs-scenes/compose'`,
   },
   './view': {
     title:   'view',
     desc:    'Binding a scene to the page: the renderer and canvas, the animation-frame loop and injectable clocks, raw pointer-gesture input, overlay compositing, screen projection, disposal, and device-tier quality detection. Nothing in this layer knows what the scene contains.',
-    example: `import { createRenderer, createFrameLoop } from '@tuomashatakka/threejs-scenes/view'`,
+    example: `import { createRenderer, createFrameLoop } from 'threejs-scenes/view'`,
   },
   './state': {
     title:   'state',
     desc:    'Unidirectional data flow as a first-class layer: the serializable store, the controller protocol (any { get, subscribe } is a valid state source; plain objects are wrapped), and tween/lerp transition helpers so state changes animate instead of snapping. State flows one way — nothing writes back.',
-    example: `import { createStore, tweened } from '@tuomashatakka/threejs-scenes/state'`,
+    example: `import { createStore, tweened } from 'threejs-scenes/state'`,
   },
   './scaffold': {
     title:   'scaffold',
     desc:    'Genre-level wiring in one call. Each scaffold accepts a plain object, a store, or a { get, subscribe } controller as its state source, wraps the shared createApp runtime, and returns the app plus its genre-specific handles: iso, orbit, tpp, rails, fps.',
-    example: `import { createIsoScaffold, createOrbitScaffold } from '@tuomashatakka/threejs-scenes/scaffold'`,
+    example: `import { createIsoScaffold, createOrbitScaffold } from 'threejs-scenes/scaffold'`,
   },
   './webgpu': {
     title:   'webgpu effects',
     desc:    'Experimental WebGPU/TSL node post-processing helpers isolated from the WebGL barrel so standard scenes never need to resolve three/webgpu.',
-    example: `import * as webgpuPost from '@tuomashatakka/threejs-scenes/webgpu'`,
+    example: `import * as webgpuPost from 'threejs-scenes/webgpu'`,
   },
   './jsx': {
     title:   'jsx scene layer',
     desc:    'Reactive JSX-style scene authoring without React: render() mounts real three.js objects and function props are re-read on the frame loop.',
-    example: `import { render, h, signal } from '@tuomashatakka/threejs-scenes/jsx'`,
+    example: `import { render, h, signal } from 'threejs-scenes/jsx'`,
   },
   './jsx/jsx-runtime': {
     title:   'jsx runtime',
     desc:    'The jsx/jsxs/Fragment runtime target for tsconfig jsxImportSource plus the hyperscript helper used by no-build demos.',
-    example: `import { jsx, jsxs, Fragment } from '@tuomashatakka/threejs-scenes/jsx/jsx-runtime'`,
+    example: `import { jsx, jsxs, Fragment } from 'threejs-scenes/jsx/jsx-runtime'`,
   },
 }
 

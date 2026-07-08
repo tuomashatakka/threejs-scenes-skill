@@ -1,13 +1,13 @@
 // scripts/material-presets.js
 // Common starting materials from the library's materials module — a sphere per
-// PBR preset plus toon and matcap. '@tuomashatakka/threejs-scenes' maps to the
+// PBR preset plus toon and matcap. 'threejs-scenes' maps to the
 // version-pinned esm.sh package in an artifact (see references/library.md).
 
 import * as THREE from 'three'
 
 import {
   createStandardMaterial, createToonMaterial, createMatcapMaterial, layoutGrid,
-} from '@tuomashatakka/threejs-scenes'
+} from 'threejs-scenes'
 
 
 export function buildMaterialBalls (scene) {

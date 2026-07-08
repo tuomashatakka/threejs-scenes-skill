@@ -1,14 +1,14 @@
 // scripts/prop-composite.js
 // Prop composite: assemble several props into one group with relative
 // transforms and aggregate disposal. Builds a lamp = post + bulb + point light.
-// '@tuomashatakka/threejs-scenes' maps to the esm.sh package (version-pinned) in an
+// 'threejs-scenes' maps to the esm.sh package (version-pinned) in an
 // artifact (see references/library.md).
 
 import * as THREE from 'three'
 
 import {
   defineProp, createProp, createPropComposite, createStandardMaterial, pulseScaleClip,
-} from '@tuomashatakka/threejs-scenes'
+} from 'threejs-scenes'
 
 
 const postProp = defineProp({

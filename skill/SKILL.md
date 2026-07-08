@@ -1,6 +1,6 @@
 ---
 name: threejs-scenes
-version: 2.0.1
+version: 2.1.0
 description: >
   Build production-quality three.js WebGL scenes with vanilla three.js (no R3F).
   Use this skill whenever the user mentions three.js, WebGL, 3D scenes in the browser,
@@ -96,7 +96,7 @@ specific request — the scripts are templates, not black boxes.
 
 The 1.1 scripts (`extruded-mesh.js`, `geometry-modifiers.js`, `material-presets.js`,
 `prop-factory.js`, `prop-composite.js`, `animation-controller.js`, `gltf-prop.js`,
-`jsx-scene.js`) import the **library** (`@tuomashatakka/threejs-scenes`)
+`jsx-scene.js`) import the **library** (`threejs-scenes`)
 rather than inlining helpers — see **Using the Library** below.
 
 ## Runnable Templates
@@ -129,7 +129,7 @@ For multi-module projects, graduate to the `scripts/` modules + an importmap.
 The first six templates are self-contained (inlined helpers, esm.sh `three`). The
 five **library-backed** templates (`geometry`, `materials`, `props`, `animation`,
 `jsx-scene`) instead import the published package via importmap (`@scenes` →
-esm.sh `@tuomashatakka/threejs-scenes`, pinned to this skill's version; `three`
+esm.sh `threejs-scenes`, pinned to this skill's version; `three`
 from esm.sh) — see `references/library.md`. The skill does not bundle a copy of
 the library.
 
@@ -151,8 +151,8 @@ through an importmap so artifacts stay self-contained:
     "three":         "https://esm.sh/three@0.184.0",
     "three/addons/": "https://esm.sh/three@0.184.0/examples/jsm/",
     "@tuomashatakka/canvas-loop-framecapper": "https://esm.sh/@tuomashatakka/canvas-loop-framecapper@1.0.0",
-    "@scenes":       "https://esm.sh/@tuomashatakka/threejs-scenes@2.0.1?external=three,@tuomashatakka/canvas-loop-framecapper",
-    "@scenes/jsx":   "https://esm.sh/@tuomashatakka/threejs-scenes@2.0.1/jsx?external=three,@tuomashatakka/canvas-loop-framecapper"
+    "@scenes":       "https://esm.sh/threejs-scenes@2.1.0?external=three,@tuomashatakka/canvas-loop-framecapper",
+    "@scenes/jsx":   "https://esm.sh/threejs-scenes@2.1.0/jsx?external=three,@tuomashatakka/canvas-loop-framecapper"
   }
 }
 </script>
@@ -163,9 +163,9 @@ through an importmap so artifacts stay self-contained:
 ```
 
 The library is structured into three main, tree-shakeable public entry points:
-- `@tuomashatakka/threejs-scenes` (WebGL core, scaffolding, cameras, animations, lighting, materials, geometry, instancing, loaders, and state management)
-- `@tuomashatakka/threejs-scenes/webgpu` (Dedicated WebGPU post-processing and TSL effects)
-- `@tuomashatakka/threejs-scenes/jsx` (Declarative, reactive JSX layer)
+- `threejs-scenes` (WebGL core, scaffolding, cameras, animations, lighting, materials, geometry, instancing, loaders, and state management)
+- `threejs-scenes/webgpu` (Dedicated WebGPU post-processing and TSL effects)
+- `threejs-scenes/jsx` (Declarative, reactive JSX layer)
 
 See `references/library.md` for integration details.
 
@@ -175,7 +175,7 @@ See `references/library.md` for integration details.
 elements and `render(tree, { canvas })` mounts it, driving reactivity from the
 **main frame loop**: a function-valued prop is an accessor re-read every frame,
 plain values apply once. Use hyperscript `h(...)` for a no-build artifact, or JSX
-with `jsxImportSource: "@tuomashatakka/threejs-scenes/jsx"`. Intrinsics: `<scene>`,
+with `jsxImportSource: "threejs-scenes/jsx"`. Intrinsics: `<scene>`,
 `<camera type=perspective|iso|follow>`, `<light type=spot|point|directional|ambient|
 hemisphere>`, `<group>`, `<mesh>`, `<primitive>`, `<prop src=…>` (factory / `.ts`
 module / model file), `<instances>`, `<post>`. See `references/jsx-layer.md`.

@@ -1,21 +1,21 @@
 // lib/index.ts
-// @tuomashatakka/threejs-scenes — curated entrypoint.
+// threejs-scenes — curated entrypoint.
 //
 // The root is intentionally small: the shared type vocabulary, a hand-picked
 // set of the most-used factories, and the six domain namespaces. The full
 // library is grouped by concern behind those namespaces — and each is also a
 // tree-shakeable subpath:
 //
-//   import { createApp, raster, primitives } from '@tuomashatakka/threejs-scenes'
+//   import { createApp, raster, primitives } from 'threejs-scenes'
 //   const bloom = raster.createBloomPass({ ... })
 //
 //   // or, for tree-shaking / deep imports:
-//   import { createBloomPass } from '@tuomashatakka/threejs-scenes/raster'
+//   import { createBloomPass } from 'threejs-scenes/raster'
 //
 // Data flows one way:  state → scaffold → compose → primitives, with view and
 // raster on the output side. WebGPU/TSL post effects and the reactive JSX layer
 // stay off this barrel (they pull in three/webgpu + three/tsl / a runtime):
-// import them from '@tuomashatakka/threejs-scenes/webgpu' and '/jsx'.
+// import them from 'threejs-scenes/webgpu' and '/jsx'.
 
 // --- shared type vocabulary (SceneContext, FrameContext, ParamSpec, tuples...) ---
 export * from './types.js'

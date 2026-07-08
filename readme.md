@@ -73,27 +73,27 @@ import {
   createStandardMaterial, createEmitter, createInfiniteGround,
   // domain namespaces — the whole library, grouped by concern
   primitives, raster, compose, view, state, scaffold,
-} from '@tuomashatakka/threejs-scenes'
+} from 'threejs-scenes'
 
 const app = createApp({ canvas })              // renderer + scene + camera + lighting + orbit + loop
 const chunk = new primitives.VoxelChunk(16)    // deep API lives in its namespace
 app.start()
 
 // or import a single domain directly (best for tree-shaking):
-import { createBatchedBuildings } from '@tuomashatakka/threejs-scenes/primitives'
-import { createComposer, createGradePass } from '@tuomashatakka/threejs-scenes/raster'
+import { createBatchedBuildings } from 'threejs-scenes/primitives'
+import { createComposer, createGradePass } from 'threejs-scenes/raster'
 ```
 
 Public entry points:
-- `@tuomashatakka/threejs-scenes` — curated root: hero factories + the six domain namespaces
-- `@tuomashatakka/threejs-scenes/primitives` — geometry, materials, procedural, instancing, voxels
-- `@tuomashatakka/threejs-scenes/raster` — lighting, cameras, post-processing, particles
-- `@tuomashatakka/threejs-scenes/compose` — scene modules, props, loaders, animation, skybox, events
-- `@tuomashatakka/threejs-scenes/view` — renderer, frame loop, input, projection, disposal, quality
-- `@tuomashatakka/threejs-scenes/state` — store, controller protocol, tween/lerp transitions
-- `@tuomashatakka/threejs-scenes/scaffold` — one-call genre wiring (iso, orbit, tpp, rails, fps)
-- `@tuomashatakka/threejs-scenes/webgpu` — dedicated WebGPU post-processing and TSL effects
-- `@tuomashatakka/threejs-scenes/jsx` — declarative, reactive JSX layer
+- `threejs-scenes` — curated root: hero factories + the six domain namespaces
+- `threejs-scenes/primitives` — geometry, materials, procedural, instancing, voxels
+- `threejs-scenes/raster` — lighting, cameras, post-processing, particles
+- `threejs-scenes/compose` — scene modules, props, loaders, animation, skybox, events
+- `threejs-scenes/view` — renderer, frame loop, input, projection, disposal, quality
+- `threejs-scenes/state` — store, controller protocol, tween/lerp transitions
+- `threejs-scenes/scaffold` — one-call genre wiring (iso, orbit, tpp, rails, fps)
+- `threejs-scenes/webgpu` — dedicated WebGPU post-processing and TSL effects
+- `threejs-scenes/jsx` — declarative, reactive JSX layer
 
 ### hooks (`/jsx`)
 
@@ -105,7 +105,7 @@ provides the mounting runtime, so `useScene()`, `useRenderer()`, `useCamera()`,
 `useSignal` / `useDerived` are callable anywhere.
 
 ```tsx
-import { render, h, useFrame, useSignal } from '@tuomashatakka/threejs-scenes/jsx'
+import { render, h, useFrame, useSignal } from 'threejs-scenes/jsx'
 
 function Spinner () {
   const [angle, setAngle] = useSignal(0)
@@ -123,7 +123,7 @@ The vite site renders the full searchable API with runnable playgrounds at
 [the library page](https://tuomashatakka.github.io/threejs-scenes-skill/library/) and keeps the old
 [`api.html`](https://tuomashatakka.github.io/threejs-scenes-skill/api.html) URL as a redirect.
 
-#### `@tuomashatakka/threejs-scenes`
+#### `threejs-scenes`
 
 A deliberately small surface: the shared type vocabulary, a hand-picked set of the most-used factories (createApp, the scaffolds, the go-to material/geometry/light/animation/prop/particle helpers), and the six domain namespaces below. The full library is grouped by concern behind primitives / raster / compose / view / state / scaffold.
 
@@ -356,11 +356,11 @@ A deliberately small surface: the shared type vocabulary, a hand-picked set of t
   <details><summary>Example</summary>
 
   ```ts
-  import { createApp, raster, primitives } from '@tuomashatakka/threejs-scenes'
+  import { createApp, raster, primitives } from 'threejs-scenes'
   ```
   </details>
 
-#### `@tuomashatakka/threejs-scenes/primitives`
+#### `threejs-scenes/primitives`
 
 Things you can put in a scene: geometry construction (shapes, extrusion, lathe, tubes), vertex manipulation and merging, materials and procedural textures, seeded noise/scatter, instanced and batched high-count meshes, and voxel storage + meshing. Everything that takes a seed is deterministic.
 
@@ -614,11 +614,11 @@ Things you can put in a scene: geometry construction (shapes, extrusion, lathe, 
   <details><summary>Example</summary>
 
   ```ts
-  import { createExtrudedMesh, VoxelChunk } from '@tuomashatakka/threejs-scenes/primitives'
+  import { createExtrudedMesh, VoxelChunk } from 'threejs-scenes/primitives'
   ```
   </details>
 
-#### `@tuomashatakka/threejs-scenes/raster`
+#### `threejs-scenes/raster`
 
 How the scene turns into pixels: lighting rigs, cameras, color correction and post-processing chains, and particle emitters (render-technique-bound: billboards, GPGPU, blending). WebGPU/TSL node effects stay off this barrel — import them from /webgpu.
 
@@ -834,11 +834,11 @@ How the scene turns into pixels: lighting rigs, cameras, color correction and po
   <details><summary>Example</summary>
 
   ```ts
-  import { createBloomPass, createCameraController } from '@tuomashatakka/threejs-scenes/raster'
+  import { createBloomPass, createCameraController } from 'threejs-scenes/raster'
   ```
   </details>
 
-#### `@tuomashatakka/threejs-scenes/compose`
+#### `threejs-scenes/compose`
 
 Assembling and interacting with a scene: scene modules and view management, props and model loading, grouping/layout, animation, skyboxing, raycasting and declarative event binding. It decides WHAT is in the scene and how it responds, never how pixels are produced.
 
@@ -1082,11 +1082,11 @@ Assembling and interacting with a scene: scene modules and view management, prop
   <details><summary>Example</summary>
 
   ```ts
-  import { createSkybox, createPropRegistry } from '@tuomashatakka/threejs-scenes/compose'
+  import { createSkybox, createPropRegistry } from 'threejs-scenes/compose'
   ```
   </details>
 
-#### `@tuomashatakka/threejs-scenes/view`
+#### `threejs-scenes/view`
 
 Binding a scene to the page: the renderer and canvas, the animation-frame loop and injectable clocks, raw pointer-gesture input, overlay compositing, screen projection, disposal, and device-tier quality detection. Nothing in this layer knows what the scene contains.
 
@@ -1172,11 +1172,11 @@ Binding a scene to the page: the renderer and canvas, the animation-frame loop a
   <details><summary>Example</summary>
 
   ```ts
-  import { createRenderer, createFrameLoop } from '@tuomashatakka/threejs-scenes/view'
+  import { createRenderer, createFrameLoop } from 'threejs-scenes/view'
   ```
   </details>
 
-#### `@tuomashatakka/threejs-scenes/state`
+#### `threejs-scenes/state`
 
 Unidirectional data flow as a first-class layer: the serializable store, the controller protocol (any { get, subscribe } is a valid state source; plain objects are wrapped), and tween/lerp transition helpers so state changes animate instead of snapping. State flows one way — nothing writes back.
 
@@ -1229,11 +1229,11 @@ Unidirectional data flow as a first-class layer: the serializable store, the con
   <details><summary>Example</summary>
 
   ```ts
-  import { createStore, tweened } from '@tuomashatakka/threejs-scenes/state'
+  import { createStore, tweened } from 'threejs-scenes/state'
   ```
   </details>
 
-#### `@tuomashatakka/threejs-scenes/scaffold`
+#### `threejs-scenes/scaffold`
 
 Genre-level wiring in one call. Each scaffold accepts a plain object, a store, or a { get, subscribe } controller as its state source, wraps the shared createApp runtime, and returns the app plus its genre-specific handles: iso, orbit, tpp, rails, fps.
 
@@ -1285,11 +1285,11 @@ Genre-level wiring in one call. Each scaffold accepts a plain object, a store, o
   <details><summary>Example</summary>
 
   ```ts
-  import { createIsoScaffold, createOrbitScaffold } from '@tuomashatakka/threejs-scenes/scaffold'
+  import { createIsoScaffold, createOrbitScaffold } from 'threejs-scenes/scaffold'
   ```
   </details>
 
-#### `@tuomashatakka/threejs-scenes/webgpu`
+#### `threejs-scenes/webgpu`
 
 Experimental WebGPU/TSL node post-processing helpers isolated from the WebGL barrel so standard scenes never need to resolve three/webgpu.
 
@@ -1495,11 +1495,11 @@ Experimental WebGPU/TSL node post-processing helpers isolated from the WebGL bar
   <details><summary>Example</summary>
 
   ```ts
-  import * as webgpuPost from '@tuomashatakka/threejs-scenes/webgpu'
+  import * as webgpuPost from 'threejs-scenes/webgpu'
   ```
   </details>
 
-#### `@tuomashatakka/threejs-scenes/jsx`
+#### `threejs-scenes/jsx`
 
 Reactive JSX-style scene authoring without React: render() mounts real three.js objects and function props are re-read on the frame loop.
 
@@ -1621,11 +1621,11 @@ Reactive JSX-style scene authoring without React: render() mounts real three.js 
   <details><summary>Example</summary>
 
   ```ts
-  import { render, h, signal } from '@tuomashatakka/threejs-scenes/jsx'
+  import { render, h, signal } from 'threejs-scenes/jsx'
   ```
   </details>
 
-#### `@tuomashatakka/threejs-scenes/jsx/jsx-runtime`
+#### `threejs-scenes/jsx/jsx-runtime`
 
 The jsx/jsxs/Fragment runtime target for tsconfig jsxImportSource plus the hyperscript helper used by no-build demos.
 
@@ -1650,7 +1650,7 @@ The jsx/jsxs/Fragment runtime target for tsconfig jsxImportSource plus the hyper
   <details><summary>Example</summary>
 
   ```ts
-  import { jsx, jsxs, Fragment } from '@tuomashatakka/threejs-scenes/jsx/jsx-runtime'
+  import { jsx, jsxs, Fragment } from 'threejs-scenes/jsx/jsx-runtime'
   ```
   </details>
 
@@ -1695,7 +1695,7 @@ not `ShaderPass` chains. To avoid name clashes they are exported under a
 namespace, or via the `./post/webgpu` subpath:
 
 ```ts
-import * as webgpuPost from '@tuomashatakka/threejs-scenes/webgpu'
+import * as webgpuPost from 'threejs-scenes/webgpu'
 
 const { color, viewZ } = webgpuPost.createScenePass(scene, camera)
 const bloom = webgpuPost.createBloom(color, { strength: 0.8 })

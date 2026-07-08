@@ -2,14 +2,14 @@
 // AnimationMixer convenience layer: build programmatic clips, wire them into the
 // frame loop, and crossfade between them. createAnimationController + clip
 // builders come from the library's animation module.
-// '@tuomashatakka/threejs-scenes' maps to the esm.sh package (version-pinned) in an
+// 'threejs-scenes' maps to the esm.sh package (version-pinned) in an
 // artifact (see references/library.md).
 
 import * as THREE from 'three'
 
 import {
   createAnimationController, spinClip, bobClip, pulseScaleClip, combineClips,
-} from '@tuomashatakka/threejs-scenes'
+} from 'threejs-scenes'
 
 
 export function animateMesh (mesh, loop) {

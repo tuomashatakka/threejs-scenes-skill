@@ -1,7 +1,7 @@
 # Using the library
 
 Templates and artifacts import the published npm package
-`@tuomashatakka/threejs-scenes` from esm.sh, **version-pinned** to the skill's
+`threejs-scenes` from esm.sh, **version-pinned** to the skill's
 version — the skill does **not** ship a copy of the library. No `npm install`
 either: the importmap is the whole integration.
 
@@ -19,8 +19,8 @@ them — one shared three.js instance, no duplicate-THREE `instanceof` failures.
     "three":          "https://esm.sh/three@0.184.0",
     "three/addons/":  "https://esm.sh/three@0.184.0/examples/jsm/",
     "@tuomashatakka/canvas-loop-framecapper": "https://esm.sh/@tuomashatakka/canvas-loop-framecapper@1.0.0",
-    "@scenes":     "https://esm.sh/@tuomashatakka/threejs-scenes@2.0.1?external=three,@tuomashatakka/canvas-loop-framecapper",
-    "@scenes/jsx": "https://esm.sh/@tuomashatakka/threejs-scenes@2.0.1/jsx?external=three,@tuomashatakka/canvas-loop-framecapper"
+    "@scenes":     "https://esm.sh/threejs-scenes@2.1.0?external=three,@tuomashatakka/canvas-loop-framecapper",
+    "@scenes/jsx": "https://esm.sh/threejs-scenes@2.1.0/jsx?external=three,@tuomashatakka/canvas-loop-framecapper"
   }
 }
 </script>
@@ -32,13 +32,13 @@ them — one shared three.js instance, no duplicate-THREE `instanceof` failures.
 ```
 
 Keep the pinned version in sync with the skill: `scripts/sync-version.ts`
-rewrites every `@tuomashatakka/threejs-scenes@<version>` occurrence on
+rewrites every `threejs-scenes@<version>` occurrence on
 `npm version`, and `package-skill.ts` refuses to bundle a stale pin.
 
 For bundler-based projects, install from npm instead:
 
 ```sh
-npm install @tuomashatakka/threejs-scenes three
+npm install threejs-scenes three
 ```
 
 Working references: every library-backed file in `skill/templates/*.html`
@@ -50,13 +50,13 @@ committed).
 
 Instead of exposing dozens of subpaths, the library simplifies integration into three clean, tree-shakeable public entry points:
 
-- `@tuomashatakka/threejs-scenes`: Unified core containing WebGL scaffolding, cameras, animations, lighting, materials, geometry, instancing, loaders, and state management.
-- `@tuomashatakka/threejs-scenes/webgpu`: WebGPU post-processing and node-based effects (isolated to prevent standard WebGL scenes from needing to resolve `three/webgpu` + `three/tsl`).
-- `@tuomashatakka/threejs-scenes/jsx`: Declarative, reactive JSX layer.
+- `threejs-scenes`: Unified core containing WebGL scaffolding, cameras, animations, lighting, materials, geometry, instancing, loaders, and state management.
+- `threejs-scenes/webgpu`: WebGPU post-processing and node-based effects (isolated to prevent standard WebGL scenes from needing to resolve `three/webgpu` + `three/tsl`).
+- `threejs-scenes/jsx`: Declarative, reactive JSX layer.
 
 ```js
-import { createIsoScaffold, tweened, EASINGS } from '@tuomashatakka/threejs-scenes'
-import { render, h } from '@tuomashatakka/threejs-scenes/jsx'
+import { createIsoScaffold, tweened, EASINGS } from 'threejs-scenes'
+import { render, h } from 'threejs-scenes/jsx'
 ```
 
 Every scaffold accepts `state` as a plain object, a store, or any

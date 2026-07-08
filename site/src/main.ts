@@ -179,7 +179,7 @@ function quickstartExample (): string {
   {
     "imports": {
       "three": "https://esm.sh/three@0.184.0",
-      "@tuomashatakka/threejs-scenes": "https://esm.sh/@tuomashatakka/threejs-scenes@${libraryData.version}?external=three"
+      "threejs-scenes": "https://esm.sh/threejs-scenes@${libraryData.version}?external=three"
     }
   }
   </script>
@@ -188,7 +188,7 @@ function quickstartExample (): string {
   <canvas id="scene" style="width:100vw;height:100vh;display:block"></canvas>
   <script type="module">
     import * as THREE from 'three'
-    import { createApp, createToonMaterial } from '@tuomashatakka/threejs-scenes'
+    import { createApp, createToonMaterial } from 'threejs-scenes'
 
     let mesh
     const app = createApp({
@@ -221,7 +221,7 @@ function quickstartSection (): string {
 }
 
 function renderHome (): string {
-  const headerExtra = `<p><code>npm install @tuomashatakka/threejs-scenes</code> (github packages) - or, with no token at all:</p>
+  const headerExtra = `<p><code>npm install threejs-scenes</code> (github packages) - or, with no token at all:</p>
     <p><code>npm install https://tuomashatakka.github.io/threejs-scenes-skill/threejs-scenes.tgz</code></p>
     <p data-actions>
       <a href="${href('/library/')}">full library reference</a>

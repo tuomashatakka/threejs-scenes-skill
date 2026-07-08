@@ -21,10 +21,10 @@
     "verbatimModuleSyntax": false,
     "isolatedModules": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "@tuomashatakka/threejs-scenes/jsx",
+    "jsxImportSource": "threejs-scenes/jsx",
     "paths": {
-      "@tuomashatakka/threejs-scenes/jsx/jsx-runtime": [ "./lib/jsx/jsx-runtime.ts" ],
-      "@tuomashatakka/threejs-scenes/jsx": [ "./lib/jsx/index.ts" ]
+      "threejs-scenes/jsx/jsx-runtime": [ "./lib/jsx/jsx-runtime.ts" ],
+      "threejs-scenes/jsx": [ "./lib/jsx/index.ts" ]
     }
   },
   "include": ["lib/**/*.ts"],

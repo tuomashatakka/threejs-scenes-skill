@@ -1,14 +1,14 @@
 // scripts/prop-factory.js
 // Prop factory usage: a "crystal" prop (mesh + light + animation clips) and a
 // single-mesh "tree" prop that instances to one draw call. defineProp/createProp
-// come from the library's props module. '@tuomashatakka/threejs-scenes' maps to
+// come from the library's props module. 'threejs-scenes' maps to
 // the esm.sh package (version-pinned) in an artifact (see references/library.md).
 
 import * as THREE from 'three'
 
 import {
   defineProp, createProp, createInstancedProp, createStandardMaterial, spinClip, bobClip,
-} from '@tuomashatakka/threejs-scenes'
+} from 'threejs-scenes'
 
 
 export const crystalProp = defineProp({

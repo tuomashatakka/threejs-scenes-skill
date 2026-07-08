@@ -1,13 +1,13 @@
 // scripts/geometry-modifiers.js
 // Vertex deformers + static-batch merging from the library's geometry module.
-// '@tuomashatakka/threejs-scenes' maps to the esm.sh package (version-pinned) in an
+// 'threejs-scenes' maps to the esm.sh package (version-pinned) in an
 // artifact (see references/library.md).
 
 import * as THREE from 'three'
 
 import {
   applyTwist, displaceByNoise, mergeMeshes, createStandardMaterial,
-} from '@tuomashatakka/threejs-scenes'
+} from 'threejs-scenes'
 
 
 export function makeTwistedBar (material = createStandardMaterial('plastic', { color: '#d94f9f' })) {
