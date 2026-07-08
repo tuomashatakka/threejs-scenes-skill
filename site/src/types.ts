@@ -12,27 +12,36 @@ export interface PlaySeed {
 }
 
 export interface LibraryExport {
-  name:         string
-  kind:         string
-  doc:          string
-  summary:      string
-  signature:    string
-  coverage:     'playground' | 'type-reference'
-  sample:       string
-  relatedDemos: string[]
-  playSeed?:    PlaySeed
+  name:          string
+  kind:          string
+  doc:           string
+  summary:       string
+  signature:     string
+  coverage:      'playground' | 'type-reference'
+  sample:        string
+  relatedDemos:  string[]
+  category:      string
+  categoryLabel: string
+  playSeed?:     PlaySeed
+}
+
+export interface LibraryCategory {
+  id:    string
+  label: string
+  count: number
 }
 
 export interface LibraryModule {
-  id:        string
-  subpath:   string
-  specifier: string
-  title:     string
-  desc:      string
-  entry:     string
-  importUrl: string
-  example?:  string
-  exports:   LibraryExport[]
+  id:         string
+  subpath:    string
+  specifier:  string
+  title:      string
+  desc:       string
+  entry:      string
+  importUrl:  string
+  example?:   string
+  categories: LibraryCategory[]
+  exports:    LibraryExport[]
 }
 
 export interface LibraryData {

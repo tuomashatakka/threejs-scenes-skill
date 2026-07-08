@@ -3,7 +3,7 @@
 
 @layer reset {
   *, *::before, *::after { box-sizing: border-box; }
-  body, h1, h2, h3, p, ul, ol, dl, dd, figure, pre { margin: 0; }
+  body, h1, h2, h3, h4, p, ul, ol, dl, dd, figure, pre { margin: 0; }
   ul, ol { padding: 0; }
   img, iframe { display: block; max-width: 100%; }
   iframe, input, textarea, pre, code { min-width: 0; }
@@ -52,7 +52,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3 {
+  h1, h2, h3, h4 {
     line-height: 1.2;
     font-weight: 650;
     letter-spacing: 0;
@@ -61,6 +61,7 @@
   h1 { font-size: clamp(1.9rem, 5vw, 3rem); }
   h2 { font-size: clamp(1.4rem, 3vw, 2rem); }
   h3 { font-size: 1.15rem; color: var(--accent); }
+  h4 { font-size: 1rem; color: var(--accent); }
 
   p {
     color: var(--fg-muted);
@@ -282,7 +283,8 @@
 
   nav[aria-label="primary"] a,
   [data-actions] a,
-  [data-local-nav] a {
+  [data-local-nav] a,
+  [data-group-nav] a {
     display: inline-block;
     border: 1px solid var(--border);
     border-radius: 999px;
@@ -295,7 +297,8 @@
   nav[aria-label="primary"] a:hover,
   nav[aria-label="primary"] a[aria-current="page"],
   [data-actions] a:hover,
-  [data-local-nav] a:hover {
+  [data-local-nav] a:hover,
+  [data-group-nav] a:hover {
     border-color: var(--accent-dim);
     background: var(--bg-elev);
     color: var(--accent);
@@ -385,7 +388,7 @@
     margin: 0.45rem 0 0.2rem;
   }
 
-  [data-export-card] h3 {
+  [data-export-card] h4 {
     min-width: 0;
     overflow-wrap: anywhere;
   }
@@ -395,7 +398,7 @@
     max-height: 26em;
   }
 
-  [data-export-card] h3 span,
+  [data-export-card] h4 span,
   [data-type-badge],
   [data-tags] span,
   .badge {
@@ -419,7 +422,8 @@
   [data-related],
   [data-tags],
   [data-demo-tabs],
-  [data-local-nav] {
+  [data-local-nav],
+  [data-group-nav] {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
@@ -434,6 +438,10 @@
     background: color-mix(in srgb, var(--bg) 88%, transparent);
     backdrop-filter: blur(8px);
     padding-block: 0.75rem;
+  }
+
+  [data-module-section] > [data-group-section] {
+    margin-top: 2rem;
   }
 
   [data-related] {

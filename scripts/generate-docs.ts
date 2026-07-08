@@ -29,15 +29,23 @@ interface ModuleMeta {
 }
 
 interface DocExport {
-  name:         string
-  kind:         string
-  doc:          string
-  summary:      string
-  signature:    string
-  coverage:     'playground' | 'type-reference'
-  sample:       string
-  relatedDemos: string[]
-  playSeed?:    PlaySeed
+  name:          string
+  kind:          string
+  doc:           string
+  summary:       string
+  signature:     string
+  coverage:      'playground' | 'type-reference'
+  sample:        string
+  relatedDemos:  string[]
+  category:      string
+  categoryLabel: string
+  playSeed?:     PlaySeed
+}
+
+interface LibraryCategory {
+  id:    string
+  label: string
+  count: number
 }
 
 interface LibraryData {
@@ -50,7 +58,7 @@ interface LibraryData {
     playable: number
     typeReferences: number
   }
-  modules: Array<ModuleMeta & { exports: DocExport[] }>
+  modules: Array<ModuleMeta & { exports: DocExport[], categories: LibraryCategory[] }>
 }
 
 interface ParsedParam {
@@ -158,6 +166,39 @@ const DESCRIPTIONS: Record<string, { title: string, desc: string, example?: stri
     desc:    'The jsx/jsxs/Fragment runtime target for tsconfig jsxImportSource plus the hyperscript helper used by no-build demos.',
     example: `import { jsx, jsxs, Fragment } from '@tuomashatakka/threejs-scenes/jsx/jsx-runtime'`,
   },
+}
+
+// First matching rule wins. Tuned against the root barrel (326 exports) so
+// the api/library page can group by topic instead of one flat alphabetical
+// list — order matters, more specific keywords come before generic ones.
+const CATEGORY_RULES: Array<{ id: string, label: string, pattern: RegExp }> = [
+  { id: 'app-lifecycle',    label: 'App & Lifecycle',      pattern: /app|clock|store|renderer|frame|resize|pointer|dispose|quality|overlay|projection|bootstrap|loop|reducer|state|controller/ },
+  { id: 'camera',           label: 'Camera & Rigs',        pattern: /camera|iso|follow|target|path|orbit|scaffold|rails|tpp|fps|fly/ },
+  { id: 'instancing',       label: 'Instancing',           pattern: /instance|batched|building/ },
+  { id: 'geometry',         label: 'Geometry',             pattern: /shape|extrude|lathe|geometry|mesh|graph|ground|tube|merge|layout|twist|bend|taper|edge|normal|bounds|group\b/ },
+  { id: 'materials',        label: 'Materials',            pattern: /material|toon|matcap|holographic|shader|triplanar|quad/ },
+  { id: 'lighting',         label: 'Lighting & Environment', pattern: /light|sun|environment|hemisphere|sky/ },
+  { id: 'particles',        label: 'Particles',            pattern: /particle|emitter|curve|spawn/ },
+  { id: 'post-processing',  label: 'Post-processing',      pattern: /post|pass|composer|bloom|glitch|rays|dof|film|grain|stereo|lut|chromatic|radial|outline|ssr|smaa|fxaa|retro|crt|lensing|burn|hud|beam|afterimage|anamorphic|motionblur|pixel|sobel|traa|ssao|ssgi|sss|transition|masking|mask|difference|scenepass/ },
+  { id: 'voxels',           label: 'Voxels',                pattern: /voxel|chunk|greedy/ },
+  { id: 'props',            label: 'Props & Loading',      pattern: /prop|registry|gltf|model|format_loaders/ },
+  { id: 'animation',        label: 'Animation',             pattern: /animation|clip|track|mixer|tween|easing/ },
+  { id: 'architecture',     label: 'Architecture & State',  pattern: /module\b|pool|param|pick|view|edit|event|composite|disposable|click.?guard/ },
+  { id: 'procedural-math',  label: 'Procedural & Math',     pattern: /rng|noise|poisson|procedural|body|texture|segment|hash|lerp|smoothstep|mulberry|vector3|tuple|point2|axis|transform/ },
+]
+const FALLBACK_CATEGORY = { id: 'core-utilities', label: 'Core & Misc' }
+
+// Only group a module's exports by topic once it's large enough to need it —
+// small modules (webgpu/jsx/jsx-runtime) mostly miss these three.js-domain
+// keywords and would just pile into the fallback bucket.
+const CATEGORY_GROUPING_THRESHOLD = 100
+
+function categorize (name: string, kind: string): { id: string, label: string } {
+  const lower = `${name} ${kind}`.toLowerCase()
+  for (const rule of CATEGORY_RULES)
+    if (rule.pattern.test(lower))
+      return { id: rule.id, label: rule.label }
+  return FALLBACK_CATEGORY
 }
 
 const DEMO_CATALOG = [
@@ -1006,17 +1047,22 @@ function extractLibrary (): LibraryData {
       if (!decls.length)
         continue
 
-      const doc = ts.displayPartsToString(resolved.getDocumentationComment(checker)) ||
+      const doc  = ts.displayPartsToString(resolved.getDocumentationComment(checker)) ||
         ts.displayPartsToString(sym.getDocumentationComment(checker))
+      const name = sym.getName()
+      const kind = KIND[decls[0]!.kind] ?? 'value'
+      const cat  = categorize(name, kind)
       const entry: DocExport = {
-        name:         sym.getName(),
-        kind:         KIND[decls[0]!.kind] ?? 'value',
-        doc:          doc.trim(),
-        summary:      summary(doc),
-        signature:    decls.map(d => clean(d.kind === ts.SyntaxKind.VariableDeclaration ? d.parent.parent.getText() : d.getText())).join('\n'),
-        coverage:     'type-reference',
-        sample:       '',
-        relatedDemos: [],
+        name,
+        kind,
+        doc:           doc.trim(),
+        summary:       summary(doc),
+        signature:     decls.map(d => clean(d.kind === ts.SyntaxKind.VariableDeclaration ? d.parent.parent.getText() : d.getText())).join('\n'),
+        coverage:      'type-reference',
+        sample:        '',
+        relatedDemos:  [],
+        category:      cat.id,
+        categoryLabel: cat.label,
       }
       const seed = createPlaySeed(module, entry)
       entry.playSeed = seed
@@ -1028,7 +1074,14 @@ function extractLibrary (): LibraryData {
 
     const rank = (k: string): number => k === 'function' || k === 'class' ? 0 : k === 'const' || k === 'enum' ? 1 : 2
     exports.sort((a, b) => rank(a.kind) - rank(b.kind) || a.name.localeCompare(b.name))
-    return { ...module, exports }
+
+    const categories: LibraryCategory[] = exports.length > CATEGORY_GROUPING_THRESHOLD
+      ? [ ...CATEGORY_RULES.map(rule => ({ id: rule.id, label: rule.label })), FALLBACK_CATEGORY ]
+        .map(cat => ({ ...cat, count: exports.filter(e => e.category === cat.id).length }))
+        .filter(cat => cat.count > 0)
+      : []
+
+    return { ...module, exports, categories }
   })
 
   const flat = modulesWithExports.flatMap(module => module.exports)

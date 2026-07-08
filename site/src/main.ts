@@ -119,6 +119,56 @@ function demoPreview (demos = demoData.demos.slice(0, 9)): string {
   </section>`
 }
 
+function quickstartExample (): string {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://esm.sh/three@0.184.0",
+      "@tuomashatakka/threejs-scenes": "https://esm.sh/@tuomashatakka/threejs-scenes@${libraryData.version}?external=three"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="scene" style="width:100vw;height:100vh;display:block"></canvas>
+  <script type="module">
+    import * as THREE from 'three'
+    import { createApp, createToonMaterial } from '@tuomashatakka/threejs-scenes'
+
+    let mesh
+    const app = createApp({
+      canvas: document.querySelector('#scene'),
+      camera: { position: [4, 3, 6] },
+      onFrame (state, { elapsed }) {
+        if (mesh) mesh.rotation.y = elapsed * 0.4
+      },
+    })
+
+    mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1.2, 1), createToonMaterial({ color: '#6ea8ff' }))
+    app.ctx.scene.add(mesh)
+    app.start()
+
+    // resize, pointer-orbit, standard lighting, and disposal (app.dispose()) all ship built in
+  </script>
+</body>
+</html>`
+}
+
+function quickstartSection (): string {
+  return `<section aria-labelledby="quickstart-title">
+    <div data-section-head>
+      <p>quickstart</p>
+      <h2 id="quickstart-title">createApp in one file</h2>
+      <p>one factory wires the renderer, camera, standard lighting, pointer orbit, and resize handling - drop in a mesh and start the loop. copy this into an .html file and open it.</p>
+    </div>
+    <pre><code>${escapeHtml(quickstartExample())}</code></pre>
+  </section>`
+}
+
 function renderHome (): string {
   const headerExtra = `<p><code>npm install @tuomashatakka/threejs-scenes</code> (github packages) - or, with no token at all:</p>
     <p><code>npm install https://tuomashatakka.github.io/threejs-scenes-skill/threejs-scenes.tgz</code></p>
@@ -145,6 +195,7 @@ function renderHome (): string {
       <p><a href="${href('/skill/')}">open skill cases</a></p>
     </article>
   </section>
+  ${quickstartSection()}
   ${statList()}
   ${demoPreview(demoData.demos.slice(0, 12))}
   <section aria-labelledby="downloads-title">
@@ -173,6 +224,51 @@ function moduleTabs (): string {
   </nav>`
 }
 
+interface ExportGroup {
+  id:      string
+  label:   string
+  exports: LibraryExport[]
+}
+
+const KIND_GROUPS: Array<{ id: string, label: string, kinds: string[] }> = [
+  { id: 'callable', label: 'Functions & Classes', kinds: [ 'function', 'class' ] },
+  { id: 'constant', label: 'Constants', kinds: [ 'const', 'enum' ] },
+  { id: 'type', label: 'Types & Interfaces', kinds: [ 'interface', 'type' ] },
+]
+
+// Big modules (root) come pre-grouped by topic from generate-docs.ts. Small
+// modules mostly miss those three.js-domain keywords, so they fall back to a
+// plain function/class vs const vs type split instead.
+function groupsFor (module: LibraryModule): ExportGroup[] {
+  if (module.categories.length)
+    return module.categories.map(cat => ({
+      id:      cat.id,
+      label:   cat.label,
+      exports: module.exports.filter(entry => entry.category === cat.id),
+    }))
+  return KIND_GROUPS
+    .map(group => ({ id: group.id, label: group.label, exports: module.exports.filter(entry => group.kinds.includes(entry.kind)) }))
+    .filter(group => group.exports.length > 0)
+}
+
+function groupNav (module: LibraryModule, groups: ExportGroup[]): string {
+  if (groups.length < 2)
+    return ''
+  return `<nav aria-label="${escapeHtml(module.title)} contents" data-group-nav>
+    ${groups.map(group => `<a href="#${slug(module.id)}-${slug(group.id)}">${escapeHtml(group.label)} <span data-count>${group.exports.length}</span></a>`).join('')}
+  </nav>`
+}
+
+function groupSection (module: LibraryModule, group: ExportGroup): string {
+  const anchor = `${slug(module.id)}-${slug(group.id)}`
+  return `<section id="${anchor}" aria-labelledby="${anchor}-title" data-group-section>
+    <h3 id="${anchor}-title">${escapeHtml(group.label)} <span data-count>${group.exports.length}</span></h3>
+    <div data-card-grid>
+      ${group.exports.map(entry => exportCard(module, entry)).join('')}
+    </div>
+  </section>`
+}
+
 function relatedDemoLinks (entry: LibraryExport): string {
   return `<p data-related>${entry.relatedDemos.map(demo => `<a href="${asset(`demos/${demo}.html`)}">${escapeHtml(demo)}</a>`).join(' ')}</p>`
 }
@@ -187,10 +283,10 @@ function exportCard (module: LibraryModule, entry: LibraryExport): string {
   const sample = entry.coverage === 'type-reference'
     ? `<pre><code>${escapeHtml(entry.sample)}</code></pre>`
     : ''
-  return `<article id="${id}" data-export-card data-search-text="${escapeHtml(`${module.specifier} ${entry.name} ${entry.kind} ${entry.doc} ${entry.signature}`)}">
+  return `<article id="${id}" data-export-card data-search-text="${escapeHtml(`${module.specifier} ${entry.name} ${entry.kind} ${entry.doc} ${entry.signature} ${entry.categoryLabel}`)}">
     <header>
       <p>${escapeHtml(module.specifier)}</p>
-      <h3><code>${escapeHtml(entry.name)}</code> <span>${escapeHtml(entry.kind)}</span></h3>
+      <h4><code>${escapeHtml(entry.name)}</code> <span>${escapeHtml(entry.kind)}</span></h4>
       ${play}
     </header>
     ${entry.doc ? `<p>${escapeHtml(entry.doc)}</p>` : entry.summary ? `<p>${escapeHtml(entry.summary)}</p>` : '<p>generated declaration coverage; no doc comment was present.</p>'}
@@ -201,6 +297,7 @@ function exportCard (module: LibraryModule, entry: LibraryExport): string {
 }
 
 function moduleSection (module: LibraryModule): string {
+  const groups = groupsFor(module)
   return `<section id="${slug(module.id)}" aria-labelledby="${slug(module.id)}-title" data-module-section>
     <div data-section-head>
       <p>${escapeHtml(module.specifier)}</p>
@@ -209,9 +306,8 @@ function moduleSection (module: LibraryModule): string {
     </div>
     ${module.example ? `<pre><code>${escapeHtml(module.example)}</code></pre>` : ''}
     <p data-count>${module.exports.length} exports, ${module.exports.filter(item => item.playSeed).length} playgrounds</p>
-    <div data-card-grid>
-      ${module.exports.map(entry => exportCard(module, entry)).join('')}
-    </div>
+    ${groupNav(module, groups)}
+    ${groups.map(group => groupSection(module, group)).join('')}
   </section>`
 }
 
@@ -342,6 +438,7 @@ function setupSearch (): void {
   if (!input)
     return
   const cards = [ ...app.querySelectorAll<HTMLElement>('[data-export-card]') ]
+  const groups = [ ...app.querySelectorAll<HTMLElement>('[data-group-section]') ]
   const empty = app.querySelector<HTMLElement>('[data-no-results]')
   input.addEventListener('input', () => {
     const query = input.value.trim().toLowerCase()
@@ -352,6 +449,8 @@ function setupSearch (): void {
       if (matches)
         visible += 1
     }
+    for (const group of groups)
+      group.hidden = !group.querySelector('[data-export-card]:not([hidden])')
     if (empty)
       empty.hidden = visible > 0
   })
