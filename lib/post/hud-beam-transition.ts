@@ -57,7 +57,7 @@ export interface HudBeamOptions {
   onComplete?: () => void
 }
 
-//** Handle returned by {@link createHudBeamTransition} with play/tick controls. */
+/** Handle returned by {@link createHudBeamTransition} with play/tick controls. */
 export interface HudBeamTransition {
   pass: ShaderPass
   play (onMidpoint?: () => void): void

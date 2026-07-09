@@ -11,6 +11,17 @@ import type { VoxelChunk } from './voxel-data.js'
 
 
 /* eslint-disable complexity, max-statements, max-depth -- greedy meshing is one tight, inherently nested sweep */
+/**
+ * Greedy voxel meshing: merges coplanar same-id faces into maximal
+ * rectangles, producing 10-30× fewer triangles than naive
+ * six-quads-per-voxel meshing.
+ *
+ * @param chunk - The voxel data to mesh.
+ * @returns An indexed `BufferGeometry` with normals and per-face vertex
+ * colors derived from voxel ids.
+ * @remarks Rebuild cost is O(chunk volume) — mesh once per chunk edit, never
+ * per frame.
+ */
 export function greedyMesh (chunk: VoxelChunk): THREE.BufferGeometry {
   const N                   = chunk.size
   const positions: number[] = []

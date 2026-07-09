@@ -102,6 +102,7 @@ export function createRenderPipeline (renderer: Renderer, outputNode: Node): Ren
 }
 
 /**
+ * Back-compat alias of `createRenderPipeline`.
  * @deprecated Renamed to {@link createRenderPipeline}. PostProcessing was renamed
  * to RenderPipeline in three.js r183; this alias is kept for back-compat and will
  * be removed alongside three's PostProcessing wrapper.
