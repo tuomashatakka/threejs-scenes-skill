@@ -1,6 +1,6 @@
 ---
 name: threejs-scenes
-version: 2.1.1
+version: 3.0.0
 description: >
   Build production-quality three.js WebGL scenes with vanilla three.js (no R3F).
   Use this skill whenever the user mentions three.js, WebGL, 3D scenes in the browser,
@@ -151,8 +151,8 @@ through an importmap so artifacts stay self-contained:
     "three":         "https://esm.sh/three@0.184.0",
     "three/addons/": "https://esm.sh/three@0.184.0/examples/jsm/",
     "@tuomashatakka/canvas-loop-framecapper": "https://esm.sh/@tuomashatakka/canvas-loop-framecapper@1.0.0",
-    "@scenes":       "https://esm.sh/threejs-scenes@2.1.1?external=three,@tuomashatakka/canvas-loop-framecapper",
-    "@scenes/jsx":   "https://esm.sh/threejs-scenes@2.1.1/jsx?external=three,@tuomashatakka/canvas-loop-framecapper"
+    "@scenes":       "https://esm.sh/threejs-scenes@3.0.0?external=three,@tuomashatakka/canvas-loop-framecapper",
+    "@scenes/jsx":   "https://esm.sh/threejs-scenes@3.0.0/jsx?external=three,@tuomashatakka/canvas-loop-framecapper"
   }
 }
 </script>

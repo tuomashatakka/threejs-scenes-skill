@@ -1,6 +1,6 @@
 {
   "name": "threejs-scenes",
-  "version": "2.1.1",
+  "version": "3.0.0",
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
   },
