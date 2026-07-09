@@ -14,6 +14,7 @@ import type { ScalarCurve, ColorCurve } from './curves.js'
 import type { FrameContext } from '../types.js'
 
 
+/** Spawn volume for particles: `point`, `sphere` (optionally shell-only), `box`, `cone` (angle in radians), or `disc`. */
 export type EmitterShape =
   | { kind: 'point' } |
   { kind: 'sphere'; radius: number; shell?: boolean } |
@@ -21,6 +22,7 @@ export type EmitterShape =
   { kind: 'cone'; angle: number; radius?: number } |
   { kind: 'disc'; radius: number }
 
+/** Options for {@link createEmitter} and {@link createGpuEmitter}: capacity, emission rate/bursts, lifetime, shape, motion, and appearance curves. */
 export interface EmitterOptions {
 
   /** Max simultaneously-live particles. Buffers are sized once at this count. */
@@ -52,6 +54,7 @@ export interface EmitterOptions {
   seed?:     number
 }
 
+/** A live particle system. Call `tick(ctx)` each frame; `dispose()` frees the GPU buffers. */
 export interface Emitter {
   object: THREE.Object3D
   tick (ctx: FrameContext): void
@@ -67,6 +70,7 @@ function spawnRng (seed: number, slot: number, cycle: number): () => number {
   return mulberry32((seed ^ Math.imul(slot + 1, 2654435761) ^ Math.imul(cycle + 1, 40503)) >>> 0)
 }
 
+/** One sampled spawn: position (`px..pz`) and emission direction (`dx..dz`). Reused as scratch — copy to keep. */
 export interface SpawnSample {
   px: number
   py: number
@@ -124,6 +128,22 @@ export function sampleShape (shape: EmitterShape, r: () => number, out: SpawnSam
 
 const spawnScratch: SpawnSample = { px: 0, py: 0, pz: 0, dx: 0, dy: 1, dz: 0 }
 
+/**
+ * CPU-simulated billboard particle emitter: a fixed-capacity `Points` cloud
+ * with per-particle lifetime, seeded deterministic spawns, gravity/damping
+ * integration, and size/color/alpha curves evaluated in the shader.
+ *
+ * @param options - Capacity (buffers size once), rate/bursts, lifetime range,
+ * spawn shape, motion, and appearance curves.
+ * @returns An {@link Emitter}; add `object` to the scene and `tick` it.
+ * @remarks Simulation is O(capacity) per frame on the CPU with zero
+ * allocation; rendering is one draw call. Same seed → same particle stream.
+ * @see {@link createGpuEmitter} for a GPGPU variant at higher capacities.
+ * @example
+ * const smoke = createEmitter({ capacity: 500, shape: { kind: 'cone', angle: 0.4 } })
+ * scene.add(smoke.object)
+ * loop.onFrame(ctx => smoke.tick(ctx))
+ */
 export function createEmitter ({
   capacity,
   rate,

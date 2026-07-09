@@ -9,11 +9,23 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import type { Disposable } from '../types.js'
 
 
+/** Options for {@link applyEnvironment}: IBL `intensity` and an optional custom environment scene. */
 export interface EnvironmentOptions {
   intensity?: number
   envScene?:  THREE.Scene
 }
 
+/**
+ * Generate a PMREM environment map and assign it as `scene.environment` for
+ * image-based lighting. Defaults to three's `RoomEnvironment`; pass
+ * `envScene` for a custom look.
+ *
+ * @param scene - Scene receiving the environment.
+ * @param renderer - Renderer used by the PMREM generator.
+ * @param options - Intensity and optional custom environment scene.
+ * @returns The environment texture — dispose it when done (the default
+ * environment scene's geometry is freed immediately).
+ */
 export function applyEnvironment (
   scene: THREE.Scene,
   renderer: THREE.WebGLRenderer,
@@ -30,6 +42,7 @@ export function applyEnvironment (
   return envTexture
 }
 
+/** Options for {@link createSun}: color, intensity, position, and shadow map/frustum sizing. */
 export interface SunOptions {
   color?:         THREE.ColorRepresentation
   intensity?:     number
@@ -39,6 +52,16 @@ export interface SunOptions {
   shadowFar?:     number
 }
 
+/**
+ * Warm shadow-casting `DirectionalLight` with a sensibly-sized orthographic
+ * shadow frustum and a small negative shadow bias against acne.
+ *
+ * @param options - Color (default warm white), intensity (default 3),
+ * position, and shadow tuning.
+ * @returns The configured light; add both it and `light.target` to the scene.
+ * @remarks Shadow cost scales with `shadowMapSize`² — gate it on the quality
+ * tier (see `getQualitySettings`).
+ */
 export function createSun ({
   color = '#fff5e0',
   intensity = 3,
@@ -62,12 +85,14 @@ export function createSun ({
   return sun
 }
 
+/** Options for {@link createHemisphereFill}: sky/ground colors and intensity. */
 export interface HemisphereFillOptions {
   skyColor?:    THREE.ColorRepresentation
   groundColor?: THREE.ColorRepresentation
   intensity?:   number
 }
 
+/** Soft ambient fill: a `HemisphereLight` blending sky and ground bounce colors (defaults: cool sky, warm earth, 0.4). */
 export function createHemisphereFill ({
   skyColor = '#a0c0ff',
   groundColor = '#3a2a1a',
@@ -76,18 +101,31 @@ export function createHemisphereFill ({
   return new THREE.HemisphereLight(skyColor, groundColor, intensity)
 }
 
+/** Options for {@link setupStandardLighting}, grouping the environment, sun, and hemisphere sub-options. */
 export interface StandardLightingOptions {
   env?:  EnvironmentOptions
   sun?:  SunOptions
   hemi?: HemisphereFillOptions
 }
 
+/** The standard rig's parts. `dispose()` frees the env texture and removes the lights from the scene. */
 export interface StandardLighting extends Disposable {
   env:  THREE.Texture
   sun:  THREE.DirectionalLight
   hemi: THREE.HemisphereLight
 }
 
+/**
+ * The go-to three-part lighting rig: PMREM room environment for IBL, a warm
+ * shadow-casting sun, and a hemisphere fill — added to the scene in one call.
+ *
+ * @param scene - Scene to light.
+ * @param renderer - Renderer for PMREM generation.
+ * @param options - Per-part overrides.
+ * @returns A {@link StandardLighting} handle for tuning and teardown.
+ * @example
+ * const lights = setupStandardLighting(scene, renderer, { sun: { intensity: 2 } })
+ */
 export function setupStandardLighting (
   scene: THREE.Scene,
   renderer: THREE.WebGLRenderer,

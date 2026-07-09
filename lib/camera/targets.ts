@@ -6,6 +6,7 @@
 import * as THREE from 'three'
 
 
+/** A serializable xyz triple — the state-friendly form of a `Vector3`. */
 export type Vec3Tuple = readonly [number, number, number]
 
 /** A serializable camera intent: where to stand and what to look at. */
@@ -14,10 +15,12 @@ export interface CameraTarget {
   lookAt:   Vec3Tuple
 }
 
+/** Copy a {@link Vec3Tuple} into a `Vector3`, reusing `out` when given (zero-alloc pattern). */
 export function tupleToVector3 (tuple: Vec3Tuple, out = new THREE.Vector3()): THREE.Vector3 {
   return out.set(tuple[0], tuple[1], tuple[2])
 }
 
+/** Snapshot a `Vector3` as a serializable {@link Vec3Tuple}. */
 export function vector3ToTuple (v: THREE.Vector3): Vec3Tuple {
   return [ v.x, v.y, v.z ]
 }

@@ -10,6 +10,7 @@ import * as THREE from 'three'
 import type { Disposable, FrameContext } from '../types.js'
 
 
+/** Tuning for {@link createPathCamera}: look-around ranges (radians), look smoothing, and travel speed. */
 export interface PathCameraOptions {
 
   /** Max look-around yaw in radians. Default 0.25 (~14°). */
@@ -25,6 +26,7 @@ export interface PathCameraOptions {
   speed?: number
 }
 
+/** What a path camera rides: a curve plus its total length. `SegmentStream` satisfies it. */
 export interface PathCameraSource {
 
   /** Current path curve. May be swapped/rebuilt between frames. */
@@ -34,6 +36,7 @@ export interface PathCameraSource {
   total: number
 }
 
+/** Handle returned by {@link createPathCamera}. `distance` is writable for seeking; `dispose()` removes the pointer listeners. */
 export interface PathCamera extends Disposable {
 
   /** Distance travelled along the curve (writable for seeking). */
@@ -43,6 +46,18 @@ export interface PathCamera extends Disposable {
   update (ctx: FrameContext, speedOverride?: number): void
 }
 
+/**
+ * Rail-riding camera: advances `distance` along the source curve at `speed`,
+ * orients along the tangent, and layers smoothed pointer look-around within
+ * the yaw/pitch ranges.
+ *
+ * @param camera - Perspective camera to drive.
+ * @param source - Curve + total length; may be swapped between frames
+ * (segment streams rebuild it as segments append).
+ * @param element - Element whose pointer movement drives look-around.
+ * @param options - Ranges, smoothing, and speed.
+ * @returns A {@link PathCamera}; call `update(ctx)` once per frame.
+ */
 export function createPathCamera (
   camera: THREE.PerspectiveCamera,
   path: PathCameraSource,

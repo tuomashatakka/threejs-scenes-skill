@@ -6,6 +6,7 @@
 import * as THREE from 'three'
 
 
+/** Options for {@link createLightCone}: beam color and base-radius `spread`. */
 export interface LightConeOptions {
   color?: THREE.ColorRepresentation
 
@@ -13,6 +14,16 @@ export interface LightConeOptions {
   spread?: number
 }
 
+/**
+ * Fake volumetric light shaft: an open additive-blended cone from `from` to
+ * `to` whose shader fades toward the base and edges. Pure mesh — no real
+ * volumetrics, no shadowing, very cheap.
+ *
+ * @param from - Apex (the light source position).
+ * @param to - Where the beam lands; sets length and orientation.
+ * @param options - Color and spread.
+ * @returns The cone mesh; dispose its geometry/material when done.
+ */
 export function createLightCone (
   from: THREE.Vector3,
   to: THREE.Vector3,

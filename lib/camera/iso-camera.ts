@@ -6,8 +6,10 @@
 import * as THREE from 'three'
 
 
+/** Iso projection flavor: `true-iso` tilts atan(1/√2) ≈ 35.26°, `dimetric` uses the game-friendly 30°. */
 export type IsoFlavor = 'true-iso' | 'dimetric'
 
+/** Options for {@link createIsoCamera}: vertical `viewSize` in world units, projection `flavor`, and near/far planes. */
 export interface IsoCameraOptions {
   viewSize?: number
   flavor?:   IsoFlavor
@@ -20,6 +22,16 @@ interface IsoUserData {
   flavor:   IsoFlavor
 }
 
+/**
+ * Orthographic isometric camera: positioned on a 45°-yaw tilted orbit and
+ * sized so the frustum spans `viewSize` world units vertically. The chosen
+ * `viewSize`/`flavor` are stored in `userData` so {@link resizeIsoCamera}
+ * and zoom code can rebuild the frustum.
+ *
+ * @param aspect - Viewport width / height.
+ * @param options - View size, flavor, near/far planes.
+ * @returns A configured `OrthographicCamera` looking at the origin.
+ */
 export function createIsoCamera (aspect: number, {
   viewSize = 20,
   flavor = 'dimetric',
@@ -47,6 +59,7 @@ export function createIsoCamera (aspect: number, {
   return camera
 }
 
+/** Rebuild an iso camera's frustum for a new aspect ratio (and any updated `userData.viewSize`), then update the projection matrix. */
 export function resizeIsoCamera (camera: THREE.OrthographicCamera, aspect: number): void {
   const viewSize = camera.userData.viewSize as number
   const h        = viewSize / 2

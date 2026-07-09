@@ -12,13 +12,16 @@ import type { Vec3Tuple } from './targets.js'
 import type { FrameContext } from '../types.js'
 
 
+/** Which behavior currently drives the camera: idle, easing to a target, tracking an object, or anchored to a rig. */
 export type CameraMode = 'free' | 'flyTo' | 'follow' | 'cockpit'
 
+/** Axis-aligned box the camera position is clamped into. */
 export interface CameraBounds {
   min: Vec3Tuple
   max: Vec3Tuple
 }
 
+/** Tuning for {@link createCameraController}: easing stiffnesses, fly-to arrival radius, and position bounds. */
 export interface CameraControllerOptions {
 
   /** Position easing rate (higher = snappier). */
@@ -31,12 +34,14 @@ export interface CameraControllerOptions {
   bounds?:        CameraBounds | null
 }
 
+/** Per-flight options for {@link CameraController.flyTo}: speed scale, target `fov`, and an arrival callback. */
 export interface FlyToOptions {
   speed?:    number
   fov?:      number
   onArrive?: () => void
 }
 
+/** Multi-mode camera state machine driven by `update(ctx)` once per frame. */
 export interface CameraController {
   readonly camera: THREE.Camera
   mode (): CameraMode
@@ -63,6 +68,21 @@ const currentLook = new THREE.Vector3()
 const worldPos    = new THREE.Vector3()
 const worldQuat   = new THREE.Quaternion()
 
+/**
+ * Multi-mode camera state machine: `free`, `flyTo`, `follow`, and `cockpit`.
+ * All motion is framerate-independent exponential easing
+ * (`t = 1 - exp(-k * delta)`); FOV tweens the same way, and fly-to targets
+ * are serializable tuples so camera intent can live in app state.
+ *
+ * @param camera - The perspective camera to drive.
+ * @param options - Stiffness, arrival epsilon, and optional bounds.
+ * @returns A {@link CameraController}; call `update(ctx)` every frame.
+ * @remarks Zero per-frame allocation (module-level scratch vectors).
+ * @example
+ * const rig = createCameraController(camera, { stiffness: 5 })
+ * rig.flyTo([0, 12, 30], [0, 0, 0], { onArrive: () => rig.follow(ship) })
+ * loop.onFrame(ctx => rig.update(ctx))
+ */
 export function createCameraController (
   camera: THREE.PerspectiveCamera,
   {

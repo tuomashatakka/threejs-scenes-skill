@@ -16,6 +16,7 @@ import type { Emitter, EmitterOptions, SpawnSample } from './emitter.js'
 import type { FrameContext } from '../types.js'
 
 
+/** Options for {@link createGpuEmitter} — `EmitterOptions` minus the CPU-only rate/burst controls (GPU particles recycle continuously). */
 export type GpuEmitterOptions = Omit<EmitterOptions, 'rate' | 'bursts' | 'rotation'>
 
 const POSITION_SHADER = /* glsl */`
@@ -52,6 +53,18 @@ const VELOCITY_SHADER = /* glsl */`
   }
 `
 
+/**
+ * GPGPU particle emitter: position and velocity live in float textures
+ * advanced by `GPUComputationRenderer` fragment shaders, so capacity scales
+ * to hundreds of thousands with near-zero CPU cost per frame.
+ *
+ * @param renderer - Renderer running the compute passes (WebGL2).
+ * @param options - Same appearance/motion contract as the CPU emitter.
+ * @returns An {@link Emitter}; `burst`/`setRate` are no-ops — particles
+ * respawn continuously as their lifetime wraps.
+ * @remarks Capacity rounds up to a square texture side. Requires float
+ * render-target support.
+ */
 export function createGpuEmitter (renderer: THREE.WebGLRenderer, options: GpuEmitterOptions): Emitter {
   const {
     capacity,

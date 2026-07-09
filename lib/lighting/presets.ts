@@ -11,8 +11,10 @@ import { createLightCone } from './light-cone.js'
 import type { Disposable } from '../types.js'
 
 
+/** Built-in look names for {@link createLightingRig}. */
 export type LightingPresetName = 'dramatic' | 'studio' | 'soft' | 'neon' | 'sunset'
 
+/** One complete lighting look: background/exposure/fog plus hemi, key, rim, and accent light tuples, with optional spot and beams. */
 export interface LightingConfig {
   background: number
   exposure:   number
@@ -29,6 +31,7 @@ export interface LightingConfig {
   beams?: [number, number]
 }
 
+/** The five built-in looks — `dramatic`, `studio`, `soft`, `neon`, `sunset` — as data, mergeable with custom presets via {@link LightingRigOptions.presets}. */
 export const LIGHTING_PRESETS: Record<LightingPresetName, LightingConfig> = {
   // Mostly black, with two crossing volumetric beams pooling on the stage.
   dramatic: {
@@ -82,6 +85,7 @@ export const LIGHTING_PRESETS: Record<LightingPresetName, LightingConfig> = {
   },
 }
 
+/** Options for {@link createLightingRig}. */
 export interface LightingRigOptions {
 
   /** Initial preset. Default: 'studio'. */
@@ -94,6 +98,7 @@ export interface LightingRigOptions {
   presets?: Record<string, LightingConfig>
 }
 
+/** A live preset-switchable rig. `dispose()` removes and frees every light and beam cone. */
 export interface LightingRig extends Disposable {
   hemi:   THREE.HemisphereLight
   key:    THREE.DirectionalLight
@@ -106,6 +111,19 @@ export interface LightingRig extends Disposable {
   setPreset (name: LightingPresetName | string): void
 }
 
+/**
+ * Preset-driven stage rig: hemisphere + key + rim + accent + spot lights and
+ * optional visible beam cones, all retunable to a named look at runtime with
+ * `setPreset` (which also sets scene background, fog, and renderer exposure).
+ *
+ * @param scene - Scene the rig lights.
+ * @param renderer - Renderer whose `toneMappingExposure` presets control.
+ * @param options - Initial preset, shadow toggle, and extra presets.
+ * @returns A {@link LightingRig}.
+ * @example
+ * const rig = createLightingRig(scene, renderer, { preset: 'neon' })
+ * rig.setPreset('dramatic')
+ */
 export function createLightingRig (
   scene: THREE.Scene,
   renderer: THREE.WebGLRenderer,

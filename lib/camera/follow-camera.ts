@@ -13,6 +13,7 @@ const scratchTargetPos = new THREE.Vector3()
 const scratchLookAt    = new THREE.Vector3()
 const scratchDesired   = new THREE.Vector3()
 
+/** Options for {@link createFollowCamera}: required local-frame `offset`, look-ahead point, and position/rotation damping stiffness. */
 export interface FollowCameraOptions {
   offset:             THREE.Vector3
   lookAhead?:         THREE.Vector3
@@ -20,6 +21,19 @@ export interface FollowCameraOptions {
   rotationStiffness?: number
 }
 
+/**
+ * Chase camera: keeps `offset` in the target's local frame and looks at a
+ * `lookAhead` point ahead of it, both with framerate-independent exponential
+ * damping.
+ *
+ * @param camera - Camera to move.
+ * @param target - Object to chase; swap via the returned controller's `follow`.
+ * @param options - Offset (required), look-ahead, and stiffness tuning.
+ * @returns A `CameraController` locked to follow mode; call `update(ctx)`
+ * every frame.
+ * @throws Error when `offset` is missing.
+ * @remarks Three scratch vectors per frame, zero allocation.
+ */
 export function createFollowCamera (
   camera: THREE.Camera,
   target: THREE.Object3D,
