@@ -13,6 +13,25 @@ interface TrackedPointer {
   lastY: number
 }
 
+/**
+ * Attach unified drag/pinch/tap/wheel gesture handling to an element. The same
+ * callbacks fire for mouse, touch, pen, and stylus via Pointer Events — always
+ * use this instead of discrete `mouse*`/`touch*` listeners.
+ *
+ * Single-pointer moves fire `onDrag` with per-move deltas in CSS pixels;
+ * two-pointer moves fire `onPinch` with the distance ratio to the previous
+ * move (>1 zoom in) plus the pinch center; a press released within the tap
+ * thresholds fires `onTap`; `onWheel` receives the raw `deltaY` and calls
+ * `preventDefault()` on the event.
+ *
+ * @param el - Element to listen on, typically the render canvas. Its
+ * `touch-action` style is set to `none` to disable native panning/zooming.
+ * @param callbacks - Gesture handlers; all optional.
+ * @param options - Tap detection thresholds. Defaults: `tapThresholdMs: 250`,
+ * `tapMovePx: 8`.
+ * @returns Detach function removing all listeners. The `touch-action` override
+ * is not restored.
+ */
 export function attachPointerGesture (
   el: HTMLElement,
   callbacks: PointerGestureCallbacks,

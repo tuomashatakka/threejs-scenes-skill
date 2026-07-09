@@ -15,6 +15,11 @@ function isTexture (val: unknown): val is THREE.Texture {
   )
 }
 
+/**
+ * Dispose a material and every texture it references. Frees all Texture-shaped
+ * properties (`map`, `normalMap`, …), every texture-valued shader uniform, and
+ * finally the material itself.
+ */
 export function disposeMaterial (mat: THREE.Material): void {
   // dispose every Texture-shaped property
   for (const key in mat) {
@@ -34,6 +39,15 @@ export function disposeMaterial (mat: THREE.Material): void {
   mat.dispose()
 }
 
+/**
+ * Recursively free GPU resources under `root`: every geometry plus every
+ * material (and its textures, via {@link disposeMaterial}). Call on teardown,
+ * route change, or quality-tier change — three.js never auto-disposes.
+ *
+ * @remarks Disposes everything it finds, including shared/pooled materials, so
+ * keep pooled resources out of trees you pass here. Does not detach `root`
+ * from its parent.
+ */
 export function disposeScene (root: THREE.Object3D): void {
   root.traverse(obj => {
     const mesh = obj as THREE.Mesh

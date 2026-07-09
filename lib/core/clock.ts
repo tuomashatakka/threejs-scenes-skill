@@ -5,9 +5,16 @@
 // backbone for replays and headless tests (production-lessons.md: same seed +
 // same steps -> same world).
 
+/** Time-advance strategy: `'wall'` passes real deltas through, `'fixed'` emits fixed-size steps. */
 export type ClockMode = 'wall' | 'fixed'
 
+/** Options for {@link createClock}. */
 export interface ClockOptions {
+
+  /**
+   * Advance strategy; see {@link ClockMode}.
+   * @defaultValue 'wall'
+   */
   mode?: ClockMode
 
   /** Fixed step size in seconds. Only used in 'fixed' mode. */
@@ -31,6 +38,21 @@ export interface Clock {
   reset (): void
 }
 
+/**
+ * Create an injectable simulation time source for the frame loop and
+ * {@link createApp}. In `'wall'` mode `advance` echoes the real delta back as
+ * a single tick; in `'fixed'` mode it accumulates real time and emits
+ * 0..`maxSubSteps` ticks of exactly `step` seconds each — the determinism
+ * backbone for replays and headless tests.
+ *
+ * @param options - Mode plus fixed-step tuning. Defaults: `mode: 'wall'`,
+ * `step: 1/60`, `maxSubSteps: 5`.
+ * @returns A {@link Clock}; `reset()` zeroes the accumulator and elapsed total.
+ * @remarks When more than `maxSubSteps` worth of time piles up (hidden tab, GC
+ * pause), the overflow is dropped rather than replayed, so the sim slows down
+ * instead of entering a catch-up death spiral. Zero allocation per frame — the
+ * returned delta array is reused across `advance` calls.
+ */
 export function createClock ({ mode = 'wall', step = 1 / 60, maxSubSteps = 5 }: ClockOptions = {}): Clock {
   let accumulator = 0
   let total       = 0

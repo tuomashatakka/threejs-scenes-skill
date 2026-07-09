@@ -11,13 +11,29 @@ import { disposeScene } from './dispose.js'
 import type { Disposable } from '../types.js'
 
 
+/**
+ * Handle returned by {@link createOverlayScene}. `dispose` frees the
+ * geometries, materials, and textures of everything added to `scene`.
+ */
 export interface OverlayHandle extends Disposable {
+
+  /** The overlay scene — add HUD elements, gizmos, and markers here. */
   scene: THREE.Scene
 
   /** Add after the main render pass: pipeline.register('overlay', overlay.pass). */
   pass: RenderPass
 }
 
+/**
+ * Create a second scene rendered on top of the main one with the depth buffer
+ * cleared, so overlay objects (HUD, gizmos, selection markers) are never
+ * occluded by world geometry. Integrate either by registering the bundled
+ * `pass` after the main render pass in a composer chain, or composer-free via
+ * {@link renderOverlay} after a plain `renderer.render()`.
+ *
+ * @param camera - Camera the overlay is rendered through, usually the main scene camera.
+ * @returns An {@link OverlayHandle} exposing the overlay `scene` and its `pass`.
+ */
 export function createOverlayScene (camera: THREE.Camera): OverlayHandle {
   const scene = new THREE.Scene()
 

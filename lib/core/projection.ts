@@ -6,6 +6,10 @@
 import * as THREE from 'three'
 
 
+/**
+ * Screen-space projection result from {@link projectToScreenUv}. Feed `u`/`v`
+ * to effect uniforms and gate the effect on `onScreen`.
+ */
 export interface ScreenProjection {
 
   /** Screen position in 0..1 UV space (0,0 = bottom-left, matches shader vUv). */
@@ -14,12 +18,25 @@ export interface ScreenProjection {
 
   /** NDC depth; > 1 means beyond far plane, < -1 in front of near. */
   ndcZ:     number
+
+  /** True when the point is in front of the camera and inside the 0..1 UV rect. */
   onScreen: boolean
 }
 
 const scratch     = new THREE.Vector3()
 const scratchView = new THREE.Vector3()
 
+/**
+ * Project an object's world position to 0..1 screen UV space for effect
+ * targeting (lens flares, lensing, vortex centers). Points behind the camera
+ * are detected in view space — a plain `Vector3.project()` folds them into
+ * valid-looking NDC — and reported as `onScreen: false`.
+ *
+ * @param object - Object whose world position is projected; its world matrix must be current.
+ * @param camera - Camera defining the projection.
+ * @param out - Optional result object to fill; pass a reused one for zero per-frame allocation.
+ * @returns The filled {@link ScreenProjection} (the same `out` instance when provided).
+ */
 export function projectToScreenUv (
   object: THREE.Object3D,
   camera: THREE.Camera,

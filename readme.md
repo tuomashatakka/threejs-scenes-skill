@@ -330,7 +330,7 @@ A deliberately small surface: the shared type vocabulary, a hand-picked set of t
   ```
 - **`AnimationController`** *(interface)* — Wraps an AnimationMixer + its actions.
 - **`Disposable`** *(interface)* — Anything that owns GPU or DOM resources and must be torn down explicitly.
-- **`FrameCallback`** *(type)*
+- **`FrameCallback`** *(type)* — Per-frame subscriber invoked with the shared FrameContext.
 - **`FrameContext`** *(interface)* — Per-frame context handed to every animated subsystem by the frame loop.
 - **`FrameLoop`** *(interface)* — Self-contained Clock-driven frame loop.
 - **`InstancePlaceFn`** *(type)*
@@ -353,6 +353,9 @@ A deliberately small surface: the shared type vocabulary, a hand-picked set of t
 - **`SceneContext`** *(interface)* — Context injected into every scene module.
 - **`SceneModule`** *(interface)* — A self-contained scene feature.
 - **`SeededRng`** *(interface)* — Seeded pseudo-random stream.
+- **`WorkerUpdateFn`** *(type)* — Off-thread frame handler run inside a Web Worker by.
+- **`WorkerUpdateHandle`** *(interface)* — Handle returned by FrameLoop.registerWorkerUpdate.
+- **`WorkerUpdateOptions`** *(interface)* — Options for FrameLoop.registerWorkerUpdate.
 
   <details><summary>Example</summary>
 

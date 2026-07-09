@@ -5,6 +5,11 @@
 import type { QualityPreset, QualitySettings, QualityTier } from '../types.js'
 
 
+/**
+ * Baseline render budgets per {@link QualityTier}: pixel ratio, shadow map
+ * size, post-fx list, chunk view radius, particle budget, and light count.
+ * Spread and override to customize; resolve via {@link getQualitySettings}.
+ */
 export const QUALITY_PRESETS: Record<QualityTier, QualityPreset> = {
   mobile: {
     pixelRatio:      1.5,
@@ -35,6 +40,12 @@ export const QUALITY_PRESETS: Record<QualityTier, QualityPreset> = {
   },
 }
 
+/**
+ * Detect the device quality tier from cheap navigator/window heuristics.
+ * `'mobile'` when touch-capable and narrower than 1280px, or 4 cores or fewer;
+ * `'highEnd'` with 8+ cores and a devicePixelRatio of 2+; `'desktop'`
+ * otherwise. Run once at boot — requires a browser environment.
+ */
 export function detectTier (): QualityTier {
   const isMobile = navigator.maxTouchPoints > 0 && window.innerWidth < 1280
   const cores    = navigator.hardwareConcurrency || 4
@@ -46,6 +57,10 @@ export function detectTier (): QualityTier {
   return 'desktop'
 }
 
+/**
+ * Resolve the preset for a tier into a {@link QualitySettings} object with the
+ * tier attached. Defaults to the auto-detected tier from {@link detectTier}.
+ */
 export function getQualitySettings (tier: QualityTier = detectTier()): QualitySettings {
   return { tier, ...QUALITY_PRESETS[tier] }
 }

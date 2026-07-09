@@ -129,13 +129,26 @@ export interface PointerGestureCallbacks {
   onWheel?: (delta: number, event: WheelEvent) => void
 }
 
+/** Tap-detection tuning for `attachPointerGesture`. */
 export interface PointerGestureOptions {
+
+  /**
+   * Max press duration in milliseconds still counted as a tap.
+   * @defaultValue 250
+   */
   tapThresholdMs?: number
+
+  /**
+   * Max pointer travel in CSS pixels still counted as a tap.
+   * @defaultValue 8
+   */
   tapMovePx?:      number
 }
 
+/** Device performance bucket used to pick a {@link QualityPreset}. */
 export type QualityTier = 'mobile' | 'desktop' | 'highEnd'
 
+/** Name of a built-in post-processing effect, as listed in a preset's `postFx`. */
 export type PostEffectName =
   | 'bloom' |
   'dof' |
@@ -143,16 +156,33 @@ export type PostEffectName =
   'filmGrain' |
   'glitch'
 
+/**
+ * Render budgets for one quality tier. Gate shadow resolution, post-fx, chunk
+ * streaming, and particle counts on these instead of ad-hoc checks.
+ */
 export interface QualityPreset {
+
+  /** Upper bound applied to `window.devicePixelRatio`. */
   pixelRatio:      number
+
+  /** Shadow map resolution per side in texels. */
   shadowMapSize:   number
   shadowsEnabled:  boolean
+
+  /** Post-processing effects this tier can afford. */
   postFx:          PostEffectName[]
+
+  /** How many chunk rings to keep loaded around the camera in streamed worlds. */
   chunkViewRadius: number
+
+  /** Max live particles across all systems. */
   particleBudget:  number
+
+  /** Max simultaneous shadow-casting/dynamic lights. */
   maxLights:       number
 }
 
+/** A resolved {@link QualityPreset} tagged with the tier it came from. */
 export interface QualitySettings extends QualityPreset {
   tier: QualityTier
 }
@@ -211,8 +241,10 @@ export type ParamSpec =
   { kind: 'string'; default: string } |
   { kind: 'enum'; default: string; options: readonly string[] }
 
+/** A concrete parameter value after coercion against its {@link ParamSpec}. */
 export type ParamValue = number | boolean | string
 
+/** Named parameter schema: one {@link ParamSpec} per parameter key. */
 export type ParamSpecMap = Record<string, ParamSpec>
 
 // --- loaders ---
@@ -227,10 +259,17 @@ export interface LoadedModel {
 
 // --- animation ---
 
+/** Playback options for {@link AnimationController.play}. */
 export interface PlayOptions {
   loop?:              THREE.AnimationActionLoopStyles
+
+  /** Fade-in duration in seconds. */
   fadeIn?:            number
+
+  /** Restart the action from time 0 instead of resuming. */
   reset?:             boolean
+
+  /** Hold the last frame when a non-looping clip finishes. */
   clampWhenFinished?: boolean
   timeScale?:         number
 }
@@ -257,6 +296,12 @@ export interface PropContext {
   loop?: FrameLoop
 }
 
+/**
+ * Per-instance placement callback for instanced props. Called once per
+ * `index`; write the instance transform onto `object`
+ * (position/quaternion/scale) and its tint into `color`, drawing randomness
+ * only from the provided seeded `rng` so layouts stay deterministic.
+ */
 export type InstancePlaceFn = (
   index: number,
   rng: () => number,
@@ -277,6 +322,7 @@ export interface PropDefinition {
   instanced?: { count: number; radius?: number; seed?: number; place?: InstancePlaceFn }
 }
 
+/** Alias of {@link PropDefinition} kept for API symmetry with `defineProp`. */
 export type PropFactory = PropDefinition
 
 /** A live, mounted prop. `dispose` frees geometry/materials/controller it owns. */

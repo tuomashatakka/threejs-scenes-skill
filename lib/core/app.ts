@@ -34,6 +34,10 @@ export interface AppModule<S extends object = Record<string, unknown>> {
   dispose (): void
 }
 
+/**
+ * Perspective-camera setup for {@link createApp}. Defaults: `fov` 50,
+ * `near` 0.1, `far` 200, `position` [4, 3, 6], `lookAt` the origin.
+ */
 export interface AppCameraOptions {
   fov?:      number
   near?:     number
@@ -42,16 +46,32 @@ export interface AppCameraOptions {
   lookAt?:   readonly [number, number, number]
 }
 
+/**
+ * Configuration for {@link createApp}. Only `canvas` is required — every other
+ * option has a sensible default (lighting on, orbit on, wall clock, seed 1).
+ */
 export interface AppOptions<S extends object, A = Partial<S>> {
+
+  /** Target canvas. The renderer sizes itself to the canvas parent. */
   canvas: HTMLCanvasElement
 
   /** Initial serializable app state. Defaults to an empty object. */
   state?:   S
+
+  /** Optional reducer enabling `app.dispatch(action)` alongside `setState`. */
   reducer?: Reducer<S, A>
+
+  /**
+   * Seed for the injected {@link SceneContext.rng}. Same seed + same tick
+   * sequence reproduce the same world.
+   * @defaultValue 1
+   */
   seed?:    number
 
   /** Injectable time source. Pass createClock({ mode: 'fixed' }) for determinism. */
   clock?:    Clock
+
+  /** Renderer factory options forwarded to `createRenderer` (minus `canvas`). */
   renderer?: Omit<RendererOptions, 'canvas'>
 
   /** Perspective-camera options, or a prebuilt camera (e.g. an iso ortho rig). */
@@ -69,25 +89,69 @@ export interface AppOptions<S extends object, A = Partial<S>> {
 
   /** Built-in pointer orbit. Default true; disable when using a camera controller. */
   orbit?:   boolean
+
+  /** Scene features built once at creation and updated every simulation tick. */
   modules?: AppModule<S>[]
 
   /** Runs after module updates, before render — the place for app-level per-frame glue. */
   onFrame?: (state: S, frame: FrameContext, ctx: SceneContext) => void
 }
 
+/**
+ * Running app shell returned by {@link createApp}. Drive it with the built-in
+ * frame loop (`start`/`stop`) or pump the simulation manually with `tick`;
+ * `dispose` tears down the loop, gestures, modules, scene, and renderer.
+ */
 export interface App<S extends object, A = Partial<S>> extends Disposable {
   ctx:   SceneContext
   store: Store<S, A>
   getState (): S
+
+  /** Shallow-merge `patch` into app state and notify store subscribers. */
   setState (patch: Partial<S>): void
+
+  /** Run the reducer. Throws when the app was created without one. */
   dispatch (action: A): void
 
   /** Advance the simulation by `realDelta` seconds (default: one clock step) and render. */
   tick (realDelta?: number): void
+
+  /** Attach to the shared frame loop and animate continuously. */
   start (): void
+
+  /** Detach from the frame loop; state and scene stay intact. */
   stop (): void
 }
 
+/**
+ * Build a complete unidirectional app shell: renderer, scene, camera, seeded
+ * rng, store, clock, and one shared frame loop wired together. Each simulation
+ * tick flows store state through `module.update(state, frame, ctx)` and then
+ * `onFrame` before a single render; input goes back through
+ * `setState`/`dispatch`, never straight into the scene.
+ *
+ * The loop starts paused — call `start()` to animate, or `tick()` to step
+ * deterministically (headless tests, replays).
+ *
+ * @param options - App configuration; see {@link AppOptions}. Only `canvas` is required.
+ * @returns An {@link App} handle. `dispose()` stops the loop, detaches gestures
+ * and the resize observer, disposes modules, lights, scene, and renderer.
+ * @throws Error when `options.canvas` is missing.
+ * @typeParam S - Serializable app state shape.
+ * @typeParam A - Action type for the optional reducer; defaults to `Partial<S>`.
+ * @remarks Modules are built and the scene pre-compiled synchronously inside
+ * this call. The built-in orbit is view-only camera manipulation, deliberately
+ * outside app state; pass `orbit: false` when mounting your own controller.
+ * @example
+ * const app = createApp({
+ *   canvas,
+ *   state: { speed: 1 },
+ *   modules: [ turbineModule ],
+ *   onFrame: (state, frame) => hud.update(state, frame.delta),
+ * })
+ * app.start()
+ * // later: app.setState({ speed: 2 }); app.dispose()
+ */
 export function createApp<S extends object = Record<string, unknown>, A = Partial<S>> ({
   canvas,
   state = {} as S,

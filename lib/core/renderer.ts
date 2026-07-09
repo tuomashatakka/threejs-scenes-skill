@@ -5,18 +5,45 @@
 import * as THREE from 'three'
 
 
+/** Options for {@link createRenderer}. */
 export interface RendererOptions {
   canvas:               HTMLCanvasElement
+
+  /** @defaultValue true */
   antialias?:           boolean
+
+  /**
+   * Upper bound applied to `window.devicePixelRatio`.
+   * @defaultValue 2
+   */
   pixelRatioMax?:       number
+
+  /**
+   * Enable PCF soft shadow maps.
+   * @defaultValue true
+   */
   shadows?:             boolean
+
+  /** @defaultValue THREE.ACESFilmicToneMapping */
   toneMapping?:         THREE.ToneMapping
+
+  /** @defaultValue 1 */
   toneMappingExposure?: number
 
   /** For scenes spanning huge depth ranges (space scale -> surface scale). */
   logarithmicDepthBuffer?: boolean
 }
 
+/**
+ * Create a `WebGLRenderer` with production defaults: high-performance power
+ * preference, sRGB output, ACES filmic tone mapping, PCF soft shadows, and
+ * pixel ratio capped at 2. The renderer is sized to the canvas parent element
+ * (falling back to `document.body`) without touching the canvas CSS size.
+ *
+ * @param options - Canvas plus overrides; see {@link RendererOptions}.
+ * @returns The configured renderer. Create one per scene and never recreate it
+ * per frame; call `dispose()` on teardown.
+ */
 export function createRenderer ({
   canvas,
   antialias = true,
@@ -51,8 +78,17 @@ export function createRenderer ({
   return renderer
 }
 
+/** Callback invoked after a resize with the new width and height in CSS pixels. */
 export type ResizeHandler = (width: number, height: number) => void
 
+/**
+ * Keep the renderer and camera in sync with the canvas parent's size via a
+ * `ResizeObserver`. On each resize the renderer is resized and, for
+ * perspective cameras, the aspect ratio and projection matrix are updated;
+ * `onResize` then runs for app-level work (ortho frustums, composers).
+ *
+ * @returns Detach function that disconnects the observer.
+ */
 export function attachResizeObserver (
   renderer: THREE.WebGLRenderer,
   camera: THREE.Camera,

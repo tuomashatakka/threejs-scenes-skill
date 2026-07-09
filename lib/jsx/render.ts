@@ -20,21 +20,63 @@ import type { SceneChild } from './jsx-runtime.js'
 import type { FrameLoop } from '../types.js'
 
 
+/** Options for `render()`. */
 export interface RenderOptions {
+  /** Canvas to render into (required). */
   canvas:      HTMLCanvasElement
+  /** Seed for the tree's deterministic RNG (default `1`). */
   seed?:       number
+  /** Scene background color. */
   background?: THREE.ColorRepresentation
+  /** Attach drag/pinch/wheel orbit gestures to a perspective camera (default `true`). */
   orbit?:      boolean
 }
 
+/**
+ * Live handle returned by `render()`. The mounted graph mutates in place
+ * while the loop runs; `dispose()` is the single teardown point.
+ */
 export interface RenderHandle {
+  /** The mounted root scene. */
   scene:    THREE.Scene
+  /** The WebGL renderer bound to the canvas. */
   renderer: THREE.WebGLRenderer
+  /** Frame loop driving reactivity and rendering. */
   loop:     FrameLoop
+  /** The active camera. */
   getCamera (): THREE.Camera
+  /** Stop the loop, detach listeners, run all disposers, and free GPU resources. */
   dispose (): void
 }
 
+/**
+ * Mount a JSX element tree onto a canvas and start rendering. The entry point
+ * of the JSX layer.
+ *
+ * @remarks
+ * Mounting is one-off — components run exactly once and there is no virtual
+ * DOM. Each frame the loop re-reads every function-valued prop, writes the
+ * result onto the live object, then renders (through the composer when a
+ * `<post>` element built one). The frame loop is the reactivity system; no
+ * separate scheduler exists.
+ *
+ * @param root - Element tree built with JSX or `h()`.
+ * @param options - Target canvas plus seed, background and orbit settings.
+ * @returns A `RenderHandle` whose `dispose()` tears the whole graph down.
+ *
+ * @example
+ * ```tsx
+ * const [spin, setSpin] = signal(0)
+ * const handle = render(
+ *   <scene background='#101018'>
+ *     <light type='directional' position={[3, 5, 2]} />
+ *     <mesh geometry={box} material={mat} rotation={() => [0, spin(), 0]} />
+ *   </scene>,
+ *   { canvas },
+ * )
+ * // …later: handle.dispose()
+ * ```
+ */
 export function render (root: SceneChild, options: RenderOptions): RenderHandle {
   const { canvas, seed = 1, orbit = true } = options
   if (!canvas)
