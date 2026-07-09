@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import { ssaaPass } from 'three/addons/tsl/display/SSAAPassNode.js'
 
 
+/** Options for {@link createSsaaPass}. */
 export interface SsaaOptions {
   // 0..5; number of samples is 2^sampleLevel (level 4 = 16 samples).
   sampleLevel?: number
@@ -15,6 +16,7 @@ export interface SsaaOptions {
   unbiased?:    boolean
 }
 
+/** Wrap an ssaaPass PassNode that renders the scene at 2^sampleLevel jittered subpixel offsets and averages them for reference-quality anti-aliasing. Use INSTEAD of a plain scene pass. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createSsaaPass (scene: THREE.Scene, camera: THREE.Camera, options: SsaaOptions = {}) {
   const node = ssaaPass(scene, camera)
   if (options.sampleLevel !== undefined)

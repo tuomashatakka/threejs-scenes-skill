@@ -29,6 +29,7 @@ import {
 import type { ScenePassTargets } from './types.js'
 
 // Basic colour-only scene pass — enough for bloom, dof, ca, fxaa, etc.
+/** Create a basic colour-only scene PassNode returning targets: color, viewZ, and normal. Sufficient for bloom, DOF, CA, FXAA, etc. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createScenePass (scene: THREE.Scene, camera: THREE.Camera): ScenePassTargets {
   const scenePass = pass(scene, camera)
   return {
@@ -42,6 +43,7 @@ export function createScenePass (scene: THREE.Scene, camera: THREE.Camera): Scen
 // Scene pass with a multiple-render-target layout exposing a normal buffer.
 // Required by geometry-aware effects (ao, ssr, ssgi, sss, traa) so they can read
 // per-pixel normals and linear depth instead of re-rendering the scene.
+/** Create a scene PassNode with an MRT layout exposing a normal buffer for geometry-aware effects (AO, SSR, SSGI, SSS, TRAA). @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createScenePassMRT (scene: THREE.Scene, camera: THREE.Camera): ScenePassTargets {
   const scenePass = pass(scene, camera)
   scenePass.setMRT(mrt({ output, normal: normalView }))
@@ -55,6 +57,7 @@ export function createScenePassMRT (scene: THREE.Scene, camera: THREE.Camera): S
 
 // Scene pass exposing per-pixel screen-space velocity (for motion blur / TRAA).
 // Read it back with `scenePass.getTextureNode('velocity')`.
+/** Create a scene PassNode exposing a per-pixel screen-space velocity MRT channel for motion blur and TRAA. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createScenePassVelocity (scene: THREE.Scene, camera: THREE.Camera) {
   const scenePass = pass(scene, camera)
   scenePass.setMRT(mrt({ output, velocity }))
@@ -65,6 +68,7 @@ export function createScenePassVelocity (scene: THREE.Scene, camera: THREE.Camer
 // bloom can bloom only the glowing parts. The example narrows the emissive
 // attachment to a byte texture to save bandwidth — do that on the returned pass
 // if needed (`scenePass.getTexture('emissive').type = THREE.UnsignedByteType`).
+/** Create a scene PassNode exposing the emissive PBR contribution as its own MRT channel for emissive-only bloom. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createScenePassEmissive (scene: THREE.Scene, camera: THREE.Camera) {
   const scenePass = pass(scene, camera)
   scenePass.setMRT(mrt({ output, emissive: vec4(emissive, output.a) }))
@@ -75,6 +79,7 @@ export function createScenePassEmissive (scene: THREE.Scene, camera: THREE.Camer
 // roughness into a single attachment. Read normals back with
 // `colorToDirection(scenePass.getTextureNode('normal'))` and the packed material
 // channels from `.r` / `.g` of the metalrough texture.
+/** Create a scene PassNode with an MRT layout encoding view normals to colour and packing metalness/roughness into a single attachment, for screen-space reflections. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createScenePassSSR (scene: THREE.Scene, camera: THREE.Camera) {
   const scenePass = pass(scene, camera)
   scenePass.setMRT(mrt({
@@ -89,6 +94,7 @@ export function createScenePassSSR (scene: THREE.Scene, camera: THREE.Camera) {
 // Drive it from the animation loop with `pipeline.render()` (replaces
 // `renderer.render(scene, camera)`); after reassigning `.outputNode` at runtime,
 // set `.needsUpdate = true`. perf: one RenderPipeline per scene; dispose on teardown.
+/** Wrap a composed output node in a RenderPipeline instance. Drive it from the animation loop with pipeline.render() (replaces renderer.render(scene, camera)). @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. RenderPipeline replaces the deprecated PostProcessing (removed in three.js r183). */
 export function createRenderPipeline (renderer: Renderer, outputNode: Node): RenderPipeline {
   const pipeline      = new RenderPipeline(renderer)
   pipeline.outputNode = outputNode

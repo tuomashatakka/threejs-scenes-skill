@@ -48,6 +48,7 @@ const FRAGMENT_SHADER = /* glsl */`
   }
 `
 
+/** Options for {@link createHolographicMaterial}: base color, fresnel rim strength, scanline density, and opacity. */
 export interface HolographicMaterialOptions {
   baseColor?:       THREE.ColorRepresentation
   fresnelStrength?: number
@@ -55,10 +56,19 @@ export interface HolographicMaterialOptions {
   opacity?:         number
 }
 
+/** A `ShaderMaterial` carrying a `userData.tick(ctx)` that advances its time uniform — register it on the frame loop. */
 export interface TickableMaterial extends THREE.ShaderMaterial {
   userData: { tick: (ctx: FrameContext) => void }
 }
 
+/**
+ * Sci-fi hologram `ShaderMaterial`: fresnel rim glow, animated scanlines, and
+ * noise-flicker opacity, additively blended and double-sided.
+ *
+ * @param options - Color and effect tuning.
+ * @returns A {@link TickableMaterial}; call `material.userData.tick(ctx)`
+ * each frame (or register it with the loop) to animate.
+ */
 export function createHolographicMaterial ({
   baseColor = '#79f7ff',
   fresnelStrength = 2,

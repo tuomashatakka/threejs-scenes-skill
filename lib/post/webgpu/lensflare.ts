@@ -9,6 +9,7 @@ import type { Node } from 'three/webgpu'
 import { lensflare } from 'three/addons/tsl/display/LensflareNode.js'
 
 
+/** Options for {@link createLensflare}. */
 export interface LensflareOptions {
   ghostTint?:              Node
   threshold?:              number
@@ -18,6 +19,7 @@ export interface LensflareOptions {
   downSampleRatio?:        number
 }
 
+/** Wrap a LensflareNode that renders ghost reflections and halo from bright spots. Typically fed the bloom of an emissive MRT channel. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createLensflare (input: Node, options: LensflareOptions = {}) {
   const params: Parameters<typeof lensflare>[1] = {}
   if (options.ghostTint !== undefined)

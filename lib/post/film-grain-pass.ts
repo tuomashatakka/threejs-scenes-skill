@@ -43,12 +43,14 @@ const FILM_GRAIN_SHADER = {
   `,
 }
 
+/** Options for {@link createFilmGrainPass}. */
 export interface FilmGrainOptions {
   intensity?: number
   luma?:      number
   desat?:     number
 }
 
+/** Create a ShaderPass that applies procedural per-fragment film grain with optional luminance-only mode and desaturation. */
 export function createFilmGrainPass ({
   intensity = 0.08,
   luma = 0.5,

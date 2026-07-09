@@ -8,6 +8,7 @@ import type { Camera, Node } from 'three/webgpu'
 import { ssr } from 'three/addons/tsl/display/SSRNode.js'
 
 
+/** Options for {@link createSsr}. */
 export interface SsrOptions {
   maxDistance?:     number
   thickness?:       number
@@ -20,6 +21,7 @@ export interface SsrOptions {
 // `normalNode` is the decoded view-space normal (colorToDirection of the normal
 // MRT channel); `metalness`/`roughness` are the packed channels. Composite the
 // returned node's `.rgb` over the scene colour, optionally with SMAA on top.
+/** Wrap an SSRNode that ray-marches the depth buffer for glossy screen-space reflections. The scene pass needs an MRT exposing normal + packed metalness/roughness. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createSsr (
   colorNode: Node,
   depthNode: Node,

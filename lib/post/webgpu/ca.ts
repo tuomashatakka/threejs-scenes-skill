@@ -9,6 +9,7 @@ import { chromaticAberration } from 'three/addons/tsl/display/ChromaticAberratio
 import type { ColorNode } from './types.js'
 
 
+/** Options for {@link createChromaticAberration}. */
 export interface ChromaticAberrationOptions {
   // Fringe magnitude.
   strength?: number
@@ -18,6 +19,7 @@ export interface ChromaticAberrationOptions {
   scale?:    number
 }
 
+/** Wrap a ChromaticAberrationNode that splits R/G/B radially from a configurable centre for a lens-fringing look. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createChromaticAberration (input: ColorNode, options: ChromaticAberrationOptions = {}) {
   const { strength = 1, center = new THREE.Vector2(0.5, 0.5), scale = 1.2 } = options
   return chromaticAberration(input, uniform(strength), uniform(center), uniform(scale))

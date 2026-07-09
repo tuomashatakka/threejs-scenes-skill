@@ -8,6 +8,7 @@ import { bloom } from 'three/addons/tsl/display/BloomNode.js'
 import type { PassNode } from 'three/webgpu'
 
 
+/** Options for {@link createBloomEmissive}. */
 export interface BloomEmissiveOptions {
   strength?:  number
   radius?:    number
@@ -16,6 +17,7 @@ export interface BloomEmissiveOptions {
 
 // `scenePass` must expose an `emissive` MRT channel (see readme wiring note).
 // Returns { output, bloom, result }; use `result` (= output + bloom) as output.
+/** Bloom only the emissive PBR channel by extracting it from an MRT scene pass, leaving lit surfaces unwashed. Returns { output, bloom, result }. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createBloomEmissive (scenePass: PassNode, options: BloomEmissiveOptions = {}) {
   const { strength = 2.5, radius = 0.5, threshold = 0 } = options
   const output                                          = scenePass.getTextureNode('output')

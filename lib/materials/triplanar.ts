@@ -7,6 +7,7 @@
 import * as THREE from 'three'
 
 
+/** Options for {@link createTriplanarMaterial}: three-color `palette`, grid `tileScale`, fog distance, and side mode. */
 export interface TriplanarMaterialOptions {
 
   /** [base A, base B, grid/accent]. */
@@ -21,6 +22,15 @@ export interface TriplanarMaterialOptions {
   side?: THREE.Side
 }
 
+/**
+ * World-space triplanar grid `ShaderMaterial`: UVs are picked per fragment
+ * by the dominant normal axis, so procedural geometry gets seamless grid
+ * lines with no unwrapping. Palette-driven with cheap directional shading
+ * and a distance fog tint.
+ *
+ * @param options - Palette, tile scale, fog distance, side.
+ * @returns The configured `ShaderMaterial`.
+ */
 export function createTriplanarMaterial ({
   palette = [ '#2c3244', '#3c4a66', '#79f7ff' ],
   tileScale = 0.4,

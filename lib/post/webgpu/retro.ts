@@ -9,6 +9,7 @@ import type { Node } from 'three/webgpu'
 import { retroPass } from 'three/addons/tsl/display/RetroPassNode.js'
 
 
+/** Options for {@link createRetroPass}. */
 export interface RetroOptions {
   // Optional node controlling affine (perspective-incorrect) texture distortion.
   affineDistortion?: Node | null
@@ -16,6 +17,7 @@ export interface RetroOptions {
   filterTextures?:   boolean
 }
 
+/** Wrap a retroPass PassNode that emulates 5th-gen console rendering: low resolution, vertex snapping, and affine texture distortion. Use INSTEAD of a plain scene pass. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createRetroPass (scene: THREE.Scene, camera: THREE.Camera, options: RetroOptions = {}) {
   return retroPass(scene, camera, options)
 }

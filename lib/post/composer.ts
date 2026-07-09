@@ -14,6 +14,7 @@ import type { Pass } from 'three/addons/postprocessing/Pass.js'
 import type { Disposable } from '../types.js'
 
 
+/** Options for {@link createComposer}. */
 export interface ComposerOptions {
   renderer:        THREE.WebGLRenderer
   scene:           THREE.Scene
@@ -27,6 +28,7 @@ export interface ComposerOptions {
   bloomThreshold?: number
 }
 
+/** Handle returned by {@link createComposer}, exposing the EffectComposer and helper methods. */
 export interface ComposerHandle extends Disposable {
   composer: EffectComposer
   bloom:    UnrealBloomPass | null
@@ -35,6 +37,7 @@ export interface ComposerHandle extends Disposable {
   addPassBeforeOutput (pass: Pass): void
 }
 
+/** Create an EffectComposer wired with RenderPass and OutputPass, optionally adding a DepthTexture and UnrealBloomPass. */
 export function createComposer ({
   renderer,
   scene,

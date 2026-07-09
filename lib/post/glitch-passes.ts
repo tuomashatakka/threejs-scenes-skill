@@ -83,14 +83,17 @@ const SCAN_CORRUPTION_SHADER = {
   `,
 }
 
+/** Create a ShaderPass that separates RGB channels along a configurable angle for a chromatic glitch effect. */
 export function createRgbShiftPass (): ShaderPass {
   return new ShaderPass(RGB_SHIFT_SHADER)
 }
 
+/** Create a ShaderPass that displaces and swaps colour channels in pseudo-random blocks for a datamosh glitch effect. */
 export function createBlockDisplacementPass (): ShaderPass {
   return new ShaderPass(BLOCK_DISPLACEMENT_SHADER)
 }
 
+/** Create a ShaderPass that adds horizontal scan-line jitter and brightness spikes for a corrupt-signal glitch effect. */
 export function createScanCorruptionPass (): ShaderPass {
   return new ShaderPass(SCAN_CORRUPTION_SHADER)
 }

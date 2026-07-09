@@ -74,6 +74,7 @@ const DOF_CA_SHADER = {
 
 const focalScratch = new THREE.Vector3()
 
+/** Options for {@link createDofPass}. */
 export interface DofPassOptions {
   focalDistance?: number
   focalRange?:    number
@@ -83,11 +84,13 @@ export interface DofPassOptions {
   far?:           number
 }
 
+/** Combined depth-of-field and chromatic-aberration pass. */
 export interface DofPass extends ShaderPass {
   focusOn (worldPos: THREE.Vector3, camera: THREE.Camera): void
   setAspect (aspect: number): void
 }
 
+/** Create a ShaderPass that applies depth-of-field blur modulated by circle-of-confusion, with radial chromatic separation. Requires a DepthTexture on the composer render target. */
 export function createDofPass ({
   focalDistance = 10,
   focalRange = 4,

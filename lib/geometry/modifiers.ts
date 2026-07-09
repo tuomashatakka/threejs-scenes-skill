@@ -16,6 +16,7 @@ import { hash3 } from '../procedural/rng.js'
 import type { SeededRng } from '../types.js'
 
 
+/** A principal axis name, used by the geometry deformers and layout helpers. */
 export type Axis = 'x' | 'y' | 'z'
 
 type AxisExtentReturnType = { min: number; size: number }
@@ -111,6 +112,7 @@ export function applyBend (geo: THREE.BufferGeometry, angle: number, axis: Axis 
   return geo
 }
 
+/** Options for {@link displaceByNoise}: amplitude, frequency, and a `seed` or {@link SeededRng} for determinism. */
 export interface NoiseDisplaceOptions {
   amp?:  number
   freq?: number
@@ -166,6 +168,7 @@ export function mergeVertices (geo: THREE.BufferGeometry, tolerance = 1e-4): THR
   return BufferGeometryUtils.mergeVertices(geo, tolerance)
 }
 
+/** Recompute vertex normals after deforming a geometry — call once after the last modifier. */
 export function recomputeNormals (geo: THREE.BufferGeometry): THREE.BufferGeometry {
   geo.computeVertexNormals()
   return geo

@@ -8,6 +8,7 @@
 import * as THREE from 'three'
 
 
+/** Per-point tangent/normal/binormal frames along a polyline, twist-free via parallel transport. */
 export interface TransportFrames {
   tangents:  THREE.Vector3[]
   normals:   THREE.Vector3[]
@@ -58,6 +59,7 @@ export function parallelTransportFrames (points: THREE.Vector3[]): TransportFram
   return { tangents, normals, binormals }
 }
 
+/** Options for {@link createPathTube}: constant-or-variable `radius`, cross-section resolution, inward normals, and V-repeat. */
 export interface PathTubeOptions {
 
   /** Constant radius, or a per-point function of (t in [0,1], index). Default 1. */

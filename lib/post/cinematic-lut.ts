@@ -5,6 +5,7 @@
 import * as THREE from 'three'
 
 
+/** Options for {@link createCinematicLUT}. */
 export interface CinematicLutOptions {
 
   /** Contrast S-curve strength about mid-grey. Default 1.12. */

@@ -12,12 +12,14 @@ import type { Node } from 'three/webgpu'
 import type { ColorNode } from './types.js'
 
 
+/** Options for {@link createDof}. */
 export interface DofOptions {
   focusDistance?: number
   focalLength?:   number
   bokehScale?:    number
 }
 
+/** Wrap a DepthOfFieldNode that applies bokeh-blur by distance from the focus plane. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createDof (input: ColorNode, viewZ: ColorNode, options: DofOptions = {}) {
   const { focusDistance = 10, focalLength = 1, bokehScale = 1 } = options
   return dof(input, viewZ, focusDistance, focalLength, bokehScale)
@@ -25,6 +27,7 @@ export function createDof (input: ColorNode, viewZ: ColorNode, options: DofOptio
 
 // perf: medium-high. Sampling cost scales with bokehScale.
 
+/** Options for {@link createDofBasic}. */
 export interface DofBasicOptions {
   // View-space focus point; everything near focusPoint.z stays sharp.
   focusPoint?:  THREE.Vector3
@@ -38,6 +41,7 @@ export interface DofBasicOptions {
 
 // Cheap DOF (dof/basic example): box-blur the colour, then lerp sharp<->blurred
 // by smoothstep over the absolute view-Z distance to the focus point.
+/** Cheap DOF: box-blur the colour input, then lerp sharp<->blurred by smoothstep over view-Z distance to the focus point. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createDofBasic (input: Node<'vec4'>, viewZ: Node<'float'>, options: DofBasicOptions = {}) {
   const {
     focusPoint = new THREE.Vector3(),

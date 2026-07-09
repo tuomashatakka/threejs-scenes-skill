@@ -5,6 +5,7 @@
 import * as THREE from 'three'
 
 
+/** Options for {@link createLatheMesh}: radial `segments`, partial-revolution angles, and material. */
 export interface LatheOptions {
   segments?:  number
   phiStart?:  number
@@ -12,6 +13,7 @@ export interface LatheOptions {
   material?:  THREE.Material
 }
 
+/** Revolve a 2D profile of `[radius, y]` pairs around the Y axis — vases, columns, chess pieces. `segments` defaults to 32. */
 export function createLatheMesh (
   profile: ReadonlyArray<readonly [number, number] | THREE.Vector2>,
   options: LatheOptions = {},

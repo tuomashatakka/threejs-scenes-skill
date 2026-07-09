@@ -11,6 +11,7 @@ import { createNoise3D } from './noise.js'
 import type { Disposable, FrameContext } from '../types.js'
 
 
+/** Recipe for {@link createProceduralBody}: radius/detail/seed, body `type`, noise displacement tuning, palette, and water/cloud/ring shells. */
 export interface ProceduralBodySpec {
   radius?: number
 
@@ -32,6 +33,7 @@ export interface ProceduralBodySpec {
   rings?:   { inner: number; outer: number; color?: THREE.ColorRepresentation } | null
 }
 
+/** A generated celestial body. `tick(ctx)` spins it and drifts clouds; `dispose()` frees every shell's geometry and material. */
 export interface ProceduralBody extends Disposable {
   object: THREE.Group
 
@@ -41,6 +43,20 @@ export interface ProceduralBody extends Disposable {
 
 const colorA = new THREE.Color()
 
+/**
+ * Procedural celestial body: a noise-displaced icosphere terrestrial with
+ * height-palette vertex colors, or a banded gas giant — plus optional water
+ * and cloud shells and rings. Fully seeded and texture-free, so the same
+ * spec always yields the same planet and it works headless.
+ *
+ * @param spec - Body recipe; see {@link ProceduralBodySpec}.
+ * @returns A {@link ProceduralBody}; add `object` to the scene and `tick` it.
+ * @remarks `detail: 4` ≈ 5k triangles, `5` ≈ 20k — geometry cost is
+ * build-time only.
+ * @example
+ * const planet = createProceduralBody({ seed: 7, type: 'terrestrial', water: true })
+ * scene.add(planet.object)
+ */
 export function createProceduralBody ({
   radius = 1,
   detail = 4,

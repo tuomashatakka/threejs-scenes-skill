@@ -10,6 +10,7 @@ import * as THREE from 'three'
 import type { Disposable, FrameContext } from '../types.js'
 
 
+/** Options for {@link createShaderQuad}: the fragment shader, extra uniforms, and an optional pointer-tracking element. */
 export interface ShaderQuadOptions {
 
   /** Fragment shader. Receives iResolution, iTime, uPointer + your uniforms. */
@@ -22,6 +23,7 @@ export interface ShaderQuadOptions {
   pointerElement?: HTMLElement
 }
 
+/** A self-contained fullscreen shader scene. `update` advances the uniform contract; `render` also draws it. */
 export interface ShaderQuad extends Disposable {
   scene:    THREE.Scene
   camera:   THREE.OrthographicCamera
@@ -40,6 +42,18 @@ const VERTEX = /* glsl */`
   }
 `
 
+/**
+ * Fullscreen fragment-shader runner: one fullscreen triangle and a
+ * `ShaderMaterial` with the shadertoy-style uniform contract — `iResolution`
+ * (px), `iTime` (s), `uPointer` (-1..1, +y up) — plus your own uniforms.
+ *
+ * @param options - Fragment shader, extra uniforms, pointer element.
+ * @returns A {@link ShaderQuad}: use `render(ctx, renderer)` for shader-only
+ * scenes or `update` + your own composition as a backdrop layer.
+ * @example
+ * const quad = createShaderQuad({ fragmentShader: RAYMARCH_GLSL })
+ * loop.onFrame(ctx => quad.render(ctx, renderer))
+ */
 export function createShaderQuad ({ fragmentShader, uniforms = {}, pointerElement }: ShaderQuadOptions): ShaderQuad {
   const material = new THREE.ShaderMaterial({
     depthTest:  false,

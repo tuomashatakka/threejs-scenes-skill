@@ -7,6 +7,7 @@
 import type { SeededRng } from '../types.js'
 
 
+/** Tiny fast seeded PRNG: returns a `() => number` yielding uniform values in [0, 1). Same seed → same stream. */
 export function mulberry32 (seed: number): () => number {
   let a = seed >>> 0
   return function rng () {
@@ -19,20 +20,24 @@ export function mulberry32 (seed: number): () => number {
   }
 }
 
+/** Stateless 2D coordinate hash to [0, 1) — cheap lattice noise, no seed state. */
 export function hash2 (x: number, y: number): number {
   const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453
   return s - Math.floor(s)
 }
 
+/** Stateless 3D coordinate hash to [0, 1). */
 export function hash3 (x: number, y: number, z: number): number {
   const s = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453
   return s - Math.floor(s)
 }
 
+/** Linear interpolation from `a` to `b` by `t`. */
 export function lerp (a: number, b: number, t: number): number {
   return a + (b - a) * t
 }
 
+/** Hermite smoothstep: 0 below `edge0`, 1 above `edge1`, smooth in between. */
 export function smoothstep (edge0: number, edge1: number, x: number): number {
   const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)))
   return t * t * (3 - 2 * t)
@@ -48,6 +53,17 @@ function hashLabel (label: string, salt: number): number {
   return h >>> 0
 }
 
+/**
+ * Seeded random stream with the fork-per-consumer determinism API: seed
+ * once, `fork(label)` a deterministic sub-stream per consumer, and build
+ * order or replay never changes the output.
+ *
+ * @param seed - Any integer.
+ * @returns A `SeededRng` with `next`/`range`/`int`/`pick`/`fork`.
+ * @example
+ * const rng = createSeededRng(42)
+ * const grass = rng.fork('grass')   // stable regardless of call order
+ */
 export function createSeededRng (seed: number): SeededRng {
   const seedInt = seed >>> 0
   const next    = mulberry32(seedInt)

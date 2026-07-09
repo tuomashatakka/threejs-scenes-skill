@@ -49,6 +49,7 @@ const HUD_BEAM_SHADER = {
   `,
 }
 
+/** Options for {@link createHudBeamTransition}. */
 export interface HudBeamOptions {
   duration?:   number
   beamWidth?:  number
@@ -56,12 +57,14 @@ export interface HudBeamOptions {
   onComplete?: () => void
 }
 
+//** Handle returned by {@link createHudBeamTransition} with play/tick controls. */
 export interface HudBeamTransition {
   pass: ShaderPass
   play (onMidpoint?: () => void): void
   tick (delta: number, time: number): void
 }
 
+/** Create a horizontal beam-sweep transition that reveals content with RGB-split fringes. Call tick() each frame and play() to trigger. */
 export function createHudBeamTransition ({
   duration = 0.9,
   beamWidth = 0.08,

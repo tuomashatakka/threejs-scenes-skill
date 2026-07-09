@@ -10,6 +10,7 @@ import * as THREE from 'three'
 import type { Disposable } from '../types.js'
 
 
+/** Options for {@link createInfiniteGround}: tile size/radius/resolution, a `displace` height function, and material. */
 export interface InfiniteGroundOptions {
   tileSize?: number
 
@@ -22,6 +23,7 @@ export interface InfiniteGroundOptions {
   material?: THREE.Material
 }
 
+/** Recentering tiled terrain. Call `update(center)` with the camera or player position each frame. */
 export interface InfiniteGround extends Disposable {
   object: THREE.Group
 
@@ -32,6 +34,18 @@ export interface InfiniteGround extends Disposable {
   heightAt (x: number, z: number): number
 }
 
+/**
+ * Endless-looking ground from a fixed grid of displaced plane tiles that
+ * recenter around a focus point — constant memory however far you travel.
+ *
+ * @param options - `tileSize` (default 32), `gridRadius` (default 2 → 5×5
+ * tiles), per-tile `segments`, a `displace(x, z)` height function, and
+ * material.
+ * @returns An {@link InfiniteGround}; `heightAt(x, z)` samples the same
+ * displacement used for the mesh.
+ * @remarks Recentering costs only the tiles that crossed a cell boundary;
+ * frames with no boundary crossing do zero work.
+ */
 export function createInfiniteGround ({
   tileSize = 32,
   gridRadius = 2,

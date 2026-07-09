@@ -6,6 +6,7 @@
 import * as THREE from 'three'
 
 
+/** Options for {@link createBatchedBuildings}: the geometry variants, ONE shared material, and per-instance transforms. */
 export interface BatchedBuildingsOptions {
   geometries:              THREE.BufferGeometry[]
   material:                THREE.Material
@@ -14,6 +15,17 @@ export interface BatchedBuildingsOptions {
   perObjectFrustumCulled?: boolean
 }
 
+/**
+ * Batch N different geometries under one shared material into a single
+ * `BatchedMesh` draw call — city buildings, dungeon pieces, mixed props.
+ *
+ * @param options - Geometries, shared material, and one `Matrix4` per
+ * instance (geometry `i % geometries.length` is used for transform `i`).
+ * @returns The `BatchedMesh`; hide individual instances with
+ * `setVisibleAt(id, false)`.
+ * @remarks Buffers are sized once from the total vertex/index counts.
+ * @see {@link createInstancedField} for the one-geometry × N case.
+ */
 export function createBatchedBuildings ({
   geometries,
   material,

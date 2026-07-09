@@ -8,12 +8,14 @@ import * as THREE from 'three'
 
 const scratchCenter = new THREE.Vector3()
 
+/** Populates chunk `(cx, cz)` by adding content to the pooled `Group`; may be async (chunk streaming). */
 export type ChunkBuilder = (
   cx: number,
   cz: number,
   chunk: THREE.Group,
 ) => void | Promise<void>
 
+/** Options for {@link createChunkManager}: chunk size, view radius in chunks, origin-rebase threshold, and the `build` callback. */
 export interface ChunkManagerOptions {
   chunkSize:        number
   viewRadius:       number
@@ -21,6 +23,7 @@ export interface ChunkManagerOptions {
   build:            ChunkBuilder
 }
 
+/** Infinite-world chunk streamer. Call `update(cameraWorldPos)` each frame (or on movement); `dispose()` releases every chunk. */
 export interface ChunkManager {
   root:                 THREE.Group
   update (cameraWorldPos: THREE.Vector3): Promise<void>
@@ -29,6 +32,19 @@ export interface ChunkManager {
   readonly pooledCount: number
 }
 
+/**
+ * Infinite-world chunk manager: keeps a `viewRadius` ring of chunks built
+ * around the camera, pooling and recycling `Group` instances on movement,
+ * and rebases the world origin past `rebaseThreshold` to dodge float32
+ * precision rot.
+ *
+ * @param options - Chunk size, view radius, rebase threshold (default 4096),
+ * and the chunk `build` callback.
+ * @returns A {@link ChunkManager}; add `root` to the scene.
+ * @throws Error when `chunkSize` is missing or zero.
+ * @remarks `update` is async — builds may stream in over multiple frames;
+ * recycled chunks are cleared and reused, not disposed, until `dispose()`.
+ */
 export function createChunkManager ({
   chunkSize,
   viewRadius,

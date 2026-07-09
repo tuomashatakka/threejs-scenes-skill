@@ -48,6 +48,7 @@ function makeValueNoise3D (seed: number): (x: number, y: number, z: number) => n
   }
 }
 
+/** Options for {@link createNoiseTexture}: texture `size`, noise frequency/octaves/seed, and which `channels` get independent noise. */
 export interface NoiseTextureOptions {
   size?:      number
   frequency?: number
@@ -56,6 +57,14 @@ export interface NoiseTextureOptions {
   channels?:  string
 }
 
+/**
+ * Seamlessly tileable seeded noise as a `DataTexture` — the noise is sampled
+ * on a torus surface, so opposite edges match exactly.
+ *
+ * @param options - Size (default 256), frequency, octaves, seed, channels.
+ * @returns The texture, or `null` in DOM-less runtimes (degrade to flat
+ * colour instead of crashing).
+ */
 export function createNoiseTexture ({
   size = 256,
   frequency = 4,

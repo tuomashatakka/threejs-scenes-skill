@@ -10,6 +10,7 @@ import { lut3D } from 'three/addons/tsl/display/Lut3DNode.js'
 import type { ColorNode } from './types.js'
 
 
+/** Options for {@link createLut}. */
 export interface LutOptions {
   // The loaded 3D LUT texture (e.g. from LUTCubeLoader().load(...).texture3D).
   lut:        Data3DTexture
@@ -19,6 +20,7 @@ export interface LutOptions {
 
 // The input should usually be `renderOutput(scenePass)` so grading happens in
 // display space; remember to set `postProcessing.outputColorTransform = false`.
+/** Wrap a Lut3DNode that remaps colours through a loaded 3D LUT (.cube/.3dl/.png). Apply on tone-mapped display-space colour. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createLut (input: ColorNode, options: LutOptions) {
   const { lut, intensity = 1 } = options
   return lut3D(input, texture3D(lut), lut.image.width, uniform(intensity))

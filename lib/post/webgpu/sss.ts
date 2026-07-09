@@ -9,6 +9,7 @@ import type { Camera, DirectionalLight, TextureNode } from 'three/webgpu'
 import { sss } from 'three/addons/tsl/display/SSSNode.js'
 
 
+/** Options for {@link createSss}. */
 export interface SssOptions {
   maxDistance?:          number
   thickness?:            number
@@ -20,6 +21,7 @@ export interface SssOptions {
 
 // `depthNode` is the pre-pass depth texture node. Sample the result and use its
 // `.r` channel as the scattering term added into the lit colour.
+/** Wrap an SSSNode that approximates subsurface scattering by ray-marching shadow depth toward the main directional light. Returns a scattering mask in .r. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createSss (
   depthNode: TextureNode,
   camera: Camera,

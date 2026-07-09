@@ -5,8 +5,10 @@
 // scripts/poisson-disk.js.
 
 
+/** An `[x, y]` sample point. */
 export type Point2 = [number, number]
 
+/** Options for {@link poissonDisk}: region size, minimum spacing, the random stream, and attempts-per-sample `k`. */
 export interface PoissonDiskOptions {
   width:   number
   height:  number
@@ -16,6 +18,15 @@ export interface PoissonDiskOptions {
 }
 
 // eslint-disable-next-line complexity -- self-contained sampling loop; splitting hurts readability
+/**
+ * Poisson-disk 2D sampling (Bridson): points with a guaranteed minimum
+ * spacing that read as natural scatter — better than uniform random for
+ * forests, asteroid fields, and star layouts.
+ *
+ * @param options - Region `width`/`height`, `minDist` spacing, seeded `rng`,
+ * and `k` candidate attempts per sample (default 30).
+ * @returns The accepted {@link Point2} samples in [0,width]×[0,height].
+ */
 export function poissonDisk ({
   width,
   height,

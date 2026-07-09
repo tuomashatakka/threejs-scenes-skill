@@ -12,6 +12,7 @@ function pointsToShape (points: ReadonlyArray<readonly [number, number]>): THREE
   return s
 }
 
+/** Options for {@link createExtrudedMesh}: the 2D profile (`shape` or raw `points`), depth, bevel tuning, and material. */
 export interface ExtrudeOptions {
   shape?:          THREE.Shape | THREE.Shape[]
   points?:         ReadonlyArray<readonly [number, number]>
@@ -25,6 +26,16 @@ export interface ExtrudeOptions {
   material?:       THREE.Material
 }
 
+/**
+ * Extrude a 2D profile into a bevelled mesh. Pass a `Shape` (compose with
+ * the helpers in `geometry/shapes`) or raw `points` to auto-build one.
+ *
+ * @param options - Profile, `depth` (default 1), bevel settings (on by
+ * default), and material (default matte standard).
+ * @returns The extruded mesh with shadows enabled.
+ * @example
+ * const gear = createExtrudedMesh({ shape: gearShape(12, 2, 1.4), depth: 0.5 })
+ */
 export function createExtrudedMesh (options: ExtrudeOptions): THREE.Mesh {
   const {
     shape,
@@ -61,6 +72,7 @@ export function createExtrudedMesh (options: ExtrudeOptions): THREE.Mesh {
   return mesh
 }
 
+/** Options for {@link extrudeAlongPath}: sweep `steps`, bevel toggle, curve resolution, and material. */
 export interface ExtrudeAlongPathOptions {
   steps?:         number
   bevel?:         boolean
@@ -68,6 +80,7 @@ export interface ExtrudeAlongPathOptions {
   material?:      THREE.Material
 }
 
+/** Sweep a 2D `shape` along a 3D curve into a mesh — rails, pipes, ribbons. `steps` controls sweep resolution (default 64). */
 export function extrudeAlongPath (
   shape: THREE.Shape,
   path: THREE.Curve<THREE.Vector3>,

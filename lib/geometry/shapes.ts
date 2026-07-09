@@ -6,6 +6,7 @@
 import * as THREE from 'three'
 
 
+/** Rounded rectangle `Shape` centered on the origin; `radius` clamps to half the smaller side. */
 export function roundedRectShape (width: number, height: number, radius: number): THREE.Shape {
   const r  = Math.min(radius, width / 2, height / 2)
   const hw = width / 2
@@ -23,6 +24,7 @@ export function roundedRectShape (width: number, height: number, radius: number)
   return s
 }
 
+/** Regular polygon `Shape` with `sides` vertices on a circle of `radius`, first vertex at the top. */
 export function polygonShape (sides: number, radius: number): THREE.Shape {
   const s = new THREE.Shape()
   for (let i = 0; i <= sides; i++) {
@@ -37,6 +39,7 @@ export function polygonShape (sides: number, radius: number): THREE.Shape {
   return s
 }
 
+/** Star `Shape` alternating between `outerRadius` tips and `innerRadius` valleys. */
 export function starShape (points: number, outerRadius: number, innerRadius: number): THREE.Shape {
   const s     = new THREE.Shape()
   const total = points * 2
@@ -53,6 +56,7 @@ export function starShape (points: number, outerRadius: number, innerRadius: num
   return s
 }
 
+/** Gear `Shape` with square-profile `teeth` and a center hole of `innerRadius`. `toothDepth` is the tooth height as a fraction of the outer radius. */
 export function gearShape (teeth: number, outerRadius: number, innerRadius: number, toothDepth = 0.25): THREE.Shape {
   const s     = new THREE.Shape()
   const steps = teeth * 4
@@ -77,6 +81,7 @@ export function gearShape (teeth: number, outerRadius: number, innerRadius: numb
   return s
 }
 
+/** Annulus `Shape`: a disc of `outerRadius` with an `innerRadius` hole. */
 export function ringShape (outerRadius: number, innerRadius: number): THREE.Shape {
   const s = new THREE.Shape()
   s.absarc(0, 0, outerRadius, 0, Math.PI * 2, false)

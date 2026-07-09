@@ -9,6 +9,7 @@ import type { Node, PerspectiveCamera } from 'three/webgpu'
 import { ssgi } from 'three/addons/tsl/display/SSGINode.js'
 
 
+/** Options for {@link createSsgi}. */
 export interface SsgiOptions {
   sliceCount?:             number
   stepCount?:              number
@@ -26,6 +27,7 @@ export interface SsgiOptions {
 // `beautyNode` is the lit scene colour, `normalNode` the decoded view normal.
 // SSGI requires a PerspectiveCamera. The ssgi/ballpool example only differs in
 // its (skipped) physics demo scene; the effect factory is identical.
+/** Wrap an SSGINode that ray-marches the depth/normal buffers for one bounce of indirect light plus screen-space AO. Requires a PerspectiveCamera. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createSsgi (
   beautyNode: Node,
   depthNode: Node,

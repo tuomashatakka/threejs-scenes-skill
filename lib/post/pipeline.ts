@@ -13,6 +13,7 @@ import type { Pass } from 'three/addons/postprocessing/Pass.js'
 import type { Disposable } from '../types.js'
 
 
+/** Options for {@link createPostPipeline}. */
 export interface PostPipelineOptions {
   renderer: THREE.WebGLRenderer
   scene:    THREE.Scene
@@ -24,6 +25,7 @@ export interface PostPipelineOptions {
   withDepth?: boolean
 }
 
+/** Reorderable named-pass pipeline over EffectComposer. Register passes by name, then drive order and enablement from serializable config. */
 export interface PostPipeline extends Disposable {
   composer: EffectComposer
 
@@ -39,6 +41,7 @@ export interface PostPipeline extends Disposable {
   setSize (width: number, height: number): void
 }
 
+/** Create a PostPipeline with a named-pass registry. RenderPass stays first, OutputPass stays last; all other passes are reorderable. */
 export function createPostPipeline ({
   renderer,
   scene,

@@ -8,6 +8,7 @@ import type { Node } from 'three/webgpu'
 import { transition } from 'three/addons/tsl/display/TransitionNode.js'
 
 
+/** Options for {@link createTransition}. */
 export interface TransitionOptions {
   // 0 = fully scene A, 1 = fully scene B.
   mixRatio?:   number
@@ -19,6 +20,7 @@ export interface TransitionOptions {
 
 // `passA` / `passB` are two scene pass colour nodes; `mixTexture` is the wipe
 // pattern texture node. Returns the blended colour node to use as output.
+/** Wrap a TransitionNode that cross-fades two scene pass colour nodes, optionally masked by a wipe texture. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createTransition (
   passA: Node,
   passB: Node,

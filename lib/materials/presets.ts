@@ -7,6 +7,7 @@
 import * as THREE from 'three'
 
 
+/** Built-in PBR preset names for `createStandardMaterial`. */
 export type StandardPresetName =
   | 'metal' |
   'chrome' |
@@ -17,6 +18,7 @@ export type StandardPresetName =
   'matte' |
   'emissive'
 
+/** The tuned `MeshStandardMaterial` parameter sets behind each {@link StandardPresetName}. */
 export const MATERIAL_PRESETS: Record<StandardPresetName, THREE.MeshStandardMaterialParameters> = {
   metal:    { color: '#b8c0c8', metalness: 1, roughness: 0.35 },
   chrome:   { color: '#ffffff', metalness: 1, roughness: 0.05 },
@@ -65,11 +67,13 @@ export function createGradientToonMap (steps = 4): THREE.DataTexture {
   return tex
 }
 
+/** Options for {@link createToonMaterial}: flat `color` and gradient `steps`. */
 export interface ToonOptions {
   color?: THREE.ColorRepresentation
   steps?: number
 }
 
+/** Cel-shaded `MeshToonMaterial` with a nearest-filtered gradient map of `steps` bands (default 4). */
 export function createToonMaterial (options: ToonOptions = {}): THREE.MeshToonMaterial {
   const { color = '#d94f4f', steps = 4 } = options
   return new THREE.MeshToonMaterial({ color, gradientMap: createGradientToonMap(steps) })

@@ -9,6 +9,7 @@ import { uniform } from 'three/tsl'
 import { pixelationPass } from 'three/addons/tsl/display/PixelationPassNode.js'
 
 
+/** Options for {@link createPixelationPass}. */
 export interface PixelOptions {
   // Size of each output pixel block in device pixels.
   pixelSize?:          number
@@ -18,6 +19,7 @@ export interface PixelOptions {
   depthEdgeStrength?:  number
 }
 
+/** Wrap a pixelationPass PassNode that renders the scene into chunky pixels with optional normal/depth edge outlines. Use INSTEAD of a plain scene pass. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createPixelationPass (scene: THREE.Scene, camera: THREE.Camera, options: PixelOptions = {}) {
   const { pixelSize = 6, normalEdgeStrength = 0.3, depthEdgeStrength = 0.4 } = options
   return pixelationPass(scene, camera, uniform(pixelSize), uniform(normalEdgeStrength), uniform(depthEdgeStrength))

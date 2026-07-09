@@ -10,19 +10,23 @@ import { StereoEffect } from 'three/addons/effects/StereoEffect.js'
 import type { Disposable } from '../types.js'
 
 
+/** Render mode for stereoscopic 3D: anaglyph (red/cyan), side-by-side stereo, or off (passthrough). */
 export type StereoMode = 'anaglyph' | 'stereo' | 'off'
 
+/** Renderer wrapper for anaglyph or side-by-side stereo output. Both bypass EffectComposer. */
 export interface StereoRenderer extends Disposable {
   mode: StereoMode
   render (scene: THREE.Scene, camera: THREE.Camera): void
   setSize (w: number, h: number): void
 }
 
+/** Optional size override for the stereo effect render target. */
 export interface StereoSizeOptions {
   width?:  number
   height?: number
 }
 
+/** Create a StereoRenderer for the given mode. AnaglyphEffect for red/cyan glasses, StereoEffect for cardboard-style side-by-side. */
 export function createStereoRenderer (
   renderer: THREE.WebGLRenderer,
   mode: StereoMode,

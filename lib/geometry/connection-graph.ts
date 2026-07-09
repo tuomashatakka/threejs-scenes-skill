@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import type { Disposable } from '../types.js'
 
 
+/** Options for {@link createConnectionGraph}: `neighbors` per node, `maxDistance` edge cutoff, and line colors. */
 export interface ConnectionGraphOptions {
 
   /** Edges per node. Default 3. */
@@ -20,6 +21,7 @@ export interface ConnectionGraphOptions {
   opacity?:        number
 }
 
+/** Nearest-neighbor line network. `progress` drives a draw-on animation; `dispose()` frees the line geometry/material. */
 export interface ConnectionGraph extends Disposable {
   object: THREE.LineSegments
 
@@ -33,6 +35,15 @@ export interface ConnectionGraph extends Disposable {
   setHighlight (nodeIndex: number | null): void
 }
 
+/**
+ * Connect points into a nearest-neighbor `LineSegments` network — each node
+ * links to its `neighbors` closest peers within `maxDistance`, deduplicated.
+ *
+ * @param nodes - Node positions as xyz tuples.
+ * @param options - Neighbor count, distance cutoff, colors.
+ * @returns A {@link ConnectionGraph}; set `progress` from 0 to 1 to animate
+ * edges drawing in.
+ */
 export function createConnectionGraph (
   nodes: ReadonlyArray<readonly [number, number, number]>,
   {

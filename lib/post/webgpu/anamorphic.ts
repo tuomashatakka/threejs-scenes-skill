@@ -8,6 +8,7 @@ import { anamorphic } from 'three/addons/tsl/display/AnamorphicNode.js'
 import type { ColorNode } from './types.js'
 
 
+/** Options for {@link createAnamorphic}. */
 export interface AnamorphicOptions {
   // Luminance above which pixels streak.
   threshold?:       number
@@ -19,6 +20,7 @@ export interface AnamorphicOptions {
   resolutionScale?: number
 }
 
+/** Wrap an AnamorphicNode that produces horizontal streak lens flares from bright highlights. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
 export function createAnamorphic (input: ColorNode, options: AnamorphicOptions = {}) {
   const { threshold = 1.4, scale = 5, samples = 32, resolutionScale = 1 } = options
   const node                                                              = anamorphic(input, uniform(threshold), uniform(scale), samples)

@@ -9,12 +9,14 @@ import * as THREE from 'three'
 import type { Axis } from './modifiers.js'
 
 
+/** Optional position/Euler-rotation/scale applied when grouping or placing objects. */
 export interface Transform {
   position?: [number, number, number]
   rotation?: [number, number, number]
   scale?:    number | [number, number, number]
 }
 
+/** Group `children` under one `Group` with an optional {@link Transform} applied. */
 export function createGroup (children: THREE.Object3D[] = [], transform: Transform = {}): THREE.Group {
   const group = new THREE.Group()
   children.forEach(c => group.add(c))
@@ -31,12 +33,14 @@ export function createGroup (children: THREE.Object3D[] = [], transform: Transfo
   return group
 }
 
+/** Options for {@link layoutGrid}: column count (default √n), `spacing`, and layout plane. */
 export interface GridLayout {
   cols?:    number
   spacing?: number
   plane?:   'xz' | 'xy'
 }
 
+/** Arrange objects in a centered grid on the `xz` (default) or `xy` plane, mutating their positions. Returns the same array. */
 export function layoutGrid (objects: THREE.Object3D[], options: GridLayout = {}): THREE.Object3D[] {
   const { spacing = 2, plane = 'xz' } = options
   const cols                          = options.cols ?? Math.ceil(Math.sqrt(objects.length))
@@ -54,12 +58,14 @@ export function layoutGrid (objects: THREE.Object3D[], options: GridLayout = {})
   return objects
 }
 
+/** Options for {@link layoutRadial}: circle `radius`, `startAngle`, and whether items rotate to face the center. */
 export interface RadialLayout {
   radius?:     number
   startAngle?: number
   faceCenter?: boolean
 }
 
+/** Arrange objects evenly around a circle in the ground plane, optionally facing the center. Mutates positions; returns the same array. */
 export function layoutRadial (objects: THREE.Object3D[], options: RadialLayout = {}): THREE.Object3D[] {
   const { radius = 5, startAngle = 0, faceCenter = false } = options
   const n                                                  = objects.length
@@ -72,6 +78,7 @@ export function layoutRadial (objects: THREE.Object3D[], options: RadialLayout =
   return objects
 }
 
+/** Stack objects along `axis` at `spacing` intervals, centered on the origin. Mutates positions; returns the same array. */
 export function layoutStack (objects: THREE.Object3D[], axis: Axis = 'y', spacing = 1): THREE.Object3D[] {
   const offset = (objects.length - 1) * spacing / 2
   objects.forEach((obj, i) => {
@@ -80,6 +87,7 @@ export function layoutStack (objects: THREE.Object3D[], axis: Axis = 'y', spacin
   return objects
 }
 
+/** World-space bounding box of an object and all its descendants. */
 export function groupBounds (obj: THREE.Object3D): THREE.Box3 {
   return new THREE.Box3().setFromObject(obj)
 }

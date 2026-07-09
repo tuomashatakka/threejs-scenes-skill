@@ -3,8 +3,19 @@
 // Ported from scripts/voxel-data.js.
 
 
+/** Callback receiving each voxel's coordinates and id during iteration. */
 export type VoxelVisitor = (x: number, y: number, z: number, id: number) => void
 
+/**
+ * Cubic voxel chunk: flat `Uint16Array` storage with bounds-checked
+ * accessors. Id `0` is empty; any other id is a solid voxel (and indexes
+ * the meshing palette).
+ *
+ * @example
+ * const chunk = new VoxelChunk(16)
+ * chunk.set(0, 0, 0, 1)
+ * const geometry = greedyMesh(chunk)
+ */
 export class VoxelChunk {
   readonly size: number
   readonly data: Uint16Array

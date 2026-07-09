@@ -13,11 +13,13 @@ import { mulberry32 } from '../procedural/rng.js'
 const scratchObject = new THREE.Object3D()
 const scratchColor  = new THREE.Color()
 
+/** Scratch pair handed to a {@link PlaceFn}: set the `object` transform and instance `color`. */
 export interface InstancePlacement {
   object: THREE.Object3D
   color:  THREE.Color
 }
 
+/** Places instance `index`: mutate `object` position/rotation/scale and `color`; `rng` is the field's seeded stream. */
 export type PlaceFn = (
   index: number,
   rng: () => number,
@@ -25,6 +27,7 @@ export type PlaceFn = (
   color: THREE.Color,
 ) => void
 
+/** Options for {@link createInstancedField}: geometry/material/count plus seeded scatter tuning (radius, hue, scale) or a custom `place`. */
 export interface InstancedFieldOptions {
   geometry:   THREE.BufferGeometry
   material:   THREE.Material
@@ -38,6 +41,17 @@ export interface InstancedFieldOptions {
   place?:     PlaceFn
 }
 
+/**
+ * One geometry × N transforms as a single `InstancedMesh` draw call — grass,
+ * trees, asteroids, bullets, scatter. Default placement is a seeded radial
+ * scatter with per-instance hue/scale variation; pass `place` for arbitrary
+ * layouts.
+ *
+ * @param options - Geometry, material, `count` (buffers size once), and
+ * placement tuning.
+ * @returns The `InstancedMesh` with per-instance colors enabled.
+ * @remarks Same `seed` → identical field. One draw call regardless of count.
+ */
 export function createInstancedField ({
   geometry,
   material,

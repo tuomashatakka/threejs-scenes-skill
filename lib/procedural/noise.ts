@@ -12,6 +12,7 @@ const GRAD3 = [
   [ 0, 1, 1 ], [ 0, -1, 1 ], [ 0, 1, -1 ], [ 0, -1, -1 ],
 ] as const
 
+/** Seeded 3D simplex noise field with fractal `fbm` and `ridged` sums. */
 export interface Noise3D {
 
   /** Single octave, output roughly in [-1, 1]. */
@@ -24,6 +25,14 @@ export interface Noise3D {
   ridged (x: number, y: number, z: number, octaves?: number, lacunarity?: number, gain?: number): number
 }
 
+/**
+ * Seeded 3D simplex noise (classic Gustavson, seed-shuffled permutation
+ * table): the field is fully deterministic per seed. Powers procedural-body
+ * displacement and CPU terrain.
+ *
+ * @param seed - Any integer; same seed → same field.
+ * @returns A {@link Noise3D} with `sample`, `fbm`, and `ridged`.
+ */
 export function createNoise3D (seed = 1): Noise3D {
   // seed-shuffled permutation table (Fisher-Yates over 0..255, doubled)
   const rng = mulberry32(seed >>> 0)
