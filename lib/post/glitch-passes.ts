@@ -83,17 +83,38 @@ const SCAN_CORRUPTION_SHADER = {
   `,
 }
 
-/** Create a ShaderPass that separates RGB channels along a configurable angle for a chromatic glitch effect. */
+
+
+/**
+ * Create a glitch pass that separates the RGB channels along a configurable angle.
+ *
+ * @returns A {@link ShaderPass} whose `uIntensity` (default `0.5`) and `uAngle` uniforms control the shift magnitude and direction.
+ * @remarks Use together with {@link createBlockDisplacementPass} and {@link createScanCorruptionPass} for a layered datamosh effect.
+ */
 export function createRgbShiftPass (): ShaderPass {
   return new ShaderPass(RGB_SHIFT_SHADER)
 }
 
-/** Create a ShaderPass that displaces and swaps colour channels in pseudo-random blocks for a datamosh glitch effect. */
+
+
+/**
+ * Create a glitch pass that displaces and swaps colour channels in pseudo-random blocks.
+ *
+ * @returns A {@link ShaderPass} whose `uIntensity` (default `0.5`) and `uBlockSize` (default `32`) uniforms control the block corruption.
+ * @remarks Each block selects a random horizontal shift and optionally swaps the R and B channels.
+ */
 export function createBlockDisplacementPass (): ShaderPass {
   return new ShaderPass(BLOCK_DISPLACEMENT_SHADER)
 }
 
-/** Create a ShaderPass that adds horizontal scan-line jitter and brightness spikes for a corrupt-signal glitch effect. */
+
+
+/**
+ * Create a glitch pass that adds horizontal scan-line jitter and brightness spikes.
+ *
+ * @returns A {@link ShaderPass} whose `uIntensity` (default `0.5`) uniform controls the corruption amplitude.
+ * @remarks Bands sweep vertically at 2x time frequency; within each band the output is horizontally jittered and brightened.
+ */
 export function createScanCorruptionPass (): ShaderPass {
   return new ShaderPass(SCAN_CORRUPTION_SHADER)
 }

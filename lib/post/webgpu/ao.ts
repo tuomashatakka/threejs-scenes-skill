@@ -8,7 +8,17 @@ import { ao } from 'three/addons/tsl/display/GTAONode.js'
 import type { ColorNode } from './types.js'
 
 
-/** Wrap a GTAONode that computes screen-space ambient occlusion from viewZ and normal, producing contact shadows in creases. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. Needs depth + normal from an MRT scene pass (createScenePassMRT). */
+
+
+/**
+ * Compute screen-space ambient occlusion (GTAO) to produce contact shadows in creases and corners.
+ *
+ * @param viewZ - View-space Z-depth node from the scene pass (scenePass.getViewZNode()).
+ * @param normal - View-space normal node from the scene pass.
+ * @param camera - The active camera.
+ * @returns A GTAONode that outputs an occlusion mask. Multiply onto the scene colour.
+ * @remarks Requires the WebGPU renderer (three/webgpu). Needs depth + normal from an MRT scene pass (see {@link createScenePassMRT}). High cost — hemisphere sampling per pixel; gate off on low-end devices.
+ */
 export function createAo (viewZ: ColorNode, normal: ColorNode, camera: THREE.Camera) {
   return ao(viewZ, normal, camera)
 }

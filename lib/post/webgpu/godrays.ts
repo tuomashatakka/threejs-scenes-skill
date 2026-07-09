@@ -7,7 +7,9 @@ import type { Camera, DirectionalLight, PointLight, TextureNode } from 'three/we
 import { godrays } from 'three/addons/tsl/display/GodraysNode.js'
 
 
-/** Options for {@link createGodrays}. */
+
+
+/** Options for {@link createGodrays}: raymarch step count, scattering density, max density, distance attenuation, and resolution scale. */
 export interface GodraysOptions {
   raymarchSteps?:       number
   density?:             number
@@ -19,7 +21,22 @@ export interface GodraysOptions {
 // `depthNode` is the scene pass's depth texture (scenePass.getTextureNode('depth')).
 // Composite the returned node's texture over the scene colour (the example uses
 // a bilateral blur + depth-aware blend, omitted here — see TODO).
-/** Wrap a GodraysNode that ray-marches the depth buffer from a directional or point light to produce volumetric light shafts. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
+
+
+/**
+ * Ray-march the depth buffer from a directional or point light to produce volumetric light shafts (god rays).
+ *
+ * @param depthNode - Scene-pass depth-texture node (scenePass.getTextureNode('depth')).
+ * @param camera - The active camera.
+ * @param light - The light source casting rays ({@link DirectionalLight} or {@link PointLight}).
+ * @param options.raymarchSteps - Number of raymarch steps; higher = smoother but costlier.
+ * @param options.density - Scattering density along each ray.
+ * @param options.maxDensity - Maximum scattering-density clamp.
+ * @param options.distanceAttenuation - Distance-based attenuation of the light contribution.
+ * @param options.resolutionScale - Fraction of full resolution for the raymarch buffer.
+ * @returns A GodraysNode whose texture should be composited over the scene colour.
+ * @remarks Requires the WebGPU renderer (three/webgpu). High cost — scales with raymarchSteps; drop resolutionScale to recover performance.
+ */
 export function createGodrays (
   depthNode: TextureNode,
   camera: Camera,

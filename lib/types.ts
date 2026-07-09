@@ -142,7 +142,7 @@ export interface PointerGestureOptions {
    * Max pointer travel in CSS pixels still counted as a tap.
    * @defaultValue 8
    */
-  tapMovePx?:      number
+  tapMovePx?: number
 }
 
 /** Device performance bucket used to pick a {@link QualityPreset}. */
@@ -163,23 +163,23 @@ export type PostEffectName =
 export interface QualityPreset {
 
   /** Upper bound applied to `window.devicePixelRatio`. */
-  pixelRatio:      number
+  pixelRatio: number
 
   /** Shadow map resolution per side in texels. */
-  shadowMapSize:   number
-  shadowsEnabled:  boolean
+  shadowMapSize:  number
+  shadowsEnabled: boolean
 
   /** Post-processing effects this tier can afford. */
-  postFx:          PostEffectName[]
+  postFx: PostEffectName[]
 
   /** How many chunk rings to keep loaded around the camera in streamed worlds. */
   chunkViewRadius: number
 
   /** Max live particles across all systems. */
-  particleBudget:  number
+  particleBudget: number
 
   /** Max simultaneous shadow-casting/dynamic lights. */
-  maxLights:       number
+  maxLights: number
 }
 
 /** A resolved {@link QualityPreset} tagged with the tier it came from. */
@@ -261,13 +261,13 @@ export interface LoadedModel {
 
 /** Playback options for {@link AnimationController.play}. */
 export interface PlayOptions {
-  loop?:              THREE.AnimationActionLoopStyles
+  loop?: THREE.AnimationActionLoopStyles
 
   /** Fade-in duration in seconds. */
-  fadeIn?:            number
+  fadeIn?: number
 
   /** Restart the action from time 0 instead of resuming. */
-  reset?:             boolean
+  reset?: boolean
 
   /** Hold the last frame when a non-looping clip finishes. */
   clampWhenFinished?: boolean

@@ -11,7 +11,9 @@ import * as THREE from 'three'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 
 
-/** Raw ShaderPass shader definition for colour grading: tint, contrast, saturation, vignette, grain, and radial chromatic aberration. Runs in linear HDR before tone-mapping. */
+
+
+/** Raw shader definition for the colour-grade pass: tint, contrast, saturation, vignette, seeded grain, and radial chromatic aberration operating in linear HDR space. */
 export const GradeShader = {
   uniforms: {
     tDiffuse:    { value: null },
@@ -64,7 +66,11 @@ export const GradeShader = {
   `,
 }
 
-/** Options for {@link createGradePass}. */
+
+
+
+
+/** Options for {@link createGradePass}: tint colour, contrast, saturation, vignette, grain, and chromatic-aberration strength. */
 export interface GradePassOptions {
   tint?:       THREE.ColorRepresentation
   contrast?:   number
@@ -79,7 +85,20 @@ export interface GradePass extends ShaderPass {
   setTime (elapsed: number): void
 }
 
-/** Create a ShaderPass that applies tint, contrast, saturation, vignette, seeded grain, and radial chromatic aberration in linear HDR. Place before OutputPass (tone-mapping). */
+
+
+/**
+ * Create a colour-grade pass that applies tint, contrast, saturation, vignette, seeded grain, and radial chromatic aberration in linear HDR.
+ *
+ * @param options.tint - Colour tint as a {@link THREE.ColorRepresentation}. Default `#ffffff`.
+ * @param options.contrast - S-curve contrast pivot about mid-grey. Default `1.05`.
+ * @param options.saturation - Colour saturation multiplier. Default `1.1`.
+ * @param options.vignette - Soft radial vignette strength. Default `0.35`.
+ * @param options.grain - Seeded grain amplitude. Default `0.04`.
+ * @param options.chromatic - Radial chromatic-aberration strength that grows toward the corners. Default `0.6`.
+ * @returns A {@link GradePass} whose `setTime(elapsed)` updates the grain seed each frame.
+ * @remarks Must run in linear HDR (scene-referred) BEFORE the OutputPass tone-maps. Do NOT also set `renderer.toneMapping`.
+ */
 export function createGradePass ({
   tint = '#ffffff',
   contrast = 1.05,

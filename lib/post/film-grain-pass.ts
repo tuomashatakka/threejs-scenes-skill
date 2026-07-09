@@ -43,14 +43,26 @@ const FILM_GRAIN_SHADER = {
   `,
 }
 
-/** Options for {@link createFilmGrainPass}. */
+
+
+/** Options for {@link createFilmGrainPass}: grain intensity, luminance-only blend, and desaturation amount. */
 export interface FilmGrainOptions {
   intensity?: number
   luma?:      number
   desat?:     number
 }
 
-/** Create a ShaderPass that applies procedural per-fragment film grain with optional luminance-only mode and desaturation. */
+
+
+/**
+ * Create a procedural film-grain pass that adds per-fragment noise to the frame.
+ *
+ * @param options.intensity - Magnitude of the grain offset. Default `0.08`.
+ * @param options.luma - Blend between colour grain (0) and luminance-only grain (1). Default `0.5`.
+ * @param options.desat - Desaturation amount applied after grain; 0 = full colour, 1 = greyscale. Default `0`.
+ * @returns A {@link ShaderPass} that composites grain over the input colour.
+ * @remarks Cheap — three hash() calls per fragment. Safe on mobile.
+ */
 export function createFilmGrainPass ({
   intensity = 0.08,
   luma = 0.5,

@@ -49,7 +49,7 @@ export interface FrameLoopOptions {
  * @see {@link FrameLoop}
  */
 export function createFrameLoop ({ clock: simClock, fps }: FrameLoopOptions = {}): FrameLoop {
-  const subscribers = new Set<FrameCallback>()
+  const subscribers   = new Set<FrameCallback>()
   const workerBridges = new Set<WorkerUpdateBridge>()
   let frame   = 0
   let elapsed = 0
@@ -117,6 +117,7 @@ export function createFrameLoop ({ clock: simClock, fps }: FrameLoopOptions = {}
   function registerWorkerUpdate<S = unknown> (fn: WorkerUpdateFn<S>, options?: WorkerUpdateOptions<S>): WorkerUpdateHandle {
     const bridge = createWorkerUpdateBridge(fn, options)
     workerBridges.add(bridge)
+
     const off = onFrame(ctx => bridge.tick(ctx))
     return {
       unregister: off,

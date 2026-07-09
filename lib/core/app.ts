@@ -56,7 +56,7 @@ export interface AppOptions<S extends object, A = Partial<S>> {
   canvas: HTMLCanvasElement
 
   /** Initial serializable app state. Defaults to an empty object. */
-  state?:   S
+  state?: S
 
   /** Optional reducer enabling `app.dispatch(action)` alongside `setState`. */
   reducer?: Reducer<S, A>
@@ -66,10 +66,10 @@ export interface AppOptions<S extends object, A = Partial<S>> {
    * sequence reproduce the same world.
    * @defaultValue 1
    */
-  seed?:    number
+  seed?: number
 
   /** Injectable time source. Pass createClock({ mode: 'fixed' }) for determinism. */
-  clock?:    Clock
+  clock?: Clock
 
   /** Renderer factory options forwarded to `createRenderer` (minus `canvas`). */
   renderer?: Omit<RendererOptions, 'canvas'>
@@ -88,7 +88,7 @@ export interface AppOptions<S extends object, A = Partial<S>> {
   lighting?: boolean
 
   /** Built-in pointer orbit. Default true; disable when using a camera controller. */
-  orbit?:   boolean
+  orbit?: boolean
 
   /** Scene features built once at creation and updated every simulation tick. */
   modules?: AppModule<S>[]

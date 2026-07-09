@@ -49,7 +49,9 @@ const HUD_BEAM_SHADER = {
   `,
 }
 
-/** Options for {@link createHudBeamTransition}. */
+
+
+/** Options for {@link createHudBeamTransition}: sweep duration, beam width, beam tint colour, and completion callback. */
 export interface HudBeamOptions {
   duration?:   number
   beamWidth?:  number
@@ -57,14 +59,27 @@ export interface HudBeamOptions {
   onComplete?: () => void
 }
 
-/** Handle returned by {@link createHudBeamTransition} with play/tick controls. */
+
+
+/** Handle returned by {@link createHudBeamTransition}; controls a horizontal beam-sweep transition via {@link HudBeamTransition.play} and {@link HudBeamTransition.tick}. */
 export interface HudBeamTransition {
   pass: ShaderPass
   play (onMidpoint?: () => void): void
   tick (delta: number, time: number): void
 }
 
-/** Create a horizontal beam-sweep transition that reveals content with RGB-split fringes. Call tick() each frame and play() to trigger. */
+
+
+/**
+ * Create a horizontal beam-sweep transition that reveals content beneath an RGB-split luminous beam.
+ *
+ * @param options.duration - Sweep duration in seconds. Default `0.9`.
+ * @param options.beamWidth - Width of the luminous beam as a fraction of screen width. Default `0.08`.
+ * @param options.beamColor - Beam tint colour. Default `#79f7ff`.
+ * @param options.onComplete - Callback fired when the sweep reaches completion (progress >= 1).
+ * @returns A {@link HudBeamTransition}. Call `play(onMidpoint?)` to start the sweep; call `tick(delta, time)` each frame to advance. The `onMidpoint` fires when progress crosses 0.5 — the ideal frame to swap content.
+ * @remarks The beam masks the cut at its midpoint, making it suitable for reveal transitions. Disabled (pass.enabled = false) when not playing, adding zero rendering cost.
+ */
 export function createHudBeamTransition ({
   duration = 0.9,
   beamWidth = 0.08,

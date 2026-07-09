@@ -17,7 +17,7 @@ export interface ScreenProjection {
   v: number
 
   /** NDC depth; > 1 means beyond far plane, < -1 in front of near. */
-  ndcZ:     number
+  ndcZ: number
 
   /** True when the point is in front of the camera and inside the 0..1 UV rect. */
   onScreen: boolean

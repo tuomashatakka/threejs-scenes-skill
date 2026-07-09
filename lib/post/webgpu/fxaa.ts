@@ -7,7 +7,15 @@ import { fxaa } from 'three/addons/tsl/display/FXAANode.js'
 import type { ColorNode } from './types.js'
 
 
-/** Wrap an FXAANode that applies fast-approximate anti-aliasing on the final image. Apply last, on display-space colour. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
+
+
+/**
+ * Apply fast-approximate anti-aliasing (FXAA) to the final image.
+ *
+ * @param input - Colour node to anti-alias (typically display-space renderOutput).
+ * @returns An FXAANode producing the anti-aliased output.
+ * @remarks Requires the WebGPU renderer (three/webgpu). Apply last, on display-space colour. Low cost — single edge-detect pass with no extra render targets.
+ */
 export function createFxaa (input: ColorNode) {
   return fxaa(input)
 }

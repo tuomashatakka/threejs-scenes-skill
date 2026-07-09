@@ -10,7 +10,9 @@ import { lut3D } from 'three/addons/tsl/display/Lut3DNode.js'
 import type { ColorNode } from './types.js'
 
 
-/** Options for {@link createLut}. */
+
+
+/** Options for {@link createLut}: the loaded 3D LUT texture and blend intensity. */
 export interface LutOptions {
   // The loaded 3D LUT texture (e.g. from LUTCubeLoader().load(...).texture3D).
   lut:        Data3DTexture
@@ -20,7 +22,17 @@ export interface LutOptions {
 
 // The input should usually be `renderOutput(scenePass)` so grading happens in
 // display space; remember to set `postProcessing.outputColorTransform = false`.
-/** Wrap a Lut3DNode that remaps colours through a loaded 3D LUT (.cube/.3dl/.png). Apply on tone-mapped display-space colour. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
+
+
+/**
+ * Remap colours through a loaded 3D LUT (.cube / .3dl / .png) for colour grading.
+ *
+ * @param input - Colour node to grade, typically `renderOutput(scenePass)` so grading happens in display space.
+ * @param options.lut - The loaded 3D LUT as a {@link Data3DTexture} (e.g. from LUTCubeLoader().load(...).texture3D).
+ * @param options.intensity - Blend between original and graded colour, 0..1. Default `1`.
+ * @returns A Lut3DNode producing the graded colour.
+ * @remarks Requires the WebGPU renderer (three/webgpu). Remember to set `postProcessing.outputColorTransform = false` when grading in display space. Low cost — single trilinear sample into the 3D texture per pixel.
+ */
 export function createLut (input: ColorNode, options: LutOptions) {
   const { lut, intensity = 1 } = options
   return lut3D(input, texture3D(lut), lut.image.width, uniform(intensity))

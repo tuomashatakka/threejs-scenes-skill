@@ -7,25 +7,25 @@ import * as THREE from 'three'
 
 /** Options for {@link createRenderer}. */
 export interface RendererOptions {
-  canvas:               HTMLCanvasElement
+  canvas: HTMLCanvasElement
 
   /** @defaultValue true */
-  antialias?:           boolean
+  antialias?: boolean
 
   /**
    * Upper bound applied to `window.devicePixelRatio`.
    * @defaultValue 2
    */
-  pixelRatioMax?:       number
+  pixelRatioMax?: number
 
   /**
    * Enable PCF soft shadow maps.
    * @defaultValue true
    */
-  shadows?:             boolean
+  shadows?: boolean
 
   /** @defaultValue THREE.ACESFilmicToneMapping */
-  toneMapping?:         THREE.ToneMapping
+  toneMapping?: THREE.ToneMapping
 
   /** @defaultValue 1 */
   toneMappingExposure?: number
@@ -78,8 +78,11 @@ export function createRenderer ({
   return renderer
 }
 
-/** Callback invoked after a resize with the new width and height in CSS pixels. */
+/**
+ * Callback invoked after a resize with the new width and height in CSS pixels.
+ */
 export type ResizeHandler = (width: number, height: number) => void
+
 
 /**
  * Keep the renderer and camera in sync with the canvas parent's size via a

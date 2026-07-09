@@ -8,7 +8,9 @@ import { radialBlur } from 'three/addons/tsl/display/radialBlur.js'
 import type { ColorNode } from './types.js'
 
 
-/** Options for {@link createRadialBlur}. */
+
+
+/** Options for {@link createRadialBlur}: sample weight, decay, exposure, and sample count. */
 export interface RadialBlurOptions {
   // Per-sample weight contribution.
   weight?:   number
@@ -20,7 +22,19 @@ export interface RadialBlurOptions {
   count?:    number
 }
 
-/** Wrap a radialBlur node that streaks the image outward from centre for a speed / hyperspace look. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
+
+
+/**
+ * Streak the image outward from centre for a speed / hyperspace zoom-blur effect.
+ *
+ * @param input - Colour node to blur.
+ * @param options.weight - Per-sample weight contribution. Default `0.9`.
+ * @param options.decay - Per-sample decay falloff. Default `0.95`.
+ * @param options.exposure - Exposure multiplier on the accumulated samples. Default `5`.
+ * @param options.count - Number of samples along the radial direction. Default `32`.
+ * @returns A radialBlur node producing the zoom-streaked output.
+ * @remarks Requires the WebGPU renderer (three/webgpu). Medium cost — scales linearly with `count`.
+ */
 export function createRadialBlur (input: ColorNode, options: RadialBlurOptions = {}) {
   const { weight = 0.9, decay = 0.95, exposure = 5, count = 32 } = options
   return radialBlur(input, {

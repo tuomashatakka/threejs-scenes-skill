@@ -66,7 +66,7 @@ function assertSerializable (fn: (...args: never[]) => unknown): string {
   if (source.includes('[native code]'))
     throw new Error('registerWorkerUpdate: handler is a native or bound function and cannot be serialized — pass a plain, self-contained function expression')
   // Method shorthand ("tick(ctx, s) {…}") is not a valid standalone expression.
-  if (!/^\s*(?:async\s+)?(?:function\b|\()/.test(source) && !/^\s*(?:async\s+)?[\w$]+\s*=>/.test(source))
+  if (!(/^\s*(?:async\s+)?(?:function\b|\()/).test(source) && !(/^\s*(?:async\s+)?[\w$]+\s*=>/).test(source))
     throw new Error('registerWorkerUpdate: handler must be a function expression or arrow function (object method shorthand does not serialize) — it is rehydrated inside a worker and must be self-contained')
   return source
 }
@@ -82,19 +82,19 @@ export function createWorkerUpdateBridge<S> (
   options: WorkerUpdateOptions<S> = {},
   internals: WorkerBridgeInternals = {},
 ): WorkerUpdateBridge {
-  const source = assertSerializable(fn)
+  const source  = assertSerializable(fn)
   const onError = options.onError ?? ((error: Error) => {
     console.error('registerWorkerUpdate:', error)
   })
 
-  let inFlight = false
+  let inFlight                    = false
   let pending: PendingTick | null = null
-  let terminated = false
+  let terminated                  = false
 
   // --- worker path -------------------------------------------------------
   let worker: Worker | null = null
-  let blobUrl = ''
-  let urlRevoked = false
+  let blobUrl               = ''
+  let urlRevoked            = false
 
   const revokeUrl = (): void => {
     // Revoking at construction can race the module-worker fetch; defer to the
@@ -112,6 +112,7 @@ export function createWorkerUpdateBridge<S> (
       worker.postMessage({ type: 'init', state: options.initialState })
       worker.onmessage = (event: MessageEvent) => {
         revokeUrl()
+
         const msg = event.data
         inFlight = false
         if (msg?.type === 'result')
@@ -181,6 +182,7 @@ export function createWorkerUpdateBridge<S> (
   function flushPending (): void {
     if (terminated || inFlight || !pending)
       return
+
     const next = pending
     pending = null
     post(next)

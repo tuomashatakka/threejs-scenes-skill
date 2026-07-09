@@ -25,8 +25,10 @@ import type { FrameContext, InstancePlaceFn, PropFactory, PropInstance, SeededRn
  * model. Nothing re-renders; objects are mutated in place.
  */
 export interface ReactiveBinding {
+
   /** Reads the current value (the accessor passed as the JSX prop). */
-  get:   () => unknown
+  get: () => unknown
+
   /** Writes a value onto the live three.js object. */
   apply: (value: unknown) => void
 }
@@ -42,30 +44,43 @@ export interface ReactiveBinding {
  * the whole tree has mounted.
  */
 export interface Runtime {
+
   /** Root scene all mounted objects end up under. */
-  scene:    THREE.Scene
+  scene: THREE.Scene
+
   /** The WebGL renderer created by `render()`. */
   renderer: THREE.WebGLRenderer
+
   /** Frame loop driving reactive bindings and rendering. */
-  loop:     FrameLoop
+  loop: FrameLoop
+
   /** Seeded RNG shared by the whole tree. */
-  rng:      SeededRng
+  rng: SeededRng
+
   /** The currently active camera. */
   getCamera (): THREE.Camera
+
   /** Install a camera; `isDefault: false` only wins while no camera has been chosen. */
   setCamera (camera: THREE.Camera, isDefault?: boolean): void
+
   /** Canvas aspect ratio (width / height). */
   getAspect (): number
+
   /** Canvas size in pixels as `[width, height]`. */
   getSize (): [number, number]
+
   /** Register a binding to re-apply on every frame. */
   addReactive (binding: ReactiveBinding): void
+
   /** Register cleanup to run when the tree is disposed. */
   addDisposer (fn: () => void): void
+
   /** Defer a callback until the whole tree has mounted (used by `<post>`). */
   addPostSetup (fn: () => void): void
+
   /** Route frame rendering through a post-processing composer. */
   setComposer (handle: ComposerHandle): void
+
   /** Suppress the built-in orbit gesture (a follow camera owns the view). */
   disableOrbit (): void
 }
@@ -79,12 +94,16 @@ export interface Runtime {
  * for reactive (function-valued) props, mutating the live object in place.
  */
 export interface Host {
+
   /** Object added to the parent, or `null` for non-spatial elements like `<post>`. */
-  object:    THREE.Object3D | null
+  object: THREE.Object3D | null
+
   /** Object the element's children mount into (usually `object` itself). */
   container: THREE.Object3D | null
+
   /** Apply one named prop by mutating the underlying object in place. */
   setProp (name: string, value: unknown): void
+
   /** Release resources this element owns; runs at tree disposal. */
   dispose (): void
 }

@@ -16,6 +16,7 @@
  * @typeParam T - Value type produced by the read.
  */
 export type Accessor<T> = () => T
+
 /**
  * Writes a signal's value; takes the next value or an updater `prev => next`.
  *

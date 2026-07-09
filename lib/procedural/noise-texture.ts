@@ -6,7 +6,6 @@
 // deps. DOM-guarded: returns null in a headless runner.
 
 import * as THREE from 'three'
-
 import { mulberry32, smoothstep } from './rng.js'
 
 

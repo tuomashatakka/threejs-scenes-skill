@@ -24,7 +24,7 @@ export type BootstrapSetup = (ctx: BootstrapSetupContext) => FrameCallback | voi
 
 /** Options for {@link bootstrapScene}. */
 export interface BootstrapOptions {
-  canvas:   HTMLCanvasElement
+  canvas: HTMLCanvasElement
 
   /** Runs once after the scene is wired; may return a per-frame tick. */
   onSetup?: BootstrapSetup

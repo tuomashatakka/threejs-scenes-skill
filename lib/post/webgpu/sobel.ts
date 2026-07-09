@@ -7,7 +7,15 @@ import { sobel } from 'three/addons/tsl/display/SobelOperatorNode.js'
 import type { ColorNode } from './types.js'
 
 
-/** Wrap a SobelOperatorNode that detects edges via the Sobel gradient operator. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
+
+
+/**
+ * Detect edges in the input using the Sobel 3x3 gradient operator.
+ *
+ * @param input - Colour node to process (typically display-space renderOutput).
+ * @returns A SobelOperatorNode producing an edge-highlighted output.
+ * @remarks Requires the WebGPU renderer (three/webgpu). Low cost — nine texture taps (3x3 kernel) per pixel.
+ */
 export function createSobel (input: ColorNode) {
   return sobel(input)
 }

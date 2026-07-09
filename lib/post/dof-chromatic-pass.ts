@@ -74,7 +74,11 @@ const DOF_CA_SHADER = {
 
 const focalScratch = new THREE.Vector3()
 
-/** Options for {@link createDofPass}. */
+
+
+
+
+/** Options for {@link createDofPass}: focal distance, blur range, max blur radius, chromatic-aberration strength, and camera clip planes. */
 export interface DofPassOptions {
   focalDistance?: number
   focalRange?:    number
@@ -90,7 +94,20 @@ export interface DofPass extends ShaderPass {
   setAspect (aspect: number): void
 }
 
-/** Create a ShaderPass that applies depth-of-field blur modulated by circle-of-confusion, with radial chromatic separation. Requires a DepthTexture on the composer render target. */
+
+
+/**
+ * Create a combined depth-of-field and chromatic-aberration pass that blurs fragments by distance from a focal plane and splits RGB channels around the circle of confusion.
+ *
+ * @param options.focalDistance - World-space distance to the focal plane. Default `10`.
+ * @param options.focalRange - Depth range over which blur ramps from zero to maximum. Default `4`.
+ * @param options.maxBlur - Maximum blur radius as a fraction of screen width. Default `0.015`.
+ * @param options.caStrength - Intensity of radial chromatic separation modulated by the circle of confusion. Default `0.5`.
+ * @param options.near - Near clip-plane distance for depth linearisation. Default `0.1`.
+ * @param options.far - Far clip-plane distance for depth linearisation. Default `200`.
+ * @returns A {@link DofPass}. Call `focusOn(worldPos, camera)` each frame to dynamically set the focal distance from a world-space point.
+ * @remarks Requires a DepthTexture bound to the composer render targets (see {@link ComposerOptions.withDepth}). Uses 12 Poisson-disc taps times 3 colour samples = 36 texture reads per fragment. Consider reducing on mobile.
+ */
 export function createDofPass ({
   focalDistance = 10,
   focalRange = 4,

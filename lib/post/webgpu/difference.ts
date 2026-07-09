@@ -9,7 +9,9 @@ import { luminance, saturation } from 'three/tsl'
 import type { PassNode } from 'three/webgpu'
 
 
-/** Options for {@link createDifference}. */
+
+
+/** Options for {@link createDifference}: per-pixel difference gain and max saturation boost. */
 export interface DifferenceOptions {
   // Multiplier on the per-pixel difference luminance before clamping.
   gain?:          number
@@ -19,7 +21,17 @@ export interface DifferenceOptions {
 
 // Pass the scene PassNode (from createScenePass(...).pass). Returns the
 // motion-highlighted colour node to use as output.
-/** Increase saturation where the current frame differs from the previous one, highlighting motion. Reads the PassNode's retained previous-frame texture. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
+
+
+/**
+ * Increase saturation where the current frame differs from the previous one, highlighting motion regions.
+ *
+ * @param scenePass - The scene {@link PassNode} (from createScenePass(...).pass), used to read both current and retained previous-frame texture nodes.
+ * @param options.gain - Multiplier on the per-pixel difference luminance before clamping. Default `1000`.
+ * @param options.maxSaturation - Maximum extra saturation applied to moving regions. Default `3`.
+ * @returns A colour node with motion-highlighted saturation, to use as the output.
+ * @remarks Requires the WebGPU renderer (three/webgpu). Low cost — one extra retained texture and a luminance/saturation pair.
+ */
 export function createDifference (scenePass: PassNode, options: DifferenceOptions = {}) {
   const { gain = 1000, maxSaturation = 3 } = options
   const current                            = scenePass.getTextureNode()

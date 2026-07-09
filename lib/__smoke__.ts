@@ -44,11 +44,11 @@ import { h, signal, Fragment } from './jsx/index.js'
 
 // pull the non-hero surface out of its namespace so the assertions below read
 // against the same local names as before.
-const { createSeededRng, poissonDisk, VoxelChunk, greedyMesh, createNoiseTexture, createGradientToonMap, createConnectionGraph } = primitives
+const { createSeededRng, poissonDisk, VoxelChunk, greedyMesh, createNoiseTexture, createGradientToonMap, createConnectionGraph }                                = primitives
 const { MaterialPool, EditStack, resolveParam, resolveParams, createProceduralTexture, createViewRegistry, createModelCache, createPropRegistry, createSkybox } = compose
-const { createStore } = core
-const { toController, isStateController, resolveInitialState, tweened, lerpOnChange, bindStateSource, EASINGS } = state
-const { sampleCurve, bakeCurve, tupleToVector3, vector3ToTuple, createCameraController } = raster
+const { createStore }                                                                                                                                           = core
+const { toController, isStateController, resolveInitialState, tweened, lerpOnChange, bindStateSource, EASINGS }                                                 = state
+const { sampleCurve, bakeCurve, tupleToVector3, vector3ToTuple, createCameraController }                                                                        = raster
 
 
 function assert (cond: boolean, msg: string): void {
@@ -344,9 +344,10 @@ const microtask = (): Promise<void> => new Promise(resolve => {
   let latest = -1
   const bridge = createWorkerUpdateBridge<number>(
     (ctx, s) => s + ctx.delta,
-    { initialState: 0, onResult: s => {
-      latest = s
-    } },
+    { initialState: 0,
+      onResult:     s => {
+        latest = s
+      } },
     { forceFallback: true },
   )
   bridge.tick({ delta: 0.5, elapsed: 0.5, frame: 1 })
@@ -376,9 +377,10 @@ const microtask = (): Promise<void> => new Promise(resolve => {
     () => {
       throw new Error('boom')
     },
-    { initialState: 0, onError: e => {
-      caught = e.message
-    } },
+    { initialState: 0,
+      onError:      e => {
+        caught = e.message
+      } },
     { forceFallback: true },
   )
   bridge.tick({ delta: 0.1, elapsed: 0.1, frame: 1 })

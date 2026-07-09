@@ -95,7 +95,9 @@ const GOD_RAYS_SHADER = {
 
 const projected = new THREE.Vector3()
 
-/** Volumetric light-shaft pass with per-frame world-space light tracking and optional occlusion buffer. */
+
+
+/** A {@link ShaderPass} extended with {@link GodRaysPass.updateFromLight} and {@link GodRaysPass.setOcclusionTexture} for per-frame world-space light tracking and optional occlusion-buffer binding. */
 export interface GodRaysPass extends ShaderPass {
   // Project a world-space light onto the screen and disable the pass when the
   // light is behind the camera. Call once per frame.
@@ -105,7 +107,14 @@ export interface GodRaysPass extends ShaderPass {
   setOcclusionTexture (texture: THREE.Texture | null): void
 }
 
-/** Create a GodRaysPass that ray-marches from each fragment toward the light's screen-space position, accumulating scattered brightness (GPU Gems 3 ch.13 algorithm). Pass the light world-space position each frame via updateFromLight. */
+
+
+/**
+ * Create a volumetric light-shaft pass using the GPU Gems 3 ch.13 radial-scattering algorithm (Mitchell light-shaft).
+ *
+ * @returns A {@link GodRaysPass}. Call `updateFromLight(worldPos, camera)` each frame to project a world-space light onto the screen (disables the pass when the light is behind camera). Optionally bind a dedicated occlusion buffer via `setOcclusionTexture(texture)`.
+ * @remarks The scatter term is purely additive (sceneColor + rays). Defaults to 60 samples; reduce for mobile. Falls back to sampling the scene colour as the occlusion source when no dedicated buffer is bound.
+ */
 export function createGodRaysPass (): GodRaysPass {
   const pass = new ShaderPass(GOD_RAYS_SHADER) as GodRaysPass
 

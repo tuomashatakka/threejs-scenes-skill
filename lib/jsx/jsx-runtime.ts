@@ -13,6 +13,7 @@
  * change flows through accessor-valued props and hooks, not re-invocation.
  */
 export type ComponentFn = (props: Record<string, unknown>) => SceneElement | SceneElement[] | null
+
 /** What a JSX tag resolves to: an intrinsic name, a `ComponentFn`, or `Fragment`. */
 export type ElementType = string | ComponentFn | typeof Fragment
 
@@ -21,10 +22,13 @@ export type ElementType = string | ComponentFn | typeof Fragment
  * objects exist until `render()` mounts the tree.
  */
 export interface SceneElement {
+
   /** Intrinsic tag name, function component, or `Fragment`. */
-  type:     ElementType
+  type: ElementType
+
   /** All props except `children`. */
-  props:    Record<string, unknown>
+  props: Record<string, unknown>
+
   /** Normalized child list. */
   children: SceneChild[]
 }
@@ -70,6 +74,7 @@ export function jsx (type: ElementType, props: Record<string, unknown> | null): 
 
 /** Static-children variant of `jsx` — identical here (children are plain arrays either way). */
 export const jsxs = jsx
+
 /** Dev-transform variant of `jsx` — identical; no dev-mode bookkeeping is kept. */
 export const jsxDEV = jsx
 

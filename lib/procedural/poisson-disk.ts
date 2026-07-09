@@ -17,7 +17,7 @@ export interface PoissonDiskOptions {
   k?:      number
 }
 
-// eslint-disable-next-line complexity -- self-contained sampling loop; splitting hurts readability
+
 /**
  * Poisson-disk 2D sampling (Bridson): points with a guaranteed minimum
  * spacing that read as natural scatter — better than uniform random for
@@ -27,13 +27,7 @@ export interface PoissonDiskOptions {
  * and `k` candidate attempts per sample (default 30).
  * @returns The accepted {@link Point2} samples in [0,width]×[0,height].
  */
-export function poissonDisk ({
-  width,
-  height,
-  minDist,
-  rng,
-  k = 30,
-}: PoissonDiskOptions): Point2[] {
+export function poissonDisk ({ width, height, minDist, rng, k = 30 }: PoissonDiskOptions): Point2[] {
   if (!width || !height)
     throw new Error('width and height required')
   if (!minDist)

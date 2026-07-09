@@ -13,7 +13,11 @@ import type { Pass } from 'three/addons/postprocessing/Pass.js'
 import type { Disposable } from '../types.js'
 
 
-/** Options for {@link createPostPipeline}. */
+
+
+
+
+/** Options for {@link createPostPipeline}: renderer, scene, camera, viewport dimensions, and optional depth attachment. */
 export interface PostPipelineOptions {
   renderer: THREE.WebGLRenderer
   scene:    THREE.Scene
@@ -41,7 +45,20 @@ export interface PostPipeline extends Disposable {
   setSize (width: number, height: number): void
 }
 
-/** Create a PostPipeline with a named-pass registry. RenderPass stays first, OutputPass stays last; all other passes are reorderable. */
+
+
+/**
+ * Create a reorderable named-pass pipeline over {@link EffectComposer}.
+ *
+ * @param options.renderer - The WebGL2 renderer.
+ * @param options.scene - Scene to render.
+ * @param options.camera - Active camera.
+ * @param options.width - Viewport width in pixels.
+ * @param options.height - Viewport height in pixels.
+ * @param options.withDepth - Attach a shared DepthTexture to both render targets. Default `false`.
+ * @returns A {@link PostPipeline}. Register passes with `register(name, pass)`, reorder with `setOrder(names)`, and toggle enablement with `setEnabled(flags)`. {@link RenderPass} stays first and {@link OutputPass} stays last automatically.
+ * @remarks The chain order can be persisted as a string array. Passes not listed in the order array are appended after the ordered chain. Rebuild is an array splice — safe to call from UI handlers.
+ */
 export function createPostPipeline ({
   renderer,
   scene,

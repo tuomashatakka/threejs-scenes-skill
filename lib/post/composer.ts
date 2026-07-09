@@ -14,7 +14,9 @@ import type { Pass } from 'three/addons/postprocessing/Pass.js'
 import type { Disposable } from '../types.js'
 
 
-/** Options for {@link createComposer}. */
+
+
+/** Options for {@link createComposer}: renderer, scene, camera, output dimensions, and optional bloom configuration. */
 export interface ComposerOptions {
   renderer:        THREE.WebGLRenderer
   scene:           THREE.Scene
@@ -28,7 +30,9 @@ export interface ComposerOptions {
   bloomThreshold?: number
 }
 
-/** Handle returned by {@link createComposer}, exposing the EffectComposer and helper methods. */
+
+
+/** Handle returned by {@link createComposer}, exposing the {@link EffectComposer}, the optional {@link UnrealBloomPass}, the {@link OutputPass}, and helper methods for resizing and inserting passes. */
 export interface ComposerHandle extends Disposable {
   composer: EffectComposer
   bloom:    UnrealBloomPass | null
@@ -37,7 +41,25 @@ export interface ComposerHandle extends Disposable {
   addPassBeforeOutput (pass: Pass): void
 }
 
-/** Create an EffectComposer wired with RenderPass and OutputPass, optionally adding a DepthTexture and UnrealBloomPass. */
+
+
+/**
+ * Build an {@link EffectComposer} wired with a {@link RenderPass} and an {@link OutputPass}, optionally creating a shared {@link DepthTexture} and an {@link UnrealBloomPass}.
+ *
+ * @param options - Renderer, scene, camera, viewport size, and optional bloom/depth flags.
+ * @param options.renderer - The WebGL2 renderer that owns the composer render targets.
+ * @param options.scene - Scene to render each frame.
+ * @param options.camera - Active camera.
+ * @param options.width - Viewport width in pixels.
+ * @param options.height - Viewport height in pixels.
+ * @param options.withDepth - Attach a DepthTexture to both render targets for depth-sampling passes (DOF, god rays). @defaultValue true
+ * @param options.withBloom - Insert an {@link UnrealBloomPass} after the RenderPass. @defaultValue true
+ * @param options.bloomStrength - Bloom intensity. @defaultValue 0.7
+ * @param options.bloomRadius - Bloom spread. @defaultValue 0.4
+ * @param options.bloomThreshold - Luminance threshold for blooming. @defaultValue 0.85
+ * @returns A {@link ComposerHandle} with the built chain — the canonical order is RenderPass, UnrealBloomPass, custom passes, OutputPass.
+ * @remarks The chain runs in linear HDR; tone-mapping happens exactly once in OutputPass. Use addPassBeforeOutput to insert custom ShaderPass instances before tone-mapping.
+ */
 export function createComposer ({
   renderer,
   scene,

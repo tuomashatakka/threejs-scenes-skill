@@ -22,14 +22,18 @@ import type { FrameLoop } from '../types.js'
 
 /** Options for `render()`. */
 export interface RenderOptions {
+
   /** Canvas to render into (required). */
-  canvas:      HTMLCanvasElement
+  canvas: HTMLCanvasElement
+
   /** Seed for the tree's deterministic RNG (default `1`). */
-  seed?:       number
+  seed?: number
+
   /** Scene background color. */
   background?: THREE.ColorRepresentation
+
   /** Attach drag/pinch/wheel orbit gestures to a perspective camera (default `true`). */
-  orbit?:      boolean
+  orbit?: boolean
 }
 
 /**
@@ -37,14 +41,19 @@ export interface RenderOptions {
  * while the loop runs; `dispose()` is the single teardown point.
  */
 export interface RenderHandle {
+
   /** The mounted root scene. */
-  scene:    THREE.Scene
+  scene: THREE.Scene
+
   /** The WebGL renderer bound to the canvas. */
   renderer: THREE.WebGLRenderer
+
   /** Frame loop driving reactivity and rendering. */
-  loop:     FrameLoop
+  loop: FrameLoop
+
   /** The active camera. */
   getCamera (): THREE.Camera
+
   /** Stop the loop, detach listeners, run all disposers, and free GPU resources. */
   dispose (): void
 }

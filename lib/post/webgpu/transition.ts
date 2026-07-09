@@ -8,7 +8,9 @@ import type { Node } from 'three/webgpu'
 import { transition } from 'three/addons/tsl/display/TransitionNode.js'
 
 
-/** Options for {@link createTransition}. */
+
+
+/** Options for {@link createTransition}: mix ratio, wipe edge softness, and texture-wipe blend factor. */
 export interface TransitionOptions {
   // 0 = fully scene A, 1 = fully scene B.
   mixRatio?:   number
@@ -20,7 +22,20 @@ export interface TransitionOptions {
 
 // `passA` / `passB` are two scene pass colour nodes; `mixTexture` is the wipe
 // pattern texture node. Returns the blended colour node to use as output.
-/** Wrap a TransitionNode that cross-fades two scene pass colour nodes, optionally masked by a wipe texture. @remarks Requires the WebGPU renderer (three/webgpu) and ships via the 'threejs-scenes/webgpu' entry point. */
+
+
+/**
+ * Cross-fade between two scene-pass colour nodes, optionally masked by a wipe texture for directional transitions (wipes, dissolves).
+ *
+ * @param passA - Colour node for the first scene (starting state).
+ * @param passB - Colour node for the second scene (ending state).
+ * @param mixTexture - Wipe-pattern texture node. A plain white texture produces a linear cross-fade.
+ * @param options.mixRatio - Blend factor: 0 = fully passA, 1 = fully passB. Default `0`.
+ * @param options.threshold - Edge softness of the textured wipe. Default `0.1`.
+ * @param options.useTexture - Blend between textured wipe (1) and plain linear cross-fade (0). Default `1`.
+ * @returns A TransitionNode producing the blended colour, to use as the output.
+ * @remarks Requires the WebGPU renderer (three/webgpu). Medium cost — both scenes are rendered during the transition window.
+ */
 export function createTransition (
   passA: Node,
   passB: Node,

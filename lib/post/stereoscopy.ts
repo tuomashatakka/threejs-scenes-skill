@@ -10,23 +10,41 @@ import { StereoEffect } from 'three/addons/effects/StereoEffect.js'
 import type { Disposable } from '../types.js'
 
 
-/** Render mode for stereoscopic 3D: anaglyph (red/cyan), side-by-side stereo, or off (passthrough). */
+
+
+/** Render mode for stereoscopic 3D: `anaglyph` (red/cyan glasses), `stereo` (cardboard-style side-by-side), or `off` (passthrough, single render). */
 export type StereoMode = 'anaglyph' | 'stereo' | 'off'
 
-/** Renderer wrapper for anaglyph or side-by-side stereo output. Both bypass EffectComposer. */
+
+
+/** A renderer wrapper that renders the scene in the selected stereo mode. Both anaglyph and stereo modes bypass {@link EffectComposer} — pick one mode per session. */
 export interface StereoRenderer extends Disposable {
   mode: StereoMode
   render (scene: THREE.Scene, camera: THREE.Camera): void
   setSize (w: number, h: number): void
 }
 
-/** Optional size override for the stereo effect render target. */
+
+
+/** Optional output-size override for the stereo-effect render target. */
 export interface StereoSizeOptions {
   width?:  number
   height?: number
 }
 
-/** Create a StereoRenderer for the given mode. AnaglyphEffect for red/cyan glasses, StereoEffect for cardboard-style side-by-side. */
+
+
+/**
+ * Create a stereo renderer that wraps the given WebGL2 renderer in an anaglyph or side-by-side stereo effect.
+ *
+ * @param renderer - The WebGL2 renderer to wrap.
+ * @param mode - Stereo mode: `anaglyph`, `stereo`, or `off` (passthrough).
+ * @param options - Optional viewport-size override.
+ * @param options.width - Override width for the stereo-effect render target.
+ * @param options.height - Override height for the stereo-effect render target.
+ * @returns A {@link StereoRenderer}. Call `render(scene, camera)` to render the scene through the selected stereo effect.
+ * @remarks Stereo mode doubles the render cost (two eyes). Combine with post-processing only on desktop or high-end tier.
+ */
 export function createStereoRenderer (
   renderer: THREE.WebGLRenderer,
   mode: StereoMode,
