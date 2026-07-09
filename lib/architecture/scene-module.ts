@@ -8,11 +8,32 @@
 import type { FrameCallback, SceneContext, SceneModule } from '../types.js'
 
 
+/** Definition consumed by {@link createSceneModule}: a `name` plus `build(ctx, registerUpdate)` which may return a teardown function. */
 export interface SceneModuleDefinition {
   name: string
   build (ctx: SceneContext, registerUpdate: (cb: FrameCallback) => void): void | (() => void)
 }
 
+/**
+ * Wrap a build function into a lifecycle-safe `SceneModule`. Updates
+ * registered through the injected `registerUpdate` are tracked and
+ * automatically unregistered on `dispose()`, along with the optional teardown
+ * returned by `build`.
+ *
+ * @param def - Module name and build function.
+ * @returns A `SceneModule` whose `dispose()` frees only what the module
+ * created — never shared or pooled resources.
+ * @example
+ * const stars = createSceneModule({
+ *   name: 'stars',
+ *   build (ctx, registerUpdate) {
+ *     const field = makeStarfield(ctx.rng)
+ *     ctx.scene.add(field)
+ *     registerUpdate(({ delta }) => field.rotation.y += delta * 0.01)
+ *     return () => { ctx.scene.remove(field); field.geometry.dispose() }
+ *   },
+ * })
+ */
 export function createSceneModule (def: SceneModuleDefinition): SceneModule {
   const updates: FrameCallback[] = []
   let ctxRef: SceneContext | null = null

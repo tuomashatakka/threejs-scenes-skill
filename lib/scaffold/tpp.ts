@@ -16,6 +16,7 @@ import type { CameraController } from '../camera/camera-controller.js'
 import type { Disposable, FrameContext } from '../types.js'
 
 
+/** Options for {@link createTppScaffold}: `AppOptions` minus orbit/state, plus the chase target and follow-camera tuning. */
 export interface TppScaffoldOptions<S extends object> extends Omit<AppOptions<S>, 'orbit' | 'state'> {
   state?: StateSource<S>
 
@@ -31,11 +32,27 @@ export interface TppScaffoldOptions<S extends object> extends Omit<AppOptions<S>
   rotationStiffness?: number
 }
 
+/** Handle returned by {@link createTppScaffold}. `setTarget(null)` stops following; `dispose()` detaches the state binding and disposes the app. */
 export interface TppScaffold<S extends object> extends Disposable {
   app: App<S>
   setTarget (target: THREE.Object3D | null): void
 }
 
+/**
+ * Third-person scaffold: `createApp` with the built-in orbit disabled and a
+ * framerate-independent follow camera chasing a target. Swap what is being
+ * chased at runtime with `setTarget` — drive the target's transform from your
+ * modules (state → target → camera, one direction).
+ *
+ * @param options - State source, chase `target`, local-frame `offset` and
+ * `lookAhead`, damping stiffness, and the remaining `AppOptions`.
+ * @returns A {@link TppScaffold} with the app and `setTarget`.
+ * @remarks The follow update is three scratch vectors per frame, zero
+ * allocation.
+ * @example
+ * const tpp = createTppScaffold({ canvas, target: hero, offset: [0, 4, -8] })
+ * tpp.app.start()
+ */
 export function createTppScaffold<S extends object = Record<string, unknown>> ({
   state,
   target = undefined,

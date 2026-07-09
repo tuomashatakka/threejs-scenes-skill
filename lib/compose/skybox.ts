@@ -9,6 +9,7 @@ import * as THREE from 'three'
 import type { Disposable } from '../types.js'
 
 
+/** Two-color vertical gradient for the procedural sky dome. */
 export interface GradientSkyOptions {
   top:    THREE.ColorRepresentation
   bottom: THREE.ColorRepresentation
@@ -17,6 +18,7 @@ export interface GradientSkyOptions {
   exponent?: number
 }
 
+/** Options for {@link createSkybox} — set exactly one of `color`, `gradient`, `equirect`, or `cube`. */
 export interface SkyboxOptions {
 
   /** Flat background color. */
@@ -38,6 +40,7 @@ export interface SkyboxOptions {
   radius?: number
 }
 
+/** Handle returned by {@link createSkybox}. `dispose()` frees owned textures/meshes and restores the scene's previous background and environment. */
 export interface Skybox extends Disposable {
 
   /** The gradient dome mesh, when the gradient mode is active. */
@@ -64,6 +67,21 @@ void main () {
 }
 `
 
+/**
+ * Set the scene background: a flat color, a procedural vertical-gradient
+ * dome, an equirectangular panorama, or a cube map — optionally assigning the
+ * texture as `scene.environment` for image-based lighting.
+ *
+ * @param scene - Scene whose background (and optionally environment) is set.
+ * @param options - The sky mode plus `environment` and dome `radius`.
+ * @returns A {@link Skybox}; `object` is the gradient dome mesh when that
+ * mode is active.
+ * @remarks The gradient dome renders at the far plane so it never occludes
+ * content, and is GL-free to construct (safe headless). URL-based `equirect`
+ * and `cube` sources need a DOM.
+ * @example
+ * const sky = createSkybox(scene, { gradient: { top: '#79f7ff', bottom: '#0a0a14' } })
+ */
 export function createSkybox (scene: THREE.Scene, {
   color,
   gradient,

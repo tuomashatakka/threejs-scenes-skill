@@ -21,6 +21,7 @@ export interface ViewRenderer<S = unknown> extends Disposable {
   setActive? (active: boolean): void
 }
 
+/** Options for {@link createViewRegistry}: the `create` factory plus the LRU `limit`. */
 export interface ViewRegistryOptions<S> {
   create (key: string, ctx: SceneContext): ViewRenderer<S>
 
@@ -28,6 +29,7 @@ export interface ViewRegistryOptions<S> {
   limit?: number
 }
 
+/** LRU registry of {@link ViewRenderer}s. `dispose()` disposes every cached renderer. */
 export interface ViewRegistry<S = unknown> extends Disposable {
 
   /** Get-or-create the renderer for `key`, make it active, LRU-evict overflow. */
@@ -41,6 +43,15 @@ export interface ViewRegistry<S = unknown> extends Disposable {
   updateState (state: S): void
 }
 
+/**
+ * Pluggable per-view renderers with an LRU persistent-mount cache: switching
+ * views deactivates (but keeps) the previous renderer so switching back is
+ * instant; least-recently-used renderers beyond `limit` are disposed.
+ *
+ * @param options - Renderer factory and cache limit.
+ * @returns A {@link ViewRegistry} keyed by view name.
+ * @typeParam S - App state type projected into renderers via `updateState`.
+ */
 export function createViewRegistry<S = unknown> ({ create, limit = 4 }: ViewRegistryOptions<S>): ViewRegistry<S> {
   // Map iteration order = insertion order; re-inserting on use makes it an LRU.
   const cache = new Map<string, ViewRenderer<S>>()

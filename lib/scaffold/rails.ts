@@ -16,6 +16,7 @@ import type { StateSource } from '../state/controller.js'
 import type { SeededRng, Disposable } from '../types.js'
 
 
+/** Options for {@link createRailsScaffold}: `AppOptions` minus orbit/state, plus segment-stream and path-camera tuning and the `segment` factory. */
 export interface RailsScaffoldOptions<S extends object>
   extends Omit<AppOptions<S>, 'orbit' | 'state'>, SegmentStreamOptions, PathCameraOptions {
   state?: StateSource<S>
@@ -27,12 +28,31 @@ export interface RailsScaffoldOptions<S extends object>
   prefetchDistance?: number
 }
 
+/** Handle returned by {@link createRailsScaffold}. `dispose()` detaches state, then disposes the camera rig, the stream, and the app. */
 export interface RailsScaffold<S extends object> extends Disposable {
   app:    App<S>
   stream: SegmentStream
   rig:    PathCamera
 }
 
+/**
+ * On-rails scaffold: an endless segment stream stitched into one curve and a
+ * path camera travelling it with pointer look-around. You supply a `segment`
+ * factory (seeded rng in hand); the scaffold appends segments ahead of the
+ * camera and evicts them behind it — constant memory, infinite ride.
+ *
+ * @param options - State source, the deterministic `segment` builder,
+ * `prefetchDistance`, plus segment-stream and path-camera tuning.
+ * @returns A {@link RailsScaffold} with the app, the segment `stream`, and
+ * the path-camera `rig`.
+ * @remarks Per frame this costs two curve samples and a length check; segment
+ * builds amortize over the ride and evicted segments dispose their own GPU
+ * memory. A degenerate zero-length segment is guarded against (16 appends max
+ * per prefetch pass).
+ * @example
+ * const ride = createRailsScaffold({ canvas, segment: (i, rng) => tunnelSegment(rng) })
+ * ride.app.start()
+ */
 export function createRailsScaffold<S extends object = Record<string, unknown>> ({
   state,
   segment,

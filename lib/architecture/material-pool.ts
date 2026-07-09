@@ -9,6 +9,14 @@ import type * as THREE from 'three'
 import type { Disposable } from '../types.js'
 
 
+/**
+ * Keyed material cache: `get(key, factory)` returns the cached material or
+ * creates it once — sharing materials across meshes keeps shader programs and
+ * uniforms deduplicated. `dispose()` frees every pooled material.
+ *
+ * @remarks Anything holding a pooled material must not dispose it directly —
+ * the pool owns lifetime (see `SceneContext.materials`).
+ */
 export class MaterialPool implements Disposable {
   private readonly cache = new Map<string, THREE.Material>()
 

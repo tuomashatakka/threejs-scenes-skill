@@ -18,6 +18,7 @@ import type { StateSource } from '../state/controller.js'
 import type { Disposable } from '../types.js'
 
 
+/** Options for {@link createIsoScaffold}: `AppOptions` minus camera/orbit/state, plus the iso camera settings and pan/zoom/ground wiring. */
 export interface IsoScaffoldOptions<S extends object>
   extends Omit<AppOptions<S>, 'camera' | 'orbit' | 'state'>, IsoCameraOptions {
 
@@ -34,6 +35,7 @@ export interface IsoScaffoldOptions<S extends object>
   ground?: InfiniteGroundOptions
 }
 
+/** Handle returned by {@link createIsoScaffold}. `dispose()` detaches gestures and the state binding, removes and disposes the ground, then disposes the app. */
 export interface IsoScaffold<S extends object> extends Disposable {
   app:    App<S>
   camera: THREE.OrthographicCamera
@@ -43,6 +45,22 @@ export interface IsoScaffold<S extends object> extends Disposable {
   ground: InfiniteGround | null
 }
 
+/**
+ * Isometric-scene scaffold in one call: `createApp` with an orthographic iso
+ * camera, drag-to-pan in the ground plane, pinch/wheel zoom via frustum
+ * resize (not dolly), and an optional recentering infinite ground.
+ *
+ * @param options - State source, iso camera flavor, pan/zoom/ground settings,
+ * and the remaining `AppOptions`.
+ * @returns An {@link IsoScaffold} exposing the app, camera, pan `focus`, and
+ * ground handle.
+ * @remarks Pan and zoom are event-driven; the ground recenter costs only the
+ * tiles that crossed a cell boundary per frame. Zoom clamps `viewSize` to the
+ * `zoom` range.
+ * @example
+ * const iso = createIsoScaffold({ canvas, state: store, ground: { tile: 8 } })
+ * iso.app.start()
+ */
 export function createIsoScaffold<S extends object = Record<string, unknown>> ({
   state,
   viewSize = 20,

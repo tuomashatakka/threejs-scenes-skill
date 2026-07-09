@@ -8,8 +8,10 @@ import type { GLTFLoaderOptions } from './gltf.js'
 import type { LoadedModel } from '../types.js'
 
 
+/** Loads one model format into the normalized `LoadedModel` shape. */
 export type ModelLoader = (url: string, options?: GLTFLoaderOptions) => Promise<LoadedModel>
 
+/** File-extension → loader dispatch table. Ships with `glb`/`gltf`; extend it to add formats to {@link loadModel}. */
 export const FORMAT_LOADERS: Record<string, ModelLoader> = {
   glb:  loadGLTF,
   gltf: loadGLTF,
@@ -22,11 +24,21 @@ function extOf (url: string): string {
 
 // An explicit, owned model cache — prefer this over the module-global one so
 // lifetime and invalidation are yours (unidirectional-API form).
+/** An owned model cache — prefer this over the module-global {@link loadModel} so lifetime and invalidation are yours. */
 export interface ModelCache {
   load (src: string, options?: GLTFLoaderOptions): Promise<LoadedModel>
   clear (): void
 }
 
+/**
+ * Create an owned, URL-keyed model cache. `load` dispatches on file
+ * extension via {@link FORMAT_LOADERS} and dedupes concurrent and repeat
+ * loads of the same URL by caching the promise.
+ *
+ * @returns A {@link ModelCache}; `clear()` empties the cache.
+ * @remarks Loads of an unknown extension reject. Clone the returned scene
+ * per instance if you need independent transforms.
+ */
 export function createModelCache (): ModelCache {
   const cache = new Map<string, Promise<LoadedModel>>()
   return {
@@ -53,10 +65,12 @@ export function createModelCache (): ModelCache {
 // module-global convenience instance, kept for back-compat.
 const shared = createModelCache()
 
+/** Load a model through the shared module-global cache. Same contract as {@link ModelCache.load}. */
 export function loadModel (src: string, options?: GLTFLoaderOptions): Promise<LoadedModel> {
   return shared.load(src, options)
 }
 
+/** Empty the shared module-global model cache used by {@link loadModel}. */
 export function clearModelCache (): void {
   shared.clear()
 }

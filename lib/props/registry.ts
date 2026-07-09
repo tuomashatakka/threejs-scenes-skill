@@ -18,12 +18,21 @@ import type { PropContext, PropFactory, PropInstance } from '../types.js'
 
 // An explicit, owned prop registry — prefer this over the module-global one
 // so name resolution is scoped to your app (unidirectional-API form).
+/** An owned name → prop-factory registry — prefer this over the module-global {@link registerProp}/{@link resolveProp} pair so name resolution is scoped to your app. */
 export interface PropRegistry {
   register (name: string, factory: PropFactory): void
   get (name: string): PropFactory | undefined
   resolve (src: PropFactory | string, ctx?: PropContext): Promise<PropInstance>
 }
 
+/**
+ * Create an owned prop registry. `register` names a factory, `resolve` turns
+ * a factory, registered name, model URL, or module path into a mounted
+ * `PropInstance`.
+ *
+ * @returns A {@link PropRegistry}.
+ * @see {@link resolveProp} for the four accepted `src` forms.
+ */
 export function createPropRegistry (): PropRegistry {
   const names = new Map<string, PropFactory>()
   return {
@@ -40,10 +49,12 @@ export function createPropRegistry (): PropRegistry {
 // module-global convenience instance, kept for back-compat.
 const registry = new Map<string, PropFactory>()
 
+/** Register a prop factory under a name in the shared module-global registry. */
 export function registerProp (name: string, factory: PropFactory): void {
   registry.set(name, factory)
 }
 
+/** Look up a prop factory by name in the shared module-global registry. */
 export function getProp (name: string): PropFactory | undefined {
   return registry.get(name)
 }
@@ -74,6 +85,16 @@ function wrapModel (object: THREE.Object3D, clips: THREE.AnimationClip[], ctx: P
   }
 }
 
+/**
+ * Resolve any prop source to a mounted `PropInstance` via the shared
+ * module-global registry. Accepts four `src` forms: a factory object, a
+ * registered name, a `.glb`/`.gltf` URL (loaded and wrapped, clips wired),
+ * or a module path whose default export is a factory (dynamic import).
+ *
+ * @param src - Factory, registered name, model URL, or module path.
+ * @param ctx - Prop context; pass `loop` so model clips animate.
+ * @returns The mounted prop.
+ */
 export function resolveProp (
   src: PropFactory | string,
   ctx: PropContext = {},

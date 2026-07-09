@@ -17,6 +17,7 @@ export interface StateController<S extends object> {
 /** What a scaffold accepts as its state input. */
 export type StateSource<S extends object> = S | StateController<S>
 
+/** Type guard: `true` when `source` is a `{ get, subscribe }` controller rather than a plain state object. */
 export function isStateController<S extends object> (
   source: StateSource<S> | undefined,
 ): source is StateController<S> {
@@ -46,6 +47,16 @@ export function resolveInitialState<S extends object> (source: StateSource<S> | 
 
 type TargetType<S extends object> = { setState (patch: Partial<S>): void }
 
+/**
+ * Keep an app's state following an external controller. Subscribes to the
+ * controller and forwards every commit into `app.setState`; plain-object
+ * sources are a no-op (the seed already happened via `resolveInitialState`).
+ *
+ * @param app - Anything with a `setState(partial)` method.
+ * @param source - The state source the scaffold was given.
+ * @returns A detach function that unsubscribes the mirror.
+ * @remarks Data flows controller → app only; nothing writes back.
+ */
 export function bindStateSource<S extends object> (
   target: TargetType<S>,
   source: StateSource<S> | undefined,

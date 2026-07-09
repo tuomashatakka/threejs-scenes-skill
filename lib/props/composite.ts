@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import type { PropInstance } from '../types.js'
 
 
+/** One prop's placement inside a {@link createPropComposite} group: local position, Euler rotation, and uniform or per-axis scale. */
 export interface CompositePart {
   prop:      PropInstance
   position?: [number, number, number]
@@ -15,12 +16,21 @@ export interface CompositePart {
   scale?:    number | [number, number, number]
 }
 
+/** A group of placed prop instances. `dispose()` disposes every part. */
 export interface PropComposite {
   object: THREE.Group
   parts:  PropInstance[]
   dispose (): void
 }
 
+/**
+ * Assemble several mounted props into one `Group`, applying each part's
+ * position/rotation/scale. Useful for authoring compound set-pieces from
+ * simple props.
+ *
+ * @param parts - Props with optional local transforms.
+ * @returns A {@link PropComposite} whose `object` is ready to add to the scene.
+ */
 export function createPropComposite (parts: CompositePart[]): PropComposite {
   const group     = new THREE.Group()
   const instances = parts.map(p => p.prop)

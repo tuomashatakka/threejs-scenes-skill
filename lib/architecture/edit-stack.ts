@@ -3,6 +3,17 @@
 // snapshot; on failure, restore atomically so no broken partial state escapes
 // (the snapshot/restore transaction lesson in production-lessons.md).
 
+/**
+ * Snapshot-based undo/redo stack. `push` records a new state and clears the
+ * redo branch; `undo`/`redo` move the cursor and return the restored value.
+ *
+ * @typeParam T - The snapshot type; store immutable snapshots (or clones),
+ * never live references that later mutate.
+ * @example
+ * const edits = new EditStack(initialLayout)
+ * edits.push(nextLayout)
+ * const restored = edits.undo()
+ */
 export class EditStack<T> {
   private readonly past:   T[] = []
   private readonly future: T[] = []

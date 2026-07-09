@@ -19,12 +19,24 @@ export function defineProp (def: PropDefinition): PropFactory {
   return def
 }
 
+/** Mount options for {@link createProp}. */
 export interface CreatePropOptions {
 
   /** Auto-play every clip on mount (looping). Default true. */
   autoplay?: boolean
 }
 
+/**
+ * Mount a prop definition: build its object, attach declared lights, and wire
+ * declared clips into an `AnimationController` (auto-playing looped by
+ * default).
+ *
+ * @param factory - The prop definition (author with `defineProp`).
+ * @param ctx - Prop context; pass `loop` so clips advance with the frame loop.
+ * @param options - Set `autoplay: false` to leave clips stopped.
+ * @returns A `PropInstance`; `dispose()` frees the controller and everything
+ * the prop built.
+ */
 export function createProp (factory: PropFactory, ctx: PropContext = {}, options: CreatePropOptions = {}): PropInstance {
   const { autoplay = true } = options
   const object              = factory.build(ctx)

@@ -13,6 +13,7 @@ import type { StateSource } from '../state/controller.js'
 import type { Disposable } from '../types.js'
 
 
+/** Options for {@link createFpsScaffold}: `AppOptions` minus orbit/state, plus movement/look tuning and collision/terrain hooks. */
 export interface FpsScaffoldOptions<S extends object> extends Omit<AppOptions<S>, 'orbit' | 'state'> {
   state?: StateSource<S>
 
@@ -35,6 +36,7 @@ export interface FpsScaffoldOptions<S extends object> extends Omit<AppOptions<S>
   groundHeight?: (x: number, z: number) => number
 }
 
+/** Handle returned by {@link createFpsScaffold}. `dispose()` removes all input listeners, detaches the state binding, and disposes the app. */
 export interface FpsScaffold<S extends object> extends Disposable {
   app: App<S>
 
@@ -44,6 +46,24 @@ export interface FpsScaffold<S extends object> extends Disposable {
 
 const scratchNext = new THREE.Vector3()
 
+/**
+ * First-person scaffold: pointer-lock mouse look plus WASD/arrow movement
+ * applied to the camera in the ground plane, with optional collision and
+ * terrain-height hooks. Movement is framerate-independent and nothing writes
+ * back into app state.
+ *
+ * @param options - State source, `speed`/`lookSpeed`/`eyeHeight`,
+ * `pointerLock` toggle, `collide` and `groundHeight` hooks, and the remaining
+ * `AppOptions`.
+ * @returns An {@link FpsScaffold} with the app and an `orientation()` reader
+ * for HUDs.
+ * @remarks Pitch clamps to ±1.45 rad. With `pointerLock: false` the look is
+ * drag-based. `collide` may veto (return `null`) or correct the next
+ * position; `groundHeight` re-bases `eyeHeight` on terrain.
+ * @example
+ * const fps = createFpsScaffold({ canvas, speed: 7, groundHeight: (x, z) => terrain.height(x, z) })
+ * fps.app.start()
+ */
 export function createFpsScaffold<S extends object = Record<string, unknown>> ({
   state,
   speed = 5,

@@ -10,6 +10,22 @@ import * as THREE from 'three'
 import type { AnimationController, FrameContext, FrameLoop, PlayOptions } from '../types.js'
 
 
+/**
+ * Wrap an `AnimationMixer` and its actions with `play`/`crossfade`/`stop` and
+ * a `tick(ctx)` that advances by `ctx.delta`. Pass a `FrameLoop` to
+ * auto-register the tick so playback follows the render loop.
+ *
+ * @param root - Object the mixer binds to (the .glb scene or a procedural prop).
+ * @param clips - Clips to expose as named actions.
+ * @param loop - When given, `tick` auto-registers via `registerUpdate`.
+ * @returns An `AnimationController`. `dispose()` unregisters the tick, stops
+ * all actions, and uncaches the root so nothing leaks.
+ * @remarks One mixer per animated root; cost scales with active tracks.
+ * Crossfades blend on the CPU.
+ * @example
+ * const anim = createAnimationController(model.scene, model.animations, ctx.loop)
+ * anim.play('walk', { fadeIn: 0.3 })
+ */
 export function createAnimationController (
   root: THREE.Object3D,
   clips: THREE.AnimationClip[] = [],

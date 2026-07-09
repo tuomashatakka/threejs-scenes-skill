@@ -11,6 +11,7 @@ import { mulberry32 } from '../procedural/rng.js'
 import type { InstancePlaceFn, PropContext, PropFactory } from '../types.js'
 
 
+/** Placement options for {@link createInstancedProp}: instance `count`, scatter `radius`, deterministic `seed`, and a custom `place` callback. */
 export interface InstancedPropOptions {
   count:   number
   radius?: number
@@ -18,6 +19,7 @@ export interface InstancedPropOptions {
   place?:  InstancePlaceFn
 }
 
+/** The instanced field. `dispose()` frees the instanced geometry it owns. */
 export interface InstancedPropResult {
   object: THREE.Object3D
   dispose (): void
@@ -25,6 +27,18 @@ export interface InstancedPropResult {
 
 const scratch = new THREE.Object3D()
 
+/**
+ * Scatter one prop as an `InstancedMesh` field: builds a single sample from
+ * the factory, then instances its geometry/material `count` times within
+ * `radius`. One draw call regardless of count.
+ *
+ * @param factory - Prop definition; its `instanced` hint merges under `options`.
+ * @param options - Count/radius/seed/placement overrides.
+ * @param ctx - Prop context (rng, loop).
+ * @returns An {@link InstancedPropResult} ready to add to the scene.
+ * @remarks Placement is seeded and deterministic. Non-mesh sample roots fall
+ * back to per-instance clones grouped under one parent.
+ */
 export function createInstancedProp (
   factory: PropFactory,
   options: InstancedPropOptions,

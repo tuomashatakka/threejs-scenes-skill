@@ -16,6 +16,15 @@ function clamp (n: number, min: number | undefined, max: number | undefined): nu
   return v
 }
 
+/**
+ * Coerce one value against its `ParamSpec` — clamp numbers into [min, max],
+ * round ints, validate enums against their options, and fall back to the
+ * spec default for anything malformed. Never throws.
+ *
+ * @param spec - The parameter contract.
+ * @param given - Untrusted input (config file, LLM-emitted JSON).
+ * @returns A valid `ParamValue` satisfying the spec.
+ */
 export function resolveParam (spec: ParamSpec, given: unknown): ParamValue {
   switch (spec.kind) {
     case 'number': {
@@ -38,6 +47,7 @@ export function resolveParam (spec: ParamSpec, given: unknown): ParamValue {
   }
 }
 
+/** Coerce a whole params object against a `ParamSpecMap` via {@link resolveParam} — one pass, never throws, unknown keys ignored. */
 export function resolveParams (
   specs: ParamSpecMap,
   given: Record<string, unknown> = {},

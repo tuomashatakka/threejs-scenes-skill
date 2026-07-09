@@ -9,8 +9,10 @@ import type { Disposable, FrameContext } from '../types.js'
 import type { StateController } from './controller.js'
 
 
+/** Easing curve: maps normalized progress `t` in [0, 1] to an eased ratio. */
 export type Easing = (t: number) => number
 
+/** Built-in easing curves: `linear`, `easeIn`, `easeOut`, `easeInOut` (quadratic), and `cubicOut`. */
 export const EASINGS = {
   linear:     (t: number): number => t,
   easeIn:     (t: number): number => t * t,
@@ -22,6 +24,7 @@ export const EASINGS = {
 /** Scalars and fixed-length numeric tuples — positions, scales, rgb colors. */
 export type TweenValue = number | readonly number[]
 
+/** Timing options for {@link tweened} and {@link lerpOnChange}: timed easing or continuous exp-damping. */
 export interface TweenOptions {
 
   /** Seconds per transition (timed mode). Default 0.4; 0 snaps. */
@@ -32,6 +35,7 @@ export interface TweenOptions {
   stiffness?: number
 }
 
+/** A live tweened value driven by store commits. Call `tick` each frame; `dispose()` unsubscribes from the store. */
 export interface Tweened<V extends TweenValue> extends Disposable {
 
   /** Current interpolated value. Tuples return the same array instance — copy to keep. */

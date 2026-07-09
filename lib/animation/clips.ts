@@ -7,18 +7,22 @@
 import * as THREE from 'three'
 
 
+/** Build a `NumberKeyframeTrack` for `targetPath` (one value per keyframe time). */
 export function numberTrack (targetPath: string, times: number[], values: number[]): THREE.NumberKeyframeTrack {
   return new THREE.NumberKeyframeTrack(targetPath, times, values)
 }
 
+/** Build a `VectorKeyframeTrack` for `targetPath` (three values per keyframe time). */
 export function vectorTrack (targetPath: string, times: number[], values: number[]): THREE.VectorKeyframeTrack {
   return new THREE.VectorKeyframeTrack(targetPath, times, values)
 }
 
+/** Build a `QuaternionKeyframeTrack` for `targetPath` (four values per keyframe time, slerped). */
 export function quaternionTrack (targetPath: string, times: number[], values: number[]): THREE.QuaternionKeyframeTrack {
   return new THREE.QuaternionKeyframeTrack(targetPath, times, values)
 }
 
+/** Declarative keyframe-track description consumed by {@link trackFromKeyframes}. `type` defaults to `'number'`. */
 export interface TrackSpec {
   path:   string
   times:  number[]
@@ -26,6 +30,7 @@ export interface TrackSpec {
   type?:  'number' | 'vector' | 'quaternion'
 }
 
+/** Build the matching `KeyframeTrack` subclass from a {@link TrackSpec}. */
 export function trackFromKeyframes (spec: TrackSpec): THREE.KeyframeTrack {
   switch (spec.type) {
     case 'vector': return vectorTrack(spec.path, spec.times, spec.values)
@@ -34,6 +39,7 @@ export function trackFromKeyframes (spec: TrackSpec): THREE.KeyframeTrack {
   }
 }
 
+/** Assemble tracks into a named `AnimationClip` of the given `duration` in seconds. */
 export function clipFromTracks (name: string, duration: number, tracks: THREE.KeyframeTrack[]): THREE.AnimationClip {
   return new THREE.AnimationClip(name, duration, tracks)
 }
@@ -67,6 +73,15 @@ export function pulseScaleClip (min = 0.9, max = 1.1, duration = 1.5, name = 'pu
   return clipFromTracks(name, duration, [ vectorTrack('.scale', times, values) ])
 }
 
+/**
+ * Merge several clips into one, layering all their tracks. The result's
+ * duration is the longest input duration.
+ *
+ * @param name - Name of the combined clip.
+ * @param clips - Clips whose tracks are concatenated; tracks targeting the
+ * same property will fight — combine complementary clips (spin + bob).
+ * @returns One `AnimationClip` playing every input in parallel.
+ */
 export function combineClips (name: string, clips: THREE.AnimationClip[]): THREE.AnimationClip {
   const tracks   = clips.flatMap(c => c.tracks)
   const duration = Math.max(...clips.map(c => c.duration))

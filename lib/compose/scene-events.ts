@@ -10,6 +10,7 @@ import { createClickGuard } from '../architecture/pick.js'
 import type { Disposable } from '../types.js'
 
 
+/** Per-object pointer handlers: tap, down/up, and hover enter/leave. Handlers receive the raycast intersection. */
 export interface SceneEventHandlers {
   onTap?:         (hit: THREE.Intersection, event: PointerEvent) => void
   onPointerDown?: (hit: THREE.Intersection, event: PointerEvent) => void
@@ -18,6 +19,7 @@ export interface SceneEventHandlers {
   onLeave?:       () => void
 }
 
+/** One object's event subscription for {@link bindSceneEvents}. */
 export interface SceneEventBinding extends SceneEventHandlers {
   object: THREE.Object3D
 
@@ -25,6 +27,7 @@ export interface SceneEventBinding extends SceneEventHandlers {
   recursive?: boolean
 }
 
+/** Options for {@link bindSceneEvents}: the DOM element, camera, initial bindings, and an optional pointer-distortion inverse. */
 export interface SceneEventsOptions {
   element:   HTMLElement
   camera:    THREE.Camera
@@ -34,6 +37,7 @@ export interface SceneEventsOptions {
   correctPointer?: (ndc: THREE.Vector2) => THREE.Vector2
 }
 
+/** Handle returned by {@link bindSceneEvents}. `add` registers further bindings; `dispose()` removes all DOM listeners. */
 export interface SceneEvents extends Disposable {
 
   /** Register a binding; returns its unbinder. */
@@ -42,6 +46,17 @@ export interface SceneEvents extends Disposable {
 
 const scratchNdc = new THREE.Vector2()
 
+/**
+ * Declarative raycast event binding: attach tap/down/up/enter/leave handlers
+ * to individual objects instead of hand-rolling raycaster plumbing. Tap uses
+ * click-vs-drag discrimination so drags never fire `onTap`.
+ *
+ * @param options - Element, camera, initial bindings, and optional
+ * `correctPointer` distortion inverse (needed under warping post passes).
+ * @returns A {@link SceneEvents} registry.
+ * @remarks Raycasts run per pointer event against each binding's object
+ * (recursive by default) — keep binding counts moderate or scope objects.
+ */
 export function bindSceneEvents ({
   element,
   camera,

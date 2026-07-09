@@ -13,6 +13,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import type { LoadedModel } from '../types.js'
 
 
+/** Decoder/transcoder wiring for {@link createGLTFLoader}: DRACO, KTX2, and Meshopt support. */
 export interface GLTFLoaderOptions {
 
   /** DRACO decoder path (CDN or local). Enables compressed-mesh support. */
@@ -31,6 +32,16 @@ const KTX2_CDN  = 'https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/libs/
 
 let shared: GLTFLoader | null = null
 
+/**
+ * Build a `GLTFLoader` with optional DRACO, KTX2, and Meshopt decoders.
+ * Decoder paths default to CDN-hosted versions; pass local paths for
+ * offline builds.
+ *
+ * @param options - Which decoders to wire and where their binaries live.
+ * @returns A configured `GLTFLoader`.
+ * @remarks KTX2 GPU-format detection needs the `renderer`; decoders may run
+ * their own internal workers, so loading stays off the render thread.
+ */
 export function createGLTFLoader (options: GLTFLoaderOptions = {}): GLTFLoader {
   const loader = new GLTFLoader()
 
@@ -57,6 +68,16 @@ function getSharedLoader (): GLTFLoader {
   return shared
 }
 
+/**
+ * Load a `.glb`/`.gltf` file into the normalized `LoadedModel` shape.
+ * Without `options` a shared plain loader is reused; with `options` a
+ * dedicated configured loader is built for the call.
+ *
+ * @param url - Model URL.
+ * @param options - Decoder wiring when the asset is compressed.
+ * @returns Scene root, animation clips, cameras, and the asset metadata.
+ * @see {@link loadModel} for the cached, format-dispatched variant.
+ */
 export function loadGLTF (url: string, options?: GLTFLoaderOptions): Promise<LoadedModel> {
   const loader = options ? createGLTFLoader(options) : getSharedLoader()
   return new Promise((resolve, reject) => {

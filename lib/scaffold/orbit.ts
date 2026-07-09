@@ -13,6 +13,7 @@ import type { StateSource } from '../state/controller.js'
 import type { Disposable } from '../types.js'
 
 
+/** Options for {@link createOrbitScaffold}: `AppOptions` plus an `autoRotate` turntable speed. */
 export interface OrbitScaffoldOptions<S extends object> extends Omit<AppOptions<S>, 'state'> {
   state?: StateSource<S>
 
@@ -20,6 +21,7 @@ export interface OrbitScaffoldOptions<S extends object> extends Omit<AppOptions<
   autoRotate?: number
 }
 
+/** Handle returned by {@link createOrbitScaffold}. `dispose()` detaches the state binding, removes the stage, and disposes the app. */
 export interface OrbitScaffold<S extends object> extends Disposable {
   app: App<S>
 
@@ -33,6 +35,23 @@ export interface OrbitScaffold<S extends object> extends Disposable {
 const scratchBox    = new THREE.Box3()
 const scratchSphere = new THREE.Sphere()
 
+/**
+ * Product/model-viewer scaffold: `createApp` with the built-in pointer orbit,
+ * an auto-rotating `stage` group for content, and a fit-to-object framing
+ * helper. Put viewer content on `stage` so the turntable spins the model,
+ * not the lights.
+ *
+ * @param options - State source, `autoRotate` speed, and the remaining
+ * `AppOptions`.
+ * @returns An {@link OrbitScaffold} with the app, the `stage` group, and
+ * `fitTo(object, margin)` which distances the camera so the object's bounding
+ * sphere fits with `margin` headroom (default 1.25).
+ * @example
+ * const viewer = createOrbitScaffold({ canvas, autoRotate: 0.4 })
+ * viewer.stage.add(model)
+ * viewer.fitTo(model)
+ * viewer.app.start()
+ */
 export function createOrbitScaffold<S extends object = Record<string, unknown>> ({
   state,
   autoRotate = 0,
