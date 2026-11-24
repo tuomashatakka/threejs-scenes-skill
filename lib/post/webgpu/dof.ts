@@ -12,15 +12,12 @@ import type { Node } from 'three/webgpu'
 import type { ColorNode } from './types.js'
 
 
-
-
 /** Options for {@link createDof}: focus distance, focal length, and bokeh scale. */
 export interface DofOptions {
   focusDistance?: number
   focalLength?:   number
   bokehScale?:    number
 }
-
 
 
 /**
@@ -40,7 +37,6 @@ export function createDof (input: ColorNode, viewZ: ColorNode, options: DofOptio
 }
 
 // perf: medium-high. Sampling cost scales with bokehScale.
-
 
 
 /** Options for {@link createDofBasic}: focus point, blur distance range, box-blur kernel size, and sample spread. */

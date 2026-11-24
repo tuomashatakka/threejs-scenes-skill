@@ -13,10 +13,6 @@ import type { Pass } from 'three/addons/postprocessing/Pass.js'
 import type { Disposable } from '../types.js'
 
 
-
-
-
-
 /** Options for {@link createPostPipeline}: renderer, scene, camera, viewport dimensions, and optional depth attachment. */
 export interface PostPipelineOptions {
   renderer: THREE.WebGLRenderer
@@ -44,7 +40,6 @@ export interface PostPipeline extends Disposable {
   render (delta?: number): void
   setSize (width: number, height: number): void
 }
-
 
 
 /**

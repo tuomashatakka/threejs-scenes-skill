@@ -7,8 +7,6 @@ import type { Camera, DirectionalLight, PointLight, TextureNode } from 'three/we
 import { godrays } from 'three/addons/tsl/display/GodraysNode.js'
 
 
-
-
 /** Options for {@link createGodrays}: raymarch step count, scattering density, max density, distance attenuation, and resolution scale. */
 export interface GodraysOptions {
   raymarchSteps?:       number

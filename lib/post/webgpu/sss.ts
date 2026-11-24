@@ -9,8 +9,6 @@ import type { Camera, DirectionalLight, TextureNode } from 'three/webgpu'
 import { sss } from 'three/addons/tsl/display/SSSNode.js'
 
 
-
-
 /** Options for {@link createSss}: max distance, thickness, shadow intensity, quality, resolution scale, and temporal filtering. */
 export interface SssOptions {
   maxDistance?:          number

@@ -9,8 +9,6 @@ import type { Node } from 'three/webgpu'
 import { lensflare } from 'three/addons/tsl/display/LensflareNode.js'
 
 
-
-
 /** Options for {@link createLensflare}: ghost tint, luminance threshold, ghost samples/spacing/attenuation, and downsample ratio. */
 export interface LensflareOptions {
   ghostTint?:              Node
@@ -20,7 +18,6 @@ export interface LensflareOptions {
   ghostAttenuationFactor?: number
   downSampleRatio?:        number
 }
-
 
 
 /**

@@ -12,7 +12,7 @@ const FILM_GRAIN_SHADER = {
     uTime:      { value: 0 },
     uIntensity: { value: 0.08 },
     uLuma:      { value: 0.5 },
-    uDesat:     { value: 0.0 },
+    uDesat:     { value: 0 },
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
@@ -44,14 +44,12 @@ const FILM_GRAIN_SHADER = {
 }
 
 
-
 /** Options for {@link createFilmGrainPass}: grain intensity, luminance-only blend, and desaturation amount. */
 export interface FilmGrainOptions {
   intensity?: number
   luma?:      number
   desat?:     number
 }
-
 
 
 /**

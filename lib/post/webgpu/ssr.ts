@@ -8,8 +8,6 @@ import type { Camera, Node } from 'three/webgpu'
 import { ssr } from 'three/addons/tsl/display/SSRNode.js'
 
 
-
-
 /** Options for {@link createSsr}: max ray distance, thickness, opacity, quality, blur quality, and resolution scale. */
 export interface SsrOptions {
   maxDistance?:     number

@@ -9,8 +9,6 @@ import { chromaticAberration } from 'three/addons/tsl/display/ChromaticAberratio
 import type { ColorNode } from './types.js'
 
 
-
-
 /** Options for {@link createChromaticAberration}: fringe magnitude, radial centre, and per-channel scale falloff. */
 export interface ChromaticAberrationOptions {
   // Fringe magnitude.
@@ -20,7 +18,6 @@ export interface ChromaticAberrationOptions {
   // Per-channel scale falloff.
   scale?:    number
 }
-
 
 
 /**

@@ -96,7 +96,6 @@ const GOD_RAYS_SHADER = {
 const projected = new THREE.Vector3()
 
 
-
 /** A {@link ShaderPass} extended with {@link GodRaysPass.updateFromLight} and {@link GodRaysPass.setOcclusionTexture} for per-frame world-space light tracking and optional occlusion-buffer binding. */
 export interface GodRaysPass extends ShaderPass {
   // Project a world-space light onto the screen and disable the pass when the
@@ -106,7 +105,6 @@ export interface GodRaysPass extends ShaderPass {
   // to fall back to using the scene colour as the occlusion source.
   setOcclusionTexture (texture: THREE.Texture | null): void
 }
-
 
 
 /**

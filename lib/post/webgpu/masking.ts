@@ -9,8 +9,6 @@ import { mix, pass, texture } from 'three/tsl'
 import type { Node } from 'three/webgpu'
 
 
-
-
 /** A mask layer composed of an alpha-emitting scene and the texture to composite where the mask is opaque. */
 export interface MaskLayer {
   // A scene whose rendered alpha defines the mask region.

@@ -50,7 +50,6 @@ const HUD_BEAM_SHADER = {
 }
 
 
-
 /** Options for {@link createHudBeamTransition}: sweep duration, beam width, beam tint colour, and completion callback. */
 export interface HudBeamOptions {
   duration?:   number
@@ -60,14 +59,12 @@ export interface HudBeamOptions {
 }
 
 
-
 /** Handle returned by {@link createHudBeamTransition}; controls a horizontal beam-sweep transition via {@link HudBeamTransition.play} and {@link HudBeamTransition.tick}. */
 export interface HudBeamTransition {
   pass: ShaderPass
   play (onMidpoint?: () => void): void
   tick (delta: number, time: number): void
 }
-
 
 
 /**

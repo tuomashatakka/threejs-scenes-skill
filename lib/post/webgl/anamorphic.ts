@@ -14,7 +14,7 @@ const ANAMORPHIC_SHADER = {
     uThreshold:  { value: 0.9 },
     uScale:      { value: 3 },
     uSamples:    { value: 32 },
-    uTint:       { value: new THREE.Color(0.3, 0.5, 1.0) },
+    uTint:       { value: new THREE.Color(0.3, 0.5, 1) },
     uResolution: { value: new THREE.Vector2(1, 1) },
   },
   vertexShader: /* glsl */`
@@ -70,11 +70,11 @@ export interface AnamorphicPass extends ShaderPass {
 }
 
 export function createAnamorphic (options: AnamorphicOptions = {}): AnamorphicPass {
-  const { threshold = 0.9, scale = 3, samples = 32, tint = new THREE.Color(0.3, 0.5, 1.0) } = options
-  const pass                                                                                = new ShaderPass(ANAMORPHIC_SHADER) as AnamorphicPass
-  pass.uniforms.uThreshold.value                                                            = threshold
-  pass.uniforms.uScale.value                                                                = scale
-  pass.uniforms.uSamples.value                                                              = Math.min(samples, 64);
+  const { threshold = 0.9, scale = 3, samples = 32, tint = new THREE.Color(0.3, 0.5, 1) } = options
+  const pass                                                                              = new ShaderPass(ANAMORPHIC_SHADER) as AnamorphicPass
+  pass.uniforms.uThreshold.value                                                          = threshold
+  pass.uniforms.uScale.value                                                              = scale
+  pass.uniforms.uSamples.value                                                            = Math.min(samples, 64);
   (pass.uniforms.uTint.value as THREE.Color).copy(tint)
   pass.setSize = (width, height) => {
     (pass.uniforms.uResolution.value as THREE.Vector2).set(width, height)

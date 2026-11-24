@@ -8,8 +8,6 @@ import { bloom } from 'three/addons/tsl/display/BloomNode.js'
 import type { PassNode } from 'three/webgpu'
 
 
-
-
 /** Options for {@link createBloomEmissive}: bloom strength, radius, and luminance threshold. */
 export interface BloomEmissiveOptions {
   strength?:  number

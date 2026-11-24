@@ -8,8 +8,6 @@ import { ao } from 'three/addons/tsl/display/GTAONode.js'
 import type { ColorNode } from './types.js'
 
 
-
-
 /**
  * Compute screen-space ambient occlusion (GTAO) to produce contact shadows in creases and corners.
  *

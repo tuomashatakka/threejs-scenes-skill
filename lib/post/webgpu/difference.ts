@@ -9,8 +9,6 @@ import { luminance, saturation } from 'three/tsl'
 import type { PassNode } from 'three/webgpu'
 
 
-
-
 /** Options for {@link createDifference}: per-pixel difference gain and max saturation boost. */
 export interface DifferenceOptions {
   // Multiplier on the per-pixel difference luminance before clamping.

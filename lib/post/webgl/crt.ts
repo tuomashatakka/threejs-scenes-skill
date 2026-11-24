@@ -16,7 +16,7 @@ const CRT_SHADER = {
     tDiffuse:   { value: null },
     uCurvature: { value: 0.12 },
     uVignette:  { value: 0.35 },
-    uGlitch:    { value: 0.0 },
+    uGlitch:    { value: 0 },
     uTime:      { value: 0 },
   },
   vertexShader: /* glsl */`

@@ -13,13 +13,13 @@ const DOF_CA_SHADER = {
   uniforms: {
     tDiffuse:       { value: null },
     tDepth:         { value: null },
-    uFocalDistance: { value: 10.0 },
-    uFocalRange:    { value: 4.0 },
+    uFocalDistance: { value: 10 },
+    uFocalRange:    { value: 4 },
     uMaxBlur:       { value: 0.015 },
     uCAStrength:    { value: 0.5 },
     uNear:          { value: 0.1 },
-    uFar:           { value: 200.0 },
-    uAspect:        { value: 1.0 },
+    uFar:           { value: 200 },
+    uAspect:        { value: 1 },
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
@@ -75,9 +75,6 @@ const DOF_CA_SHADER = {
 const focalScratch = new THREE.Vector3()
 
 
-
-
-
 /** Options for {@link createDofPass}: focal distance, blur range, max blur radius, chromatic-aberration strength, and camera clip planes. */
 export interface DofPassOptions {
   focalDistance?: number
@@ -93,7 +90,6 @@ export interface DofPass extends ShaderPass {
   focusOn (worldPos: THREE.Vector3, camera: THREE.Camera): void
   setAspect (aspect: number): void
 }
-
 
 
 /**

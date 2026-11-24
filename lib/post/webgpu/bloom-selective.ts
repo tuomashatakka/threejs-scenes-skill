@@ -9,8 +9,6 @@ import { bloom } from 'three/addons/tsl/display/BloomNode.js'
 import type { PassNode } from 'three/webgpu'
 
 
-
-
 /** Options for {@link createBloomSelective}: bloom strength, radius, and luminance threshold. */
 export interface BloomSelectiveOptions {
   strength?:  number

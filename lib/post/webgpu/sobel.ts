@@ -7,8 +7,6 @@ import { sobel } from 'three/addons/tsl/display/SobelOperatorNode.js'
 import type { ColorNode } from './types.js'
 
 
-
-
 /**
  * Detect edges in the input using the Sobel 3x3 gradient operator.
  *

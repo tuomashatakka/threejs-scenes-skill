@@ -10,8 +10,6 @@ import { lut3D } from 'three/addons/tsl/display/Lut3DNode.js'
 import type { ColorNode } from './types.js'
 
 
-
-
 /** Options for {@link createLut}: the loaded 3D LUT texture and blend intensity. */
 export interface LutOptions {
   // The loaded 3D LUT texture (e.g. from LUTCubeLoader().load(...).texture3D).

@@ -8,8 +8,6 @@ import type { Node } from 'three/webgpu'
 import { transition } from 'three/addons/tsl/display/TransitionNode.js'
 
 
-
-
 /** Options for {@link createTransition}: mix ratio, wipe edge softness, and texture-wipe blend factor. */
 export interface TransitionOptions {
   // 0 = fully scene A, 1 = fully scene B.

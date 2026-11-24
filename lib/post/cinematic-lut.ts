@@ -5,8 +5,6 @@
 import * as THREE from 'three'
 
 
-
-
 /** Options for {@link createCinematicLUT}: contrast S-curve strength, split-tone (teal/amber) intensity, and saturation multiplier. */
 export interface CinematicLutOptions {
 

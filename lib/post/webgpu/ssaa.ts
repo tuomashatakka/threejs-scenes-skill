@@ -8,8 +8,6 @@ import * as THREE from 'three'
 import { ssaaPass } from 'three/addons/tsl/display/SSAAPassNode.js'
 
 
-
-
 /** Options for {@link createSsaaPass}: sample level and unbiased weighting toggle. */
 export interface SsaaOptions {
   // 0..5; number of samples is 2^sampleLevel (level 4 = 16 samples).
@@ -17,7 +15,6 @@ export interface SsaaOptions {
   // Distribute sample weights to avoid bias toward the centre sample.
   unbiased?:    boolean
 }
-
 
 
 /**

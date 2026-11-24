@@ -18,7 +18,7 @@ const RGB_SHIFT_SHADER = {
     tDiffuse:   { value: null },
     uTime:      { value: 0 },
     uIntensity: { value: 0.5 },
-    uAngle:     { value: 0.0 },
+    uAngle:     { value: 0 },
   },
   vertexShader:   FULL_SCREEN_VERTEX,
   fragmentShader: /* glsl */`
@@ -40,7 +40,7 @@ const BLOCK_DISPLACEMENT_SHADER = {
     tDiffuse:   { value: null },
     uTime:      { value: 0 },
     uIntensity: { value: 0.5 },
-    uBlockSize: { value: 32.0 },
+    uBlockSize: { value: 32 },
   },
   vertexShader:   FULL_SCREEN_VERTEX,
   fragmentShader: /* glsl */`
@@ -84,7 +84,6 @@ const SCAN_CORRUPTION_SHADER = {
 }
 
 
-
 /**
  * Create a glitch pass that separates the RGB channels along a configurable angle.
  *
@@ -96,7 +95,6 @@ export function createRgbShiftPass (): ShaderPass {
 }
 
 
-
 /**
  * Create a glitch pass that displaces and swaps colour channels in pseudo-random blocks.
  *
@@ -106,7 +104,6 @@ export function createRgbShiftPass (): ShaderPass {
 export function createBlockDisplacementPass (): ShaderPass {
   return new ShaderPass(BLOCK_DISPLACEMENT_SHADER)
 }
-
 
 
 /**

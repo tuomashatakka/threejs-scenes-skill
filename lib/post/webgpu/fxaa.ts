@@ -7,8 +7,6 @@ import { fxaa } from 'three/addons/tsl/display/FXAANode.js'
 import type { ColorNode } from './types.js'
 
 
-
-
 /**
  * Apply fast-approximate anti-aliasing (FXAA) to the final image.
  *

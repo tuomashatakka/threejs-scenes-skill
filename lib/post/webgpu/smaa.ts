@@ -7,8 +7,6 @@ import { smaa } from 'three/addons/tsl/display/SMAANode.js'
 import type { ColorNode } from './types.js'
 
 
-
-
 /**
  * Apply subpixel morphological anti-aliasing (SMAA) for higher-quality edge smoothing than FXAA.
  *

@@ -14,8 +14,6 @@ import type { Pass } from 'three/addons/postprocessing/Pass.js'
 import type { Disposable } from '../types.js'
 
 
-
-
 /** Options for {@link createComposer}: renderer, scene, camera, output dimensions, and optional bloom configuration. */
 export interface ComposerOptions {
   renderer:        THREE.WebGLRenderer
@@ -31,7 +29,6 @@ export interface ComposerOptions {
 }
 
 
-
 /** Handle returned by {@link createComposer}, exposing the {@link EffectComposer}, the optional {@link UnrealBloomPass}, the {@link OutputPass}, and helper methods for resizing and inserting passes. */
 export interface ComposerHandle extends Disposable {
   composer: EffectComposer
@@ -40,7 +37,6 @@ export interface ComposerHandle extends Disposable {
   setSize (w: number, h: number): void
   addPassBeforeOutput (pass: Pass): void
 }
-
 
 
 /**

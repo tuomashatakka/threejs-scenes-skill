@@ -11,8 +11,6 @@ import * as THREE from 'three'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 
 
-
-
 /** Raw shader definition for the colour-grade pass: tint, contrast, saturation, vignette, seeded grain, and radial chromatic aberration operating in linear HDR space. */
 export const GradeShader = {
   uniforms: {
@@ -67,9 +65,6 @@ export const GradeShader = {
 }
 
 
-
-
-
 /** Options for {@link createGradePass}: tint colour, contrast, saturation, vignette, grain, and chromatic-aberration strength. */
 export interface GradePassOptions {
   tint?:       THREE.ColorRepresentation
@@ -84,7 +79,6 @@ export interface GradePassOptions {
 export interface GradePass extends ShaderPass {
   setTime (elapsed: number): void
 }
-
 
 
 /**

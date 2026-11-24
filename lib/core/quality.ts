@@ -21,7 +21,7 @@ export const QUALITY_PRESETS: Record<QualityTier, QualityPreset> = {
     maxLights:       2,
   },
   desktop: {
-    pixelRatio:      2.0,
+    pixelRatio:      2,
     shadowMapSize:   2048,
     shadowsEnabled:  true,
     postFx:          [ 'bloom', 'dof', 'filmGrain' ],
@@ -30,7 +30,7 @@ export const QUALITY_PRESETS: Record<QualityTier, QualityPreset> = {
     maxLights:       4,
   },
   highEnd: {
-    pixelRatio:      2.0,
+    pixelRatio:      2,
     shadowMapSize:   4096,
     shadowsEnabled:  true,
     postFx:          [ 'bloom', 'dof', 'godRays', 'filmGrain', 'glitch' ],

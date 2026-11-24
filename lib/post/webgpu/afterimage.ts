@@ -7,14 +7,11 @@ import { afterImage } from 'three/addons/tsl/display/AfterImageNode.js'
 import type { ColorNode } from './types.js'
 
 
-
-
 /** Options for {@link createAfterImage}: per-frame persistence dampening. */
 export interface AfterImageOptions {
   // Persistence of the previous frame, 0..1. Higher = longer trails.
   damp?: number
 }
-
 
 
 /**

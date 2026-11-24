@@ -9,8 +9,6 @@ import { uniform } from 'three/tsl'
 import { pixelationPass } from 'three/addons/tsl/display/PixelationPassNode.js'
 
 
-
-
 /** Options for {@link createPixelationPass}: pixel block size and normal/depth edge-darkening strength. */
 export interface PixelOptions {
   // Size of each output pixel block in device pixels.
@@ -20,7 +18,6 @@ export interface PixelOptions {
   // Strength of depth-discontinuity edge darkening.
   depthEdgeStrength?:  number
 }
-
 
 
 /**

@@ -8,8 +8,6 @@ import type { Camera, Node, TextureNode } from 'three/webgpu'
 import { traa } from 'three/addons/tsl/display/TRAANode.js'
 
 
-
-
 /** Options for {@link createTraa}: depth threshold, edge depth diff, max velocity, and subpixel correction. */
 export interface TraaOptions {
   depthThreshold?:        number

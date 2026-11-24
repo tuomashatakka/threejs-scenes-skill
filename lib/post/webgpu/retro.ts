@@ -9,8 +9,6 @@ import type { Node } from 'three/webgpu'
 import { retroPass } from 'three/addons/tsl/display/RetroPassNode.js'
 
 
-
-
 /** Options for {@link createRetroPass}: optional affine-distortion node and texture-filtering toggle. */
 export interface RetroOptions {
   // Optional node controlling affine (perspective-incorrect) texture distortion.
@@ -18,7 +16,6 @@ export interface RetroOptions {
   // Whether textures are filtered (false = nearest, more authentic).
   filterTextures?:   boolean
 }
-
 
 
 /**

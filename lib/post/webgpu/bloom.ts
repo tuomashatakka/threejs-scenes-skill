@@ -6,8 +6,6 @@ import { bloom } from 'three/addons/tsl/display/BloomNode.js'
 import type { ColorNode } from './types.js'
 
 
-
-
 /** Options for {@link createBloom}: bloom strength, radius, and luminance threshold. */
 export interface BloomOptions {
   strength?:  number

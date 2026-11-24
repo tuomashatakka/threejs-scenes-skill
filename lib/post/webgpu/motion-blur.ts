@@ -8,8 +8,6 @@ import type { Node } from 'three/webgpu'
 import { motionBlur } from 'three/addons/tsl/display/MotionBlur.js'
 
 
-
-
 /** Options for {@link createMotionBlur}: number of velocity samples. */
 export interface MotionBlurOptions {
   // Number of samples taken along the velocity vector.

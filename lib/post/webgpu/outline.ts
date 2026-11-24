@@ -8,11 +8,8 @@ import { outline } from 'three/addons/tsl/display/OutlineNode.js'
 import type { OutlineNodeParams } from 'three/addons/tsl/display/OutlineNode.js'
 
 
-
-
 /** Options for {@link createOutline}, mirroring {@link OutlineNodeParams} from three.js (selection, colour, thickness, pulse speed). */
 export type OutlineOptions = OutlineNodeParams
-
 
 
 /**

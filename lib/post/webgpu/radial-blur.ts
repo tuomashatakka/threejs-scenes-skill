@@ -8,8 +8,6 @@ import { radialBlur } from 'three/addons/tsl/display/radialBlur.js'
 import type { ColorNode } from './types.js'
 
 
-
-
 /** Options for {@link createRadialBlur}: sample weight, decay, exposure, and sample count. */
 export interface RadialBlurOptions {
   // Per-sample weight contribution.
@@ -21,7 +19,6 @@ export interface RadialBlurOptions {
   // Number of samples along the radial direction.
   count?:    number
 }
-
 
 
 /**

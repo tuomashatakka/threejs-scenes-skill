@@ -9,8 +9,6 @@ import type { Node, PerspectiveCamera } from 'three/webgpu'
 import { ssgi } from 'three/addons/tsl/display/SSGINode.js'
 
 
-
-
 /** Options for {@link createSsgi}: slice/step counts, AO/GI intensity, radius, screen-space sampling, thickness, backface lighting, and temporal filtering. */
 export interface SsgiOptions {
   sliceCount?:             number

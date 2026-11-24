@@ -8,8 +8,6 @@ import { anamorphic } from 'three/addons/tsl/display/AnamorphicNode.js'
 import type { ColorNode } from './types.js'
 
 
-
-
 /** Options for {@link createAnamorphic}: luminance threshold, streak stretch, tap count, and resolution scale. */
 export interface AnamorphicOptions {
   // Luminance above which pixels streak.
@@ -21,7 +19,6 @@ export interface AnamorphicOptions {
   // Render the streak buffer at a fraction of full resolution (1 = full).
   resolutionScale?: number
 }
-
 
 
 /**
